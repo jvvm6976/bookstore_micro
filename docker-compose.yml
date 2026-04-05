@@ -1,0 +1,314 @@
+services:
+  # ═══════════════════════════════════════════════════════════
+  # DATABASES
+  # ═══════════════════════════════════════════════════════════
+  db-mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: bookstore_db
+    volumes:
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  db-postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: bookstore_db
+    volumes:
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ═══════════════════════════════════════════════════════════
+  # MESSAGE BROKER
+  # ═══════════════════════════════════════════════════════════
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # ═══════════════════════════════════════════════════════════
+  # AUTH SERVICE (JWT)
+  # ═══════════════════════════════════════════════════════════
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "8012:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=auth_service.settings
+      - DB_NAME=bookstore_auth
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+      - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - JWT_ACCESS_MINUTES=60
+      - JWT_REFRESH_DAYS=7
+
+  # ═══════════════════════════════════════════════════════════
+  # MICROSERVICES
+  # ═══════════════════════════════════════════════════════════
+  customer-service:
+    build: ./customer-service
+    ports:
+      - "8001:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=customer_service.settings
+      - DB_NAME=bookstore_customer
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+
+  book-service:
+    build: ./book-service
+    ports:
+      - "8002:8000"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=book_service.settings
+      - POSTGRES_DB=bookstore_book
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - DB_HOST=db-postgres
+
+  cart-service:
+    build: ./cart-service
+    ports:
+      - "8003:8000"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=cart_service.settings
+      - POSTGRES_DB=bookstore_cart
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - DB_HOST=db-postgres
+
+  order-service:
+    build: ./order-service
+    ports:
+      - "8004:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=order_service.settings
+      - DB_NAME=bookstore_order
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+
+  pay-service:
+    build: ./pay-service
+    ports:
+      - "8005:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=pay_service.settings
+      - DB_NAME=bookstore_pay
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+
+  ship-service:
+    build: ./ship-service
+    ports:
+      - "8006:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=ship_service.settings
+      - DB_NAME=bookstore_ship
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+
+  staff-service:
+    build: ./staff-service
+    ports:
+      - "8007:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=staff_service.settings
+      - DB_NAME=bookstore_staff
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+
+  comment-rate-service:
+    build: ./comment-rate-service
+    ports:
+      - "8008:8000"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=comment_rate_service.settings
+      - POSTGRES_DB=bookstore_comment
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - DB_HOST=db-postgres
+
+  catalog-service:
+    build: ./catalog-service
+    ports:
+      - "8009:8000"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=catalog_service.settings
+      - POSTGRES_DB=bookstore_catalog
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - DB_HOST=db-postgres
+
+  manager-service:
+    build: ./manager-service
+    ports:
+      - "8010:8000"
+    depends_on:
+      db-mysql:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=manager_service.settings
+      - DB_NAME=bookstore_manager
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - DB_HOST=db-mysql
+
+  recommender-ai-service:
+    build: ./recommender-ai-service
+    ports:
+      - "8011:8000"
+    depends_on:
+      db-postgres:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=recommender_ai_service.settings
+      - POSTGRES_DB=bookstore_recommender
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=root
+      - DB_HOST=db-postgres
+
+  # ═══════════════════════════════════════════════════════════
+  # API GATEWAY
+  # ═══════════════════════════════════════════════════════════
+  api-gateway:
+    build: ./api_gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - auth-service
+      - customer-service
+      - book-service
+      - cart-service
+      - order-service
+      - pay-service
+      - ship-service
+      - staff-service
+      - comment-rate-service
+      - catalog-service
+      - recommender-ai-service
+    networks:
+      - bookstore-network
+    environment:
+      - DEBUG=1
+      - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+
+networks:
+  bookstore-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  postgres_data:
+  rabbitmq_data:

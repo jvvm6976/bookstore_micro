@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microservice BookStore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Pastel Blue + White Palette */
+            --bg-color: #EEF6FB;
+            --surface-color: #ffffff;
+            --primary-color: #7BADD1;
+            --primary-light: #B3D9E8;
+            --primary-dark: #5084A6;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--surface-color);
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo span {
+            color: var(--text-main);
+        }
+
+        .auth-actions button {
+            background-color: var(--surface-color);
+            border: 2px solid var(--primary-light);
+            color: var(--primary-dark);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-left: 0.5rem;
+        }
+
+        .auth-actions button.primary {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .auth-actions button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .auth-actions button.primary:hover {
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
+        }
+
+        /* Main Layout */
+        main {
+            display: flex;
+            flex: 1;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Books Container */
+        .books-container {
+            flex: 1;
+        }
+
+        .section-header {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .book-card {
+            background-color: var(--surface-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--bg-color);
+        }
+
+        .book-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-light);
+        }
+
+        .book-img-placeholder {
+            height: 160px;
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .book-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-main);
+        }
+
+        .book-author {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .book-footer {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .book-price {
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 1.25rem;
+        }
+
+        .btn-add-cart {
+            background-color: var(--primary-light);
+            color: var(--primary-dark);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-add-cart:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .cart-sidebar {
+            display: none;
+            /* Hidden by default */
+            width: 350px;
+            background-color: var(--surface-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            height: fit-content;
+            position: sticky;
+            top: 6rem;
+            flex-direction: column;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .cart-item-title {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .cart-item-price {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .cart-item-qty {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .cart-item-qty button {
+            background: var(--bg-color);
+            border: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: var(--primary-dark);
+            font-weight: bold;
+        }
+
+        .cart-total {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 2px dashed var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .btn-checkout {
+            width: 100%;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-checkout:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(123, 173, 221, 0.2);
+        }
+
+        .empty-cart {
+            text-align: center;
+            color: var(--text-light);
+            padding: 2rem 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav>
+        <a href="#" class="logo">
+            📘 <span>CloudBooks</span>
+        </a>
+        <div class="auth-actions" id="authSection">
+            <button onclick="showLogin()">Log In</button>
+            <button class="primary" onclick="showRegister()">Register</button>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Home Books Listing -->
+        <div class="books-container">
+            <div class="section-header">
+                <h2 class="section-title">New Arrivals</h2>
+            </div>
+
+            <div class="books-grid" id="booksGrid">
+                <!-- Data will be populated by JS -->
+                <div style="color: var(--text-light);">Loading books...</div>
+            </div>
+        </div>
+
+        <!-- Right aside for Cart -->
+        <aside class="cart-sidebar" id="cartSidebar">
+            <h2 class="section-title" style="margin-bottom: 1rem;">Your Cart 🛒</h2>
+
+            <div id="cartItems">
+                <div class="empty-cart">Your cart is empty</div>
+            </div>
+
+            <div class="cart-total">
+                <span>Total</span>
+                <span id="cartTotal">$0.00</span>
+            </div>
+
+            <button class="btn-checkout" onclick="checkout()">Proceed to Checkout</button>
+        </aside>
+    </main>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <h2 class="section-title" style="margin-bottom: 1.5rem;">Create Account</h2>
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="regEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <button type="submit" class="btn-checkout" style="margin-top: 0.5rem;">Sign Up</button>
+                <button type="button" class="btn-add-cart" style="width: 100%; margin-top: 0.5rem;"
+                    onclick="closeModals()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <h2 class="section-title" style="margin-bottom: 1.5rem;">Welcome Back</h2>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Username (or Email)</label>
+                    <input type="text" id="logUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="logPassword" required>
+                </div>
+                <button type="submit" class="btn-checkout" style="margin-top: 0.5rem;">Sign In</button>
+                <button type="button" class="btn-add-cart" style="width: 100%; margin-top: 0.5rem;"
+                    onclick="closeModals()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentUser = null;
+        let cartData = null;
+
+        const API_BOOK = '/api/proxy/books/';
+        const API_CUSTOMER = '/api/proxy/customers/';
+        const API_ORDER = '/api/proxy/orders/';
+
+        // Initialize UI
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchBooks();
+
+            // For demo purposes, we can mock books if API fails
+            setTimeout(() => {
+                if (document.getElementById('booksGrid').innerHTML.includes('Loading')) {
+                    mockBooks();
+                }
+            }, 2000);
+        });
+
+        // API Calls
+        async function fetchBooks() {
+            try {
+                const res = await fetch(API_BOOK);
+                if (res.ok) {
+                    const books = await res.json();
+                    renderBooks(books);
+                }
+            } catch (error) {
+                console.error("Book API not ready yet or CORS error", error);
+            }
+        }
+
+        // Initial state logic
+        function updateUIState() {
+            if (currentUser) {
+                document.getElementById('authSection').innerHTML = `<span style="font-weight:600; color:var(--primary-dark)">Welcome, ${currentUser.username}!</span> <button class="btn-add-cart" onclick="logout()" style="margin-left: 1rem;">Logout</button>`;
+                document.getElementById('cartSidebar').style.display = 'flex';
+                fetchCart();
+            } else {
+                document.getElementById('authSection').innerHTML = `
+                    <button onclick="showLogin()">Log In</button>
+                    <button class="primary" onclick="showRegister()">Register</button>
+                `;
+                document.getElementById('cartSidebar').style.display = 'none';
+                document.getElementById('cartItems').innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+                document.getElementById('cartTotal').innerText = '$0.00';
+            }
+        }
+
+        async function fetchCart() {
+            if (!currentUser || !currentUser.cart_id) return;
+            try {
+                const res = await fetch(`/api/proxy/carts/${currentUser.cart_id}/`);
+                if (res.ok) {
+                    cartData = await res.json();
+                    renderCart();
+                }
+            } catch (e) {
+                console.error("Failed to fetch cart", e);
+            }
+        }
+
+        function renderCart() {
+            const cartHtml = document.getElementById('cartItems');
+            if (!cartData || !cartData.items || cartData.items.length === 0) {
+                cartHtml.innerHTML = '<div class="empty-cart">Your cart is empty</div>';
+                document.getElementById('cartTotal').innerText = '$0.00';
+                return;
+            }
+
+            let total = 0;
+            cartHtml.innerHTML = cartData.items.map(item => {
+                const itemTotal = parseFloat(item.price_at_add) * item.quantity;
+                total += itemTotal;
+                return `
+                <div class="cart-item">
+                    <div>
+                        <div class="cart-item-title">Book #${item.book_id}</div>
+                        <div class="cart-item-price">$${item.price_at_add}</div>
+                    </div>
+                    <div class="cart-item-qty">
+                        <span style="font-weight: 600; color: var(--text-main);">x${item.quantity}</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            document.getElementById('cartTotal').innerText = `$${total.toFixed(2)}`;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('logUsername').value;
+            // Since Django auth proxy needs a proper endpoint, we mock the login check using customer list
+            try {
+                const res = await fetch(API_CUSTOMER);
+                if (res.ok) {
+                    const customers = await res.json();
+                    const user = customers.find(c => c.username === username || c.email === username);
+                    if (user) {
+                        currentUser = user;
+                        closeModals();
+                        updateUIState();
+                        alert("Logged in successfully!");
+                    } else {
+                        alert("Invalid credentials.");
+                    }
+                }
+            } catch (e) {
+                alert("Auth Service is unreachable.");
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('regUsername').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+
+            try {
+                const res = await fetch(API_CUSTOMER, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                if (res.ok) {
+                    currentUser = await res.json();
+                    alert("Registered successfully! Cart implicitly created.");
+                    closeModals();
+                    updateUIState();
+                } else {
+                    const err = await res.json();
+                    alert("Registration failed: " + JSON.stringify(err));
+                }
+            } catch (e) {
+                alert("Auth Service is unreachable (make sure it's running). " + e.message);
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            cartData = null;
+            updateUIState();
+        }
+
+        function addToCart(bookId, price, title) {
+            if (!currentUser) {
+                alert("Please register or login first to add items to cart!");
+                showLogin();
+                return;
+            }
+
+            fetch(`${API_CUSTOMER}${currentUser.id}/updateCart/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ book_id: bookId, quantity: 1 })
+            })
+                .then(res => res.json())
+                .then(cart => {
+                    fetchCart(); // refresh UI cart
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("Service architecture processing...");
+                });
+        }
+
+        function checkout() {
+            if (!currentUser) return;
+            if (!cartData || cartData.items.length === 0) {
+                alert("Your cart is empty!");
+                return;
+            }
+
+            if (confirm("Proceed with checkout? This will trigger Pay and Ship services.")) {
+                fetch(`${API_ORDER}checkout/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ customer_id: currentUser.id, cart_id: currentUser.cart_id, shipping_address: '123 Cloud St, HN' })
+                }).then(res => {
+                    if (res.ok) {
+                        alert("Order placed successfully! Total Paid.");
+                        fetchCart(); // should be empty now
+                    } else {
+                        alert("Checkout failed. Check Order service.");
+                    }
+                });
+            }
+        }
+
+        // Render Functions
+        function renderBooks(books) {
+            const grid = document.getElementById('booksGrid');
+            if (!books || books.length === 0) {
+                grid.innerHTML = "<div style='grid-column: 1/-1; text-align: center; color: var(--text-light); padding: 3rem;'>No database configured for books. Make sure book-service is running DB migrations. Mocking books instead...</div>";
+                setTimeout(mockBooks, 1500);
+                return;
+            }
+
+            grid.innerHTML = books.map(book => `
+                <div class="book-card">
+                    <div class="book-img-placeholder">${book.category || 'Book'}</div>
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-author">By ${book.author || 'Unknown'}</div>
+                    <div class="book-footer">
+                        <div class="book-price">$${book.price}</div>
+                        <button class="btn-add-cart" onclick="addToCart(${book.id}, ${book.price}, '${book.title}')">Add to Cart</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function mockBooks() {
+            const books = [
+                { id: 1, title: 'The Art of Microservices', author: 'Sam Newman', price: 45.99, category: 'Programming' },
+                { id: 2, title: 'Django for Professionals', author: 'William S. Vincent', price: 39.50, category: 'Programming' },
+                { id: 3, title: 'Clean Architecture', author: 'Robert C. Martin', price: 50.00, category: 'Engineering' },
+            ];
+            renderBooks(books);
+        }
+
+        // Modals
+        function showRegister() {
+            closeModals();
+            document.getElementById('registerModal').style.display = 'flex';
+        }
+        function showLogin() {
+            closeModals();
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+        function closeModals() {
+            document.getElementById('registerModal').style.display = 'none';
+            document.getElementById('loginModal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,6 @@
+<h2>Your Cart</h2>
+<ul>
+{% for item in items %}
+<li>Book ID: {{ item.book_id }} | Qty: {{ item.quantity }}</li>
+{% endfor %}
+</ul>

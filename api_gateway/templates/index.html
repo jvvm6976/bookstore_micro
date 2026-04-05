@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Bookstore - Your Online Library</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #7BADD1 0%, #5084A6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        .branding {
+            background: linear-gradient(135deg, #7BADD1 0%, #5084A6 100%);
+            color: white;
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .branding h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .branding .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .branding .features {
+            text-align: left;
+            list-style: none;
+        }
+
+        .branding .features li {
+            margin: 12px 0;
+            font-size: 14px;
+            opacity: 0.85;
+            display: flex;
+            align-items: center;
+        }
+
+        .branding .features li:before {
+            content: "✓";
+            margin-right: 10px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .form-section {
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-section h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 700;
+        }
+
+        .form-section .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #7BADD1;
+            box-shadow: 0 0 0 3px rgba(123, 173, 209, 0.1);
+        }
+
+        input::placeholder {
+            color: #999;
+        }
+
+        .btn-signup {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, #7BADD1 0%, #5084A6 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(123, 173, 209, 0.4);
+        }
+
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(123, 173, 209, 0.6);
+        }
+
+        .btn-signup:active {
+            transform: translateY(0);
+        }
+
+        .btn-signup:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-cancel {
+            width: 100%;
+            padding: 12px 24px;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-link a {
+            color: #7BADD1;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .alert {
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert.error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            display: block;
+        }
+
+        .alert.success {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #3c3;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #7BADD1;
+            margin: 10px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #7BADD1;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .branding {
+                padding: 40px 30px;
+            }
+
+            .form-section {
+                padding: 40px 30px;
+            }
+
+            .branding h1 {
+                font-size: 36px;
+            }
+
+            .form-section h2 {
+                font-size: 26px;
+            }
+        }
+
+        /* Dashboard Styles */
+        .dashboard {
+            display: none;
+            padding: 40px;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #7BADD1 0%, #5084A6 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .dashboard-header h2 {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .dashboard-header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .action-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            border-color: #7BADD1;
+            box-shadow: 0 5px 20px rgba(123, 173, 209, 0.2);
+            transform: translateY(-5px);
+        }
+
+        .action-card .icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .action-card h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .action-card p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: #ff4757;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            float: right;
+            margin-bottom: 20px;
+        }
+
+        .logout-btn:hover {
+            background: #ff3838;
+        }
+
+        .clearfix::after {
+            content: "";
+            clear: both;
+            display: table;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Authentication Section -->
+        <div class="auth-section">
+            <div class="content">
+                <!-- Branding -->
+                <div class="branding">
+                    <h1>📚 Bookstore</h1>
+                    <p class="subtitle">Your gateway to thousands of amazing books</p>
+                    <ul class="features">
+                        <li>Browse 1000+ books</li>
+                        <li>Fast & secure checkout</li>
+                        <li>Expert recommendations</li>
+                        <li>Community reviews</li>
+                        <li>Free shipping on orders</li>
+                    </ul>
+                </div>
+
+                <!-- Form -->
+                <div class="form-section">
+                    <!-- Register Form -->
+                    <div id="registerForm">
+                        <h2>Create Account</h2>
+                        <p class="subtitle">Join our community of book lovers</p>
+                        
+                        <div id="registerAlert" class="alert"></div>
+                        
+                        <div class="form-group">
+                            <label for="regUsername">Username</label>
+                            <input type="text" id="regUsername" placeholder="Enter your username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regEmail">Email</label>
+                            <input type="email" id="regEmail" placeholder="Enter your email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regPassword">Password</label>
+                            <input type="password" id="regPassword" placeholder="Enter a strong password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regPasswordConfirm">Confirm Password</label>
+                            <input type="password" id="regPasswordConfirm" placeholder="Confirm password" required>
+                        </div>
+
+                        <button class="btn-signup" onclick="handleRegister()">Create Account</button>
+                        <button class="btn-cancel" onclick="toggleForm()">Already have an account? Login</button>
+                    </div>
+
+                    <!-- Login Form -->
+                    <div id="loginForm" class="hidden">
+                        <h2>Welcome Back</h2>
+                        <p class="subtitle">Login to your account</p>
+                        
+                        <div id="loginAlert" class="alert"></div>
+                        
+                        <div class="form-group">
+                            <label for="logUsername">Username</label>
+                            <input type="text" id="logUsername" placeholder="Enter your username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="logPassword">Password</label>
+                            <input type="password" id="logPassword" placeholder="Enter your password" required>
+                        </div>
+
+                        <button class="btn-signup" onclick="handleLogin()">Login</button>
+                        <button class="btn-cancel" onclick="toggleForm()">Don't have an account? Register</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard">
+            <div class="clearfix">
+                <button class="logout-btn" onclick="handleLogout()">Logout</button>
+            </div>
+
+            <div class="dashboard-header">
+                <h2>Welcome to Bookstore! 📚</h2>
+                <p id="welcomeMsg">Logged in successfully</p>
+            </div>
+
+            <div class="quick-actions">
+                <div class="action-card" onclick="alert('Browse books feature coming soon!')">
+                    <div class="icon">🔍</div>
+                    <h3>Browse Books</h3>
+                    <p>Explore our collection of thousands of books</p>
+                </div>
+
+                <div class="action-card" onclick="alert('Shopping cart coming soon!')">
+                    <div class="icon">🛒</div>
+                    <h3>My Cart</h3>
+                    <p>View and manage your shopping cart</p>
+                </div>
+
+                <div class="action-card" onclick="alert('Orders coming soon!')">
+                    <div class="icon">📦</div>
+                    <h3>My Orders</h3>
+                    <p>Track your recent orders and purchases</p>
+                </div>
+
+                <div class="action-card" onclick="alert('Reviews coming soon!')">
+                    <div class="icon">⭐</div>
+                    <h3>Reviews</h3>
+                    <p>Leave reviews for books you've read</p>
+                </div>
+
+                <div class="action-card" onclick="alert('Recommendations coming soon!')">
+                    <div class="icon">💡</div>
+                    <h3>Recommendations</h3>
+                    <p>Get personalized book recommendations</p>
+                </div>
+
+                <div class="action-card" onclick="alert('Settings coming soon!')">
+                    <div class="icon">⚙️</div>
+                    <h3>Settings</h3>
+                    <p>Manage your account and preferences</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+
+        function toggleForm() {
+            document.getElementById('registerForm').classList.toggle('hidden');
+            document.getElementById('loginForm').classList.toggle('hidden');
+            document.getElementById('registerAlert').innerHTML = '';
+            document.getElementById('loginAlert').innerHTML = '';
+        }
+
+        function showAlert(elementId, message, type) {
+            const alert = document.getElementById(elementId);
+            alert.textContent = message;
+            alert.className = 'alert ' + type;
+            alert.style.display = 'block';
+        }
+
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        async function handleRegister() {
+            const username = document.getElementById('regUsername').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regPasswordConfirm').value;
+
+            // Validation
+            if (!username || !email || !password) {
+                showAlert('registerAlert', '❌ Please fill in all fields', 'error');
+                return;
+            }
+
+            if (username.length < 3) {
+                showAlert('registerAlert', '❌ Username must be at least 3 characters', 'error');
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                showAlert('registerAlert', '❌ Please enter a valid email', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showAlert('registerAlert', '❌ Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showAlert('registerAlert', '❌ Passwords do not match', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/customers/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        email: email,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const errorMsg = data.error || data.detail || 'Registration failed';
+                    showAlert('registerAlert', `❌ ${errorMsg}`, 'error');
+                    return;
+                }
+
+                showAlert('registerAlert', '✅ Account created successfully! Logging you in...', 'success');
+                
+                // Store token
+                if (data.token) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('customerId', data.data?.id || data.customer_id);
+                    localStorage.setItem('username', username);
+                    
+                    setTimeout(() => {
+                        showDashboard();
+                    }, 1500);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('registerAlert', '❌ Network error. Please try again.', 'error');
+            }
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('logUsername').value.trim();
+            const password = document.getElementById('logPassword').value;
+
+            if (!username || !password) {
+                showAlert('loginAlert', '❌ Please enter username and password', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/customers/login/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showAlert('loginAlert', '❌ Invalid username or password', 'error');
+                    return;
+                }
+
+                showAlert('loginAlert', '✅ Login successful!', 'success');
+                
+                // Store token
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('customerId', data.customer_id);
+                localStorage.setItem('username', data.username);
+                
+                setTimeout(() => {
+                    showDashboard();
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('loginAlert', '❌ Network error. Please try again.', 'error');
+            }
+        }
+
+        function showDashboard() {
+            document.querySelector('.auth-section').style.display = 'none';
+            document.querySelector('.dashboard').style.display = 'block';
+            
+            const username = localStorage.getItem('username');
+            document.getElementById('welcomeMsg').textContent = `Welcome, ${username}! 🎉`;
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('customerId');
+                localStorage.removeItem('username');
+                
+                document.querySelector('.auth-section').style.display = 'flex';
+                document.querySelector('.dashboard').style.display = 'none';
+                document.getElementById('registerForm').classList.remove('hidden');
+                document.getElementById('loginForm').classList.add('hidden');
+                document.getElementById('registerAlert').innerHTML = '';
+                document.getElementById('loginAlert').innerHTML = '';
+                
+                // Clear form fields
+                document.getElementById('regUsername').value = '';
+                document.getElementById('regEmail').value = '';
+                document.getElementById('regPassword').value = '';
+                document.getElementById('regPasswordConfirm').value = '';
+                document.getElementById('logUsername').value = '';
+                document.getElementById('logPassword').value = '';
+            }
+        }
+
+        // Check if user is already logged in
+        window.addEventListener('load', () => {
+            if (localStorage.getItem('token')) {
+                showDashboard();
+            }
+        });
+    </script>
+</body>
+</html>
