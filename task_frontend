@@ -1,0 +1,31 @@
+# ZenithReads Frontend Tasks
+
+## 1. Thiết lập Core Utilities (Xong)
+- [x] Thiết lập `api.js` cấu hình chung cho fetch interceptor.
+- [ ] Tạo `AuthContext.jsx` lưu trữ token và thông tin người dùng.
+- [ ] Tạo `CartContext.jsx` để quản lý số lượng và đồng bộ với giỏ hàng API.
+- [ ] Thiết lập Toast/Alert Context.
+
+## 2. Giao diện Tổng thể & Styling
+- [ ] Soạn `index.css` với Variables, Glassmorphism, Micro-animations.
+- [ ] Xây dựng các Layout chung: `CustomerLayout` & `InternalLayout`.
+- [ ] Xây dựng Header/Navbar, Footer và thanh bên Sidebar.
+- [ ] Component tái sử dụng: `BookCard`, `Button`, `Input`.
+
+## 3. Chức năng Khách Hàng (Customer Portal)
+- [ ] Cập nhật trang chủ `Home.jsx` (Trending & AI Recommendations).
+- [ ] Xây dựng trang danh mục sách `Catalog.jsx`.
+- [ ] Xây dựng trang chi tiết sản phẩm `BookDetail.jsx`.
+- [ ] Xây dựng trang giỏ hàng `Cart.jsx`.
+- [ ] Xây dựng luồng thanh toán `Checkout.jsx`.
+- [ ] Xây dựng quản lý hồ sơ và lịch sử vận chuyển `Profile.jsx`.
+- [ ] Cập nhật Đăng ký/Đăng nhập Khách hàng `LoginCustomer.jsx`.
+
+## 4. Chức năng Nhân sự (Internal Portals)
+- [ ] Cập nhật Đăng nhập nội bộ `LoginInternal.jsx`.
+- [ ] Cập nhật Bảng điều khiển nhân viên `StaffDashboard.jsx`.
+- [ ] Cập nhật Thông kê vĩ mô cho quản lý `ManagerDashboard.jsx`.
+
+## 5. Xác thực và Nghiệm thu
+- [ ] Thử nghiệm E2E giao dịch.
+- [ ] Thử nghiệm KPI và vận chuyển.

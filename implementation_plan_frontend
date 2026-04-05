@@ -1,0 +1,116 @@
+# Kế hoạch Kiến trúc Frontend ZenithReads
+
+Tài liệu này phác thảo kế hoạch triển khai cho ứng dụng React (Vite) hiện đại, hiệu suất cao, tích hợp hoàn toàn với 13 microservices ở backend. Ứng dụng sẽ sử dụng hệ thống thiết kế (design system) hoàn toàn bằng CSS thuần (pure-CSS), cao cấp để mang lại trải nghiệm nhà sách "ZenithReads" chuyên nghiệp nhất.
+
+## Mô tả Mục tiêu
+Mục tiêu là thay thế giao diện HTML tĩnh cũ kĩ bằng mô hình Ứng dụng Trang Đơn (SPA) hiện đại. Ứng dụng sẽ cung cấp các cổng thông tin (portal) riêng biệt cho Khách hàng (Customers), Nhân viên (Staff) và Quản lý (Managers). Nó sẽ tiêu thụ các APIs được gom lại bởi API Gateway để hỗ trợ tất cả các luồng thương mại điện tử (tìm kiếm, mua sắm, đề xuất, giỏ hàng, thanh toán, theo dõi) và các luồng quản lý hệ thống (kho hàng, vận chuyển, ca làm việc, báo cáo thống kê).
+
+## Kiến trúc & Thiết kế Đề xuất
+- **React + Vite**: Nền tảng ứng dụng frontend cực nhanh và hiện đại.
+- **Routing**: `react-router-dom` sử dụng nested layouts.
+- **Quản lý State**: React Context (`AuthContext` để lưu JWT & phân quyền, `CartContext` để đồng bộ giỏ hàng, `ToastContext` để hiển thị thông báo lỗi/thành công).
+- **Thiết kế UI/UX**: Sử dụng Vanilla CSS với CSS Variables (Custom Properties) để tạo ra các theme màu sống động, sử dụng phong cách Glassmorphism (kính mờ), các vi-hiệu ứng (micro-animations) mượt mà để mang lại cảm giác cao cấp. Font chữ hiện đại (Inter, Outfit).
+
+---
+
+## Các Thay Đổi Đề Xuất
+
+### Cấu trúc cốt lõi và Layouts
+
+#### [MODIFY] src/App.jsx
+Cài đặt `BrowserRouter` với các layout tĩnh:
+- `CustomerLayout`: Chứa Navbar dành cho khách hàng, Footer và thanh thông báo nổi (Toast).
+- `InternalLayout`: Dành cho nhân sự nội bộ, có Sidebar (thanh bên) hiển thị chức năng quản lý tuỳ theo quyền hiện tại.
+
+#### [NEW] src/context/AuthContext.jsx
+Quản lý trạng thái xác thực, lưu trữ JWT, ID, và phân quyền (role) vào `localStorage`. Cung cấp phương thức đăng nhập/đăng xuất và tạo trình chặn (fetch interceptor) để tự động thêm header `Authorization` vào yêu cầu API.
+
+#### [NEW] src/context/CartContext.jsx
+Đồng bộ và tính toán trạng thái giỏ hàng liên tục với `cart-service` một khi người dùng đã có phiên làm việc (logged in).
+
+#### [NEW] src/lib/api.js
+Trình bao bọc API tập trung trỏ về API Gateway (`http://localhost:8000/api/proxy/`). Xử lý lỗi hệ thống toàn cầu (chẳng hạn tự động văng ra trang đăng nhập nếu gặp lỗi 401 Unauthorized đoạn token hết hạn).
+
+---
+
+### Cổng Khách Hàng (Customer Portal)
+
+#### [MODIFY] src/pages/Home.jsx
+Trang chủ cập nhật tự động:
+- Vùng Hero banner và thanh tìm kiếm phong cách glassmorphism.
+- Dùng `catalog-service` hiển thị **Sách Đang Hot (Trending)** và **Sách Đánh Giá Cao (Featured)**.
+- Nếu người dùng đăng nhập, gọi AI (`recommender-ai-service`) để hiển thị Gợi ý Dành riêng.
+
+#### [NEW] src/pages/BookDetail.jsx
+Trang chi tiết sản phẩm:
+- Lấy thông tin sách (`book-service`) và đánh giá (`comment-rate-service`).
+- Tự động gắn thẻ tương tác "view" và gửi cho AI.
+- Hiện sao trung bình và danh sách review. Cho phép khách hàng gửi bình luận mới.
+- Chức năng chọn số lượng và nút Add to Cart nổi bật.
+
+#### [NEW] src/pages/Catalog.jsx
+Hiển thị danh sách duyệt sách chuyên sâu với Thanh lọc bên (Filter Sidebar) theo Giá, Thể Loại, Tác Giả.
+- Kết nối với tính năng tìm kiếm của `catalog-service`.
+
+#### [MODIFY] src/pages/Cart.jsx
+Hiển thị chi tiết giỏ hàng (`cart-service`), cho phép cập nhật số lượng, tính toán tổng tiền thanh toán.
+
+#### [NEW] src/pages/Checkout.jsx
+Trang thanh toán nhiều bước mượt mà:
+- Lấy thông tin địa chỉ từ hồ sơ (`customer-service`).
+- Chọn phương thức thanh toán.
+- Khởi chạy Saga đặt hàng qua endpoint của `order-service`.
+
+#### [NEW] src/pages/Profile.jsx
+Trang tài khoản riêng tư:
+- Cập nhật thông tin KH (`customer-service`).
+- Lịch sử đơn hàng cá nhân (`order-service`).
+- Hiển thị thông tin hành trình vận chuyển thực tế cho đơn hàng đang giao (`ship-service`).
+
+#### [MODIFY] src/pages/LoginCustomer.jsx
+Chuyên trách Đăng Ký và Đăng Nhập cho người dùng công khai.
+
+---
+
+### Quản trị viên (Staff & Manager Portals)
+
+#### [MODIFY] src/pages/LoginInternal.jsx
+Trang đăng nhập hợp nhất cho Nhân viên và Quản lý cấp cao thông qua `auth-service`. Tự động điều hướng đến dashboard phù hợp dựa trên Role.
+
+#### [MODIFY] src/pages/StaffDashboard.jsx
+Giao diện khoá quyền từng chi tiết dựa vào roles nội tại:
+- **Tất Cả Staff**: Quản lý ca làm việc (bắt đầu/kết thúc) tới `staff-service`.
+- **Shipping Role**: Xem danh sách giao hàng, đổi trạng thái đơn sang Đang gửi / Giao thành công qua `ship-service`.
+- **Inventory Role**: Cập nhật số lượng tồn kho của sách trực tiếp.
+
+#### [MODIFY] src/pages/ManagerDashboard.jsx
+Góc nhìn vĩ mô của Ban Giám đốc quản lý:
+- **Bảng KPI**: Tổng doanh thu (revenue), Số đơn hàng, Giá trị tồn kho.
+- **Cảnh báo Thông minh**: Mục thông báo cực lớn khi loại sách có stock < 10.
+- **Báo cáo Data**: Kết xuất dữ liệu doanh số và giao hàng bằng biểu đồ/bảng số liệu.
+- **Quản trị Nhân sự**: Cấp tài khoản nhân viên mới và kiểm tra Activity Logs của từng nhân viên.
+
+---
+
+### Giao Diện Thành Phần (UI Components) & Styling
+
+#### [MODIFY] src/index.css
+Thiết lập hệ thống thiết kế tổng thể, quy chuẩn cho ZenithReads:
+- Variables CSS cho màu chủ đạo (accent), card surfaces và phông chữ bóng bảy.
+- Utility classes cho layout (Grid, Flexbox) thay thế cho sự cồng kềnh của Bootstrap hệ cũ.
+- Thiết kế thẻ (Cards) kiểu Glassmorphism (khính mờ `backdrop-filter`) và hiệu ứng chuyển tông (transitions) siêu nhỏ.
+
+#### [NEW] src/components/ui/BookCard.jsx
+Component card xài chung trên tất cả các trang, chứa hình ảnh sách, giá tiền, sao trung bình, và thẻ hover animation để Add-to-cart nhanh chóng.
+
+---
+
+> [!IMPORTANT]
+> **Cần Quý Khách Đánh Giá**
+> 1. **URL Định Tuyến API**: Kế hoạch này hiện dùng `http://localhost:8000/api/proxy/<service-name>/<endpoint>` để đi vào Gateway nội bộ. Tiền tố API như thế này đối với Gateway local của mình có đúng đắn hay chưa?
+> 2. **Khuynh hướng Thẩm Mỹ Giao Diện**: Tôi sẽ thiết kế app React này trở nên cực kì hiện đại đi kèm với hoạt ảnh tuỳ biến siêu mượt bằng Vanilla CSS cấp cao mà không cần tới TailwindCSS. Bạn sẵn sàng chấp thuận góc độ này chưa?
+
+## Phương án Nghiệm thu / Kiểm tra
+1. **Biên dịch**: Lệnh cấu trúc `npm run build` không báo lỗi trên Vite.
+2. **E2E Flow cho Khách**: Đăng ký -> Tìm và duyệt mua sản phẩm -> Vào giỏ -> Đặt lệnh thanh toán qua Saga -> Xem lộ trình giao hàng trực quan.
+3. **E2E Flow cho Quản trị**: Manager Login đọc KPI cực nhanh và check báo động tồn kho. Staff (Shipping) vào Dashboard đẩy tình trạng đơn hàng lên Shipped.

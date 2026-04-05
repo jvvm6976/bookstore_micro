@@ -304,6 +304,21 @@ services:
       - DEBUG=1
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
 
+  # ═══════════════════════════════════════════════════════════
+  # FRONTEND UI
+  # ═══════════════════════════════════════════════════════════
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - bookstore-network
+
 networks:
   bookstore-network:
     driver: bridge
