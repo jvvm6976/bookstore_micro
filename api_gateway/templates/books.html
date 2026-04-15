@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bookstore - Danh sách sách</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--p:#C2182B;--pd:#8E1120;--pl:#EF9A9A;--pll:#FFEBEE;--bg:#FFF5F5;--s:#fff;--t:#2C0D10;--tm:#7F3D43;--b:#F3CDD1;--r:14px;--rs:10px;--sh:0 10px 30px rgba(194,24,43,.15)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',sans-serif;background:radial-gradient(circle at 15% 10%,#fff 0%,#fff3f4 48%,#ffe8eb 100%);color:var(--t);min-height:100vh}
+nav{padding:.85rem 1rem;background:var(--s);border-bottom:3px solid var(--p);display:flex;justify-content:center}
+.logo{font-size:1.25rem;font-weight:800;color:var(--pd);text-decoration:none;letter-spacing:.03em;text-transform:uppercase}
+main{max-width:1080px;margin:1.2rem auto;padding:0 1rem}
+.hero{background:linear-gradient(120deg,#A71124,#C2182B 60%,#8E1120);color:#fff;border-radius:var(--r);padding:1.1rem 1.2rem;box-shadow:var(--sh);margin-bottom:1rem}
+.hero h1{font-size:1.15rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.hero p{font-size:.85rem;opacity:.92;margin-top:.3rem}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem}
+.item{background:var(--s);border:2px solid var(--b);border-radius:var(--r);padding:.9rem;box-shadow:0 2px 14px rgba(194,24,43,.08);transition:all .2s}
+.item:hover{transform:translateY(-2px);border-color:var(--p);box-shadow:0 10px 20px rgba(194,24,43,.16)}
+.item h3{font-size:.95rem;line-height:1.35;margin-bottom:.55rem}
+.meta{display:flex;justify-content:space-between;align-items:center;padding-top:.55rem;border-top:1px solid var(--b)}
+.price{font-weight:800;color:var(--p)}
+.empty{background:var(--s);border:2px dashed var(--b);border-radius:var(--r);padding:1.2rem;text-align:center;color:var(--tm)}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">bookstore</a>
+</nav>
+<main>
+  <section class="hero">
+    <h1>Danh sách sách</h1>
+    <p>Tất cả đầu sách hiện có trong hệ thống bookstore</p>
+  </section>
+
+  {% if books %}
+  <section class="list">
+    {% for book in books %}
+    <article class="item">
+      <h3>{{ book.title }}</h3>
+      <div class="meta">
+        <span>ID #{{ book.id }}</span>
+        <span class="price">{{ book.price }}</span>
+      </div>
+    </article>
+    {% endfor %}
+  </section>
+  {% else %}
+  <div class="empty">Chưa có sách để hiển thị.</div>
+  {% endif %}
+</main>
+</body>
+</html>

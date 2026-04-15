@@ -1,0 +1,31 @@
+/* Shared status tokens and badge styles */
+:root{
+  --st-pending-bg:#FEF3C7;--st-pending-tx:#92400E;
+  --st-paid-bg:#DCFCE7;--st-paid-tx:#166534;
+  --st-shipped-bg:#FFE4E6;--st-shipped-tx:#9F1239;
+  --st-canceled-bg:#FEE2E2;--st-canceled-tx:#991B1B;
+  --st-delivered-bg:#D1FAE5;--st-delivered-tx:#065F46;
+  --st-processing-bg:#FEF3C7;--st-processing-tx:#92400E;
+  --st-success-bg:#DCFCE7;--st-success-tx:#166534;
+  --st-failed-bg:#FEE2E2;--st-failed-tx:#991B1B;
+  --st-refunded-bg:#FFE4E6;--st-refunded-tx:#9F1239;
+  --st-scheduled-bg:#FCE7F3;--st-scheduled-tx:#9D174D;
+  --st-started-bg:#FFE4E6;--st-started-tx:#9F1239;
+  --st-ended-bg:#F3F4F6;--st-ended-tx:#374151;
+  --st-cancelled-bg:#FEE2E2;--st-cancelled-tx:#991B1B;
+}
+
+.badge,.status-badge{display:inline-block;padding:.2rem .65rem;border-radius:20px;font-size:.73rem;font-weight:700}
+.s-pending{background:var(--st-pending-bg);color:var(--st-pending-tx)}
+.s-paid{background:var(--st-paid-bg);color:var(--st-paid-tx)}
+.s-shipped{background:var(--st-shipped-bg);color:var(--st-shipped-tx)}
+.s-canceled{background:var(--st-canceled-bg);color:var(--st-canceled-tx)}
+.s-delivered{background:var(--st-delivered-bg);color:var(--st-delivered-tx)}
+.s-processing{background:var(--st-processing-bg);color:var(--st-processing-tx)}
+.s-success{background:var(--st-success-bg);color:var(--st-success-tx)}
+.s-failed{background:var(--st-failed-bg);color:var(--st-failed-tx)}
+.s-refunded{background:var(--st-refunded-bg);color:var(--st-refunded-tx)}
+.s-scheduled{background:var(--st-scheduled-bg);color:var(--st-scheduled-tx)}
+.s-started{background:var(--st-started-bg);color:var(--st-started-tx)}
+.s-ended{background:var(--st-ended-bg);color:var(--st-ended-tx)}
+.s-cancelled{background:var(--st-cancelled-bg);color:var(--st-cancelled-tx)}

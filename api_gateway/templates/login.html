@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bookstore – Cổng đăng nhập nội bộ</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--bg:#FFF5F5;--s:#fff;--t:#2C0D10;--tm:#7F3D43;--b:#F3CDD1;--r:12px;--rs:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',sans-serif;background:radial-gradient(circle at 18% 12%,#fff 0%,#FFF1F2 46%,#FFE4E6 100%);color:var(--t);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.box{background:var(--s);border-radius:var(--r);padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:0 14px 36px rgba(194,24,43,.18);border:1px solid rgba(194,24,43,.12)}
+.logo{font-size:1.4rem;font-weight:700;color:var(--pd);text-align:center;margin-bottom:.4rem;text-decoration:none;display:block}
+.logo em{color:var(--p);font-style:normal}
+.subtitle{text-align:center;font-size:.85rem;color:var(--tm);margin-bottom:1.75rem}
+.form-group{display:flex;flex-direction:column;gap:.3rem;margin-bottom:1rem}
+label{font-size:.82rem;font-weight:600;color:var(--tm)}
+input{padding:.6rem .85rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.9rem;color:var(--t);background:var(--bg);font-family:inherit;width:100%}
+input:focus{outline:none;border-color:var(--p)}
+.btn{width:100%;padding:.8rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;cursor:pointer;margin-top:.5rem;font-family:inherit;transition:background .2s}
+.btn:hover{background:var(--pd)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.err{color:#DC2626;font-size:.83rem;text-align:center;margin-top:.75rem;min-height:1.2rem}
+.back{text-align:center;margin-top:1rem;font-size:.83rem;color:var(--tm)}
+.back a{color:var(--p);font-weight:600;text-decoration:none}
+.role-tabs{display:flex;gap:.4rem;margin-bottom:1.5rem;background:var(--bg);border-radius:var(--rs);padding:.3rem}
+.rtab{flex:1;padding:.45rem;border:none;border-radius:6px;background:transparent;font-weight:600;font-size:.85rem;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .2s}
+.rtab.active{background:var(--p);color:#fff}
+.info-box{background:var(--pll);border:1px solid var(--pl);border-radius:var(--rs);padding:.65rem .85rem;font-size:.82rem;color:var(--pd);margin-bottom:1rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="box">
+  <a href="/" class="logo">📕 book<em>store</em></a>
+  <div class="subtitle">Cổng đăng nhập nội bộ</div>
+  <div class="info-box">🔒 Dành cho nhân viên và quản lý. <a href="/customer-login/" style="color:var(--pd);font-weight:700">Khách hàng đăng nhập tại đây →</a></div>
+  <div class="role-tabs">
+    <button class="rtab active" id="tab-staff" onclick="setRole('staff')">👔 Nhân viên</button>
+    <button class="rtab" id="tab-manager" onclick="setRole('manager')">📊 Quản lý</button>
+  </div>
+  <div class="form-group">
+    <label>Tên đăng nhập</label>
+    <input type="text" id="username" placeholder="Nhập tên đăng nhập" autofocus>
+  </div>
+  <div class="form-group">
+    <label>Mật khẩu</label>
+    <input type="password" id="password" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+  </div>
+  <button class="btn" onclick="doLogin()" id="loginBtn">Đăng nhập</button>
+  <div class="err" id="errMsg"></div>
+  <div class="back"><a href="/">← Về trang chủ</a></div>
+</div>
+<script>
+let selectedRole = 'staff';
+function setRole(r) {
+  selectedRole = r;
+  document.getElementById('tab-staff').classList.toggle('active', r==='staff');
+  document.getElementById('tab-manager').classList.toggle('active', r==='manager');
+}
+
+const saved = localStorage.getItem('cb_user');
+if (saved) {
+  try {
+    const u = JSON.parse(saved);
+    if (u.role==='staff'||u.role==='admin') { window.location.href='/staff/'; }
+    else if (u.role==='manager') { window.location.href='/manager/'; }
+    else if (u.role==='customer') { window.location.href='/'; }
+  } catch(e) {}
+}
+
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('errMsg');
+  const btn = document.getElementById('loginBtn');
+  errEl.textContent = '';
+  if (!username || !password) { errEl.textContent = 'Vui lòng nhập đầy đủ thông tin'; return; }
+  btn.textContent = 'Đang đăng nhập...'; btn.disabled = true;
+  try {
+    const r = await fetch('/api/auth/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'; return; }
+    const role = d.user?.role;
+    if (selectedRole === 'staff' && !['staff','admin'].includes(role)) {
+      errEl.textContent = 'Tài khoản này không có quyền Staff'; return;
+    }
+    if (selectedRole === 'manager' && role !== 'manager') {
+      errEl.textContent = 'Tài khoản này không có quyền Manager'; return;
+    }
+    const user = { ...d.user, access_token: d.access_token, refresh_token: d.refresh_token };
+    localStorage.setItem('cb_user', JSON.stringify(user));
+    if (['staff','admin'].includes(role)) window.location.href = '/staff/';
+    else if (role === 'manager') window.location.href = '/manager/';
+    else window.location.href = '/';
+  } catch(e) {
+    errEl.textContent = 'Lỗi kết nối đến server';
+  } finally {
+    btn.textContent = 'Đăng nhập'; btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

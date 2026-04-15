@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bookstore – Nhà sách trực tuyến</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+{% include "_shared_theme_tokens.css" %}
+:root{
+  --pdd:#650B16;
+  --bg:#FFF6F6;
+  --t:#2E1114;
+  --tm:#7C3A42;
+  --b:#F0C8CE;
+  --orange:#F59E0B;
+  --green:#0EA5A4;
+  --red:#DC2626
+}
+{% include "_shared_status_tokens.css" %}
+{% include "_shared_components_customer.css" %}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t);min-height:100vh;display:flex;flex-direction:column}
+button,input,select,textarea{font-family:inherit}
+a{text-decoration:none;color:inherit}
+
+/* ── TOP BAR ── */
+.topbar{background:#FFF1F2;color:var(--tm);padding:.45rem 2rem;font-size:.78rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--b)}
+.topbar a{color:var(--pd);font-weight:700}
+
+/* ── NAV ── */
+nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;grid-template-columns:auto minmax(420px,620px) auto;align-items:center;position:sticky;top:0;z-index:300;gap:1rem;border-bottom:1px solid var(--b)}
+.logo{font-size:1.35rem;font-weight:800;color:var(--pdd);display:flex;align-items:center;gap:.4rem;flex-shrink:0;white-space:nowrap;letter-spacing:.01em}
+.logo em{color:var(--p);font-style:normal}
+.logo-icon{display:none}
+.nav-search{display:flex;gap:0;width:100%;max-width:620px;justify-self:center;border:2px solid var(--p);border-radius:var(--rs);overflow:hidden}
+.nav-search select{padding:.5rem .7rem;border:none;border-right:1px solid var(--b);background:#FFF4F5;font-size:.82rem;color:var(--tm);cursor:pointer;flex-shrink:0}
+.nav-search input{flex:1;padding:.5rem .9rem;border:none;color:var(--t);background:#FFF4F5;font-size:.88rem}
+.nav-search input:focus{outline:none;background:var(--s)}
+.nav-search button{padding:.5rem 1rem;background:var(--p);color:#fff;border:none;font-weight:700;font-size:.88rem;cursor:pointer;transition:background .2s;flex-shrink:0}
+.nav-search button:hover{background:var(--pd)}
+.nav-right{display:flex;gap:.45rem;align-items:center;justify-self:end;flex-shrink:0}
+.cart-btn{position:relative;background:var(--p);color:#fff;padding:.45rem .9rem;border-radius:var(--rs);font-weight:700;font-size:.84rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;border:none}
+.cart-btn:hover{background:var(--pd)}
+.cart-badge{background:#EF4444;color:#fff;border-radius:50%;width:17px;height:17px;font-size:.62rem;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+.profile-wrap{position:relative}
+.profile-btn{display:flex;align-items:center;gap:.4rem;padding:.42rem .75rem;border:1.5px solid var(--b);border-radius:var(--rs);background:var(--s);cursor:pointer;font-size:.84rem;font-weight:600;color:var(--t);transition:all .2s}
+.profile-btn:hover{border-color:var(--p);background:var(--pll)}
+.avatar{width:26px;height:26px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:800;flex-shrink:0}
+.dropdown{position:absolute;top:calc(100% + 6px);right:0;background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);box-shadow:var(--shl);min-width:210px;z-index:400;overflow:hidden;display:none}
+.dropdown.open{display:block}
+.dd-item{display:flex;align-items:center;gap:.6rem;padding:.7rem 1rem;font-size:.86rem;font-weight:600;color:var(--t);cursor:pointer;transition:background .15s;border:none;background:transparent;width:100%;text-align:left}
+.dd-item:hover{background:var(--pll);color:var(--pd)}
+.dd-sep{height:1px;background:var(--b);margin:.2rem 0}
+.dd-header{padding:.6rem 1rem .3rem;font-size:.72rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.06em}
+
+/* ── CATEGORY NAV ── */
+.cat-nav{background:var(--s);border-bottom:1px solid var(--b);padding:0 2rem}
+.cat-nav-inner{max-width:1280px;margin:0 auto;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.cat-nav-inner::-webkit-scrollbar{display:none}
+.cat-link{padding:.65rem 1rem;font-size:.83rem;font-weight:600;color:var(--tm);white-space:nowrap;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;flex-shrink:0}
+.cat-link:hover,.cat-link.active{color:var(--p);border-bottom-color:var(--p)}
+
+/* ── HERO BANNER ── */
+.hero{background:radial-gradient(circle at 20% 20%,#D33A4C 0%,#C2182B 40%,#8E1120 100%);padding:3rem 2rem;color:#fff;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,rgba(255,255,255,.16),rgba(255,255,255,0));pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-220px;right:-150px;width:540px;height:540px;background:radial-gradient(circle,rgba(255,228,230,.26),rgba(255,228,230,0) 70%);border-radius:50%}
+.hero-inner{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1.05fr .95fr;gap:2rem;align-items:center;position:relative;z-index:1}
+.hero-title{font-size:2.2rem;font-weight:800;line-height:1.2;margin-bottom:.75rem}
+.hero-title em{color:#FFE4E6;font-style:normal}
+.hero-sub{font-size:1rem;opacity:.88;margin-bottom:1.5rem;line-height:1.7;max-width:620px}
+.hero-actions{display:flex;gap:.75rem;flex-wrap:wrap}
+.hero-btn{padding:.75rem 1.75rem;border-radius:var(--rs);font-weight:700;font-size:.95rem;cursor:pointer;transition:all .2s;border:none}
+.hero-btn-primary{background:#FFF1F2;color:var(--pd)}.hero-btn-primary:hover{background:#FFE4E6;transform:translateY(-2px)}
+.hero-btn-secondary{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.35)}.hero-btn-secondary:hover{background:rgba(255,255,255,.2)}
+.hero-stats{display:flex;gap:2rem;margin-top:1.5rem}
+.hero-stat{text-align:center}
+.hero-stat-num{font-size:1.5rem;font-weight:800;color:#FFE4E6}
+.hero-stat-label{font-size:.78rem;opacity:.8}
+.hero-visual{position:relative;min-height:320px;display:flex;justify-content:flex-end}
+.hero-main-image{width:min(470px,100%);height:320px;object-fit:cover;border-radius:18px;box-shadow:0 16px 38px rgba(0,0,0,.24);border:2px solid rgba(255,255,255,.22)}
+.hero-books{position:absolute;right:16px;bottom:-28px;display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:nowrap;padding:.5rem;background:rgba(106,12,23,.72);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.25);border-radius:12px;max-width:94%;overflow-x:auto}
+.hero-book-thumb{width:72px;height:96px;border-radius:8px;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,.28);flex-shrink:0;background:rgba(255,255,255,.12)}
+.hero-book-thumb img{width:100%;height:100%;object-fit:cover}
+
+/* ── MAIN LAYOUT ── */
+.main-wrap{max-width:1280px;margin:0 auto;width:100%;padding:1.5rem 2rem}
+
+/* ── SECTION ── */
+.section{margin-bottom:2.5rem}
+.section-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem}
+.section-title{font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:.5rem}
+.section-title::before{content:'';width:4px;height:1.1rem;background:var(--p);border-radius:2px;display:inline-block}
+.see-all{font-size:.83rem;color:var(--p);font-weight:600;cursor:pointer}
+.see-all:hover{text-decoration:underline}
+
+/* ── PROMO BANNERS ── */
+.promo-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem}
+.promo-card{border-radius:var(--r);padding:1.25rem 1.5rem;color:#fff;position:relative;overflow:hidden;cursor:pointer;transition:transform .2s}
+.promo-card:hover{transform:translateY(-3px)}
+.promo-card-1{background:linear-gradient(135deg,#B41527,#8E1120)}
+.promo-card-2{background:linear-gradient(135deg,#D33A4C,#AF1C2F)}
+.promo-card-3{background:linear-gradient(135deg,#8E1120,#690B17)}
+.promo-title{font-size:1rem;font-weight:800;margin-bottom:.3rem}
+.promo-sub{font-size:.8rem;opacity:.88}
+.promo-badge{position:absolute;top:.75rem;right:.75rem;background:rgba(255,255,255,.25);padding:.2rem .6rem;border-radius:20px;font-size:.72rem;font-weight:700}
+
+/* ── BOOKS GRID ── */
+.books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:1rem}
+.book-card{background:var(--s);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);transition:all .25s;display:flex;flex-direction:column;border:1.5px solid transparent;cursor:pointer;position:relative}
+.book-card:hover{transform:translateY(-4px);box-shadow:var(--shl);border-color:var(--pl)}
+.book-badge{position:absolute;top:.5rem;left:.5rem;z-index:2;padding:.18rem .5rem;border-radius:6px;font-size:.65rem;font-weight:700;color:#fff}
+.badge-new{background:var(--orange)}
+.badge-sale{background:var(--red)}
+.badge-hot{background:#8B5CF6}
+.book-cover{height:200px;position:relative;overflow:hidden;background:#FFF1F2;flex-shrink:0}
+.book-cover img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.book-card:hover .book-cover img{transform:scale(1.05)}
+.book-cover-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;background:linear-gradient(135deg,#FFF1F2,#FFE4E6)}
+.cover-cat{position:absolute;bottom:.4rem;left:.4rem;background:rgba(142,17,32,.86);color:#fff;font-size:.6rem;padding:.18rem .5rem;border-radius:6px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.book-body{padding:.85rem;display:flex;flex-direction:column;flex:1}
+.book-title{font-size:.88rem;font-weight:700;margin-bottom:.18rem;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-clamp:2}
+.book-author{color:var(--tm);font-size:.76rem;margin-bottom:.4rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book-rating{display:flex;align-items:center;gap:.25rem;font-size:.74rem;color:var(--tm);margin-bottom:.55rem}
+.stars{color:#F59E0B;letter-spacing:-.5px;font-size:.78rem}
+.book-footer{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:.55rem;border-top:1px solid var(--b)}
+.book-price{font-weight:800;color:var(--red);font-size:.98rem}
+.book-price-orig{font-size:.72rem;color:var(--tm);text-decoration:line-through;margin-left:.25rem}
+.btn-cart{background:var(--p);color:#fff;border:none;padding:.38rem .7rem;border-radius:var(--rs);font-weight:700;font-size:.76rem;cursor:pointer;transition:all .2s}
+.btn-cart:hover{background:var(--pd)}
+.btn-cart:disabled{opacity:.5;cursor:not-allowed;background:var(--tm)}
+.oos-tag{font-size:.72rem;color:var(--red);font-weight:700;background:#FEE2E2;padding:.2rem .5rem;border-radius:6px}
+
+/* ── CATEGORY CARDS ── */
+.cat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.85rem}
+.cat-card{background:var(--s);border-radius:var(--r);padding:1.1rem .75rem;text-align:center;cursor:pointer;transition:all .2s;border:1.5px solid var(--b);box-shadow:var(--sh)}
+.cat-card:hover{border-color:var(--p);background:var(--pll);transform:translateY(-2px)}
+.cat-icon{font-size:1.8rem;margin-bottom:.4rem}
+.cat-name{font-size:.8rem;font-weight:700;color:var(--t)}
+.cat-count{font-size:.72rem;color:var(--tm);margin-top:.15rem}
+
+/* ── PAGINATION ── */
+.pagination{display:flex;justify-content:center;align-items:center;gap:.4rem;margin-top:1.5rem;flex-wrap:wrap}
+.pg-btn{padding:.42rem .75rem;border:1.5px solid var(--b);border-radius:var(--rs);background:var(--s);color:var(--tm);font-size:.84rem;font-weight:600;cursor:pointer;transition:all .2s;min-width:36px;text-align:center}
+.pg-btn:hover{border-color:var(--p);color:var(--p);background:var(--pll)}
+.pg-btn.active{background:var(--p);color:#fff;border-color:var(--p)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.pg-info{font-size:.82rem;color:var(--tm);padding:0 .5rem}
+
+/* ── MODAL ── */
+.detail-grid{display:grid;grid-template-columns:200px 1fr;gap:1.5rem;margin-bottom:1.25rem}
+.detail-cover{height:270px;border-radius:var(--r);overflow:hidden;background:linear-gradient(135deg,var(--pll),#FFE4E6);display:flex;align-items:center;justify-content:center;font-size:3rem}
+.detail-cover img{width:100%;height:100%;object-fit:cover}
+.detail-info{display:flex;flex-direction:column;gap:.6rem}
+.detail-title{font-size:1.2rem;font-weight:800;line-height:1.3}
+.detail-author{color:var(--tm);font-size:.9rem}
+.detail-meta{display:flex;gap:.5rem;flex-wrap:wrap}
+.chip{background:var(--pll);border:1px solid var(--b);border-radius:20px;padding:.22rem .7rem;font-size:.76rem;color:var(--pd);font-weight:600}
+.detail-price{font-size:1.55rem;font-weight:800;color:var(--red)}
+.detail-desc{font-size:.87rem;color:var(--tm);line-height:1.65}
+.reviews-sec{border-top:2px solid var(--b);padding-top:1.1rem;margin-top:.5rem}
+.rev-card{background:var(--pll);border-radius:var(--rs);padding:.85rem;margin-bottom:.65rem;border:1px solid var(--b)}
+.rev-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem}
+.rev-author{font-weight:700;font-size:.85rem}
+.rev-date{font-size:.75rem;color:var(--tm)}
+.rev-body{font-size:.85rem;color:var(--tm);line-height:1.55}
+.write-rev{background:var(--pll);border-radius:var(--rs);padding:1rem;margin-top:1rem;border:1px solid var(--b)}
+.write-rev h4{font-size:.92rem;font-weight:700;margin-bottom:.75rem}
+.star-row{display:flex;gap:.3rem;margin-bottom:.75rem}
+.star-btn{background:none;border:none;font-size:1.5rem;color:#D1D5DB;cursor:pointer;padding:0;line-height:1;transition:color .15s}
+.order-card{background:var(--s);border-radius:var(--r);padding:1rem 1.1rem;margin-bottom:.75rem;border:1.5px solid var(--b);cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
+.order-card:hover{border-color:var(--pl);box-shadow:var(--shl)}
+.order-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem}
+.order-id{font-weight:700;font-size:.9rem}
+.profile-card{background:var(--s);border-radius:var(--r);padding:1.5rem;box-shadow:var(--sh);margin-bottom:1rem;border:1px solid var(--b)}
+.profile-avatar-lg{width:64px;height:64px;background:linear-gradient(135deg,var(--p),var(--pl));border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.6rem;font-weight:800;flex-shrink:0}
+footer{background:var(--pdd);color:#fff;padding:2rem 2rem 1rem;margin-top:auto}
+.footer-inner{max-width:1280px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:2rem;margin-bottom:1.5rem}
+.footer-brand .logo{color:#fff;font-size:1.2rem}
+.footer-brand p{font-size:.82rem;opacity:.75;margin-top:.5rem;line-height:1.6}
+.footer-col h4{font-size:.85rem;font-weight:700;margin-bottom:.75rem;color:#FFCDD2}
+.footer-col a{display:block;font-size:.82rem;opacity:.75;margin-bottom:.4rem;color:#fff;transition:opacity .2s}
+.footer-col a:hover{opacity:1}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.15);padding-top:1rem;display:flex;justify-content:space-between;align-items:center;font-size:.78rem;opacity:.65;flex-wrap:wrap;gap:.5rem}
+@media(max-width:1024px){.cat-grid{grid-template-columns:repeat(3,1fr)}.promo-grid{grid-template-columns:1fr 1fr}.hero-inner{grid-template-columns:1fr}.hero-visual{min-height:280px}.hero-main-image{height:280px}.hero-books{position:static;margin-top:.9rem;justify-content:flex-start}.footer-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:980px){.nav{display:flex;flex-wrap:wrap}.nav-search{max-width:100%;order:3;flex:0 0 100%}}
+@media(max-width:768px){.main-wrap{padding:1rem}.nav{padding:.65rem 1rem;display:flex;flex-wrap:wrap}.nav-search{max-width:100%;order:3;flex:0 0 100%}.books-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.hero{padding:2rem 1rem 1.5rem}.hero-title{font-size:1.5rem}.hero-main-image{height:220px}.promo-grid{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(3,1fr)}.detail-grid{grid-template-columns:1fr}.detail-cover{height:200px}.footer-grid{grid-template-columns:1fr}}
+
+/* Red-white redesign override */
+:root{
+  --p:#C2182B;
+  --pl:#EF9A9A;
+  --pll:#FFEBEE;
+  --pd:#8E1120;
+  --pdd:#650B16;
+  --bg:#FFF6F6;
+  --s:#ffffff;
+  --t:#2E1114;
+  --tm:#7C3A42;
+  --b:#F0C8CE;
+  --sh:0 8px 24px rgba(194,24,43,.12);
+  --shl:0 16px 34px rgba(194,24,43,.18);
+}
+body{background:repeating-linear-gradient(135deg,#fff 0,#fff 28px,#fff6f7 28px,#fff6f7 56px)}
+nav{border-bottom:3px solid var(--p);padding:.8rem 2rem}
+.logo{letter-spacing:.03em;text-transform:uppercase}
+.topbar{background:#FFEFF1;border-bottom:1px solid #F1BFC6}
+.cat-nav{background:#fff;border-top:1px solid var(--b)}
+.cat-link{font-weight:700}
+.hero{background:linear-gradient(120deg,#9F1022 0%,#C2182B 55%,#8E1120 100%)}
+.hero::after{background:radial-gradient(circle,rgba(255,255,255,.22),rgba(255,255,255,0) 72%)}
+.hero-inner{grid-template-columns:.92fr 1.08fr;gap:2.5rem}
+.hero-title{font-size:2.35rem;text-transform:uppercase;letter-spacing:.01em}
+.hero-btn-primary{background:#fff;color:var(--pd)}
+.hero-btn-secondary{border-color:rgba(255,255,255,.55)}
+.promo-card{border:2px solid rgba(255,255,255,.3)}
+.promo-card-1{background:linear-gradient(135deg,#B41527,#8E1120)}
+.promo-card-2{background:linear-gradient(135deg,#D33A4C,#AF1C2F)}
+.promo-card-3{background:linear-gradient(135deg,#8E1120,#690B17)}
+.section-title{font-size:1.05rem;letter-spacing:.05em;text-transform:uppercase}
+.section-title::before{background:var(--pd)}
+.book-card{border:2px solid #F3D3D7;border-radius:10px;box-shadow:none}
+.book-card:hover{border-color:var(--p);box-shadow:var(--shl)}
+.book-cover-fallback{background:linear-gradient(135deg,#fff0f2,#ffd9de)}
+.cover-cat{background:rgba(142,17,32,.88)}
+.btn-cart,.btn-p,.cart-btn,.nav-search button{background:var(--p)}
+.btn-cart:hover,.btn-p:hover,.cart-btn:hover,.nav-search button:hover{background:var(--pd)}
+.chip{background:#fff4f5}
+footer{background:#7A0F1C}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav>
+  <a href="/" class="logo">📕 book<em>store</em></a>
+  <div class="nav-search">
+    <select id="searchCatFilter" title="Lọc danh mục tìm kiếm" aria-label="Lọc danh mục tìm kiếm">
+      <option value="">Tất cả</option>
+      <option value="programming">Lập trình</option>
+      <option value="science">Khoa học</option>
+      <option value="history">Lịch sử</option>
+      <option value="fiction">Tiểu thuyết</option>
+      <option value="math">Toán học</option>
+    </select>
+    <input type="text" id="navSearch" placeholder="Tìm sách, tác giả, thể loại..." onkeydown="if(event.key==='Enter')doSearch()">
+    <button onclick="doSearch()">🔍 Tìm</button>
+  </div>
+  <div class="nav-right" id="navRight">
+    <a href="/customer-login/" class="btn btn-o btn-sm">Đăng nhập</a>
+    <a href="/customer-login/?tab=register" class="btn btn-p btn-sm">Đăng ký</a>
+  </div>
+</nav>
+
+<!-- ═══ TOP BAR ═══ -->
+<div class="topbar">
+  <span>🚚 Miễn phí vận chuyển cho đơn hàng từ 150.000₫ | 📞 Hotline: 1800-6789</span>
+  <span><a href="/login/">Nhân viên / Quản lý</a></span>
+</div>
+
+<!-- ═══ CATEGORY NAV ═══ -->
+<div class="cat-nav">
+  <div class="cat-nav-inner">
+    <span class="cat-link active" onclick="filterCat('')">Tất cả</span>
+    <span class="cat-link" onclick="filterCat('programming')">Lập trình</span>
+    <span class="cat-link" onclick="filterCat('science')">Khoa học</span>
+    <span class="cat-link" onclick="filterCat('history')">Lịch sử & Kỹ năng</span>
+    <span class="cat-link" onclick="filterCat('fiction')">Tiểu thuyết</span>
+    <span class="cat-link" onclick="filterCat('math')">Toán học</span>
+  </div>
+</div>
+
+<!-- ═══ CONTENT ═══ -->
+<div id="pane-home">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div>
+        <div class="hero-title">Khám phá thế giới<br>qua từng <em>trang sách</em></div>
+        <div class="hero-sub">Hơn 10.000 đầu sách chất lượng cao. Giao hàng nhanh toàn quốc. Giá tốt nhất thị trường.</div>
+        <div class="hero-actions">
+          <button class="hero-btn hero-btn-primary" onclick="document.getElementById('bookSection').scrollIntoView({behavior:'smooth'})">Mua sắm ngay</button>
+          <button class="hero-btn hero-btn-secondary" onclick="filterCat('programming')">Khám phá danh mục</button>
+        </div>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-num">10K+</div><div class="hero-stat-label">Đầu sách</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">50K+</div><div class="hero-stat-label">Khách hàng</div></div>
+          <div class="hero-stat"><div class="hero-stat-num">4.8★</div><div class="hero-stat-label">Đánh giá</div></div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <img class="hero-main-image" src="https://images.unsplash.com/photo-1521587760476-6c12a4b040da?auto=format&fit=crop&w=1200&q=80" alt="Không gian đọc sách chuyên nghiệp" loading="eager">
+        <div class="hero-books" id="heroBooksPreview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-wrap">
+    <!-- PROMO BANNERS -->
+    <div class="promo-grid" style="margin-top:1.5rem">
+      <div class="promo-card promo-card-1" onclick="filterCat('programming')">
+        <div class="promo-badge">HOT</div>
+        <div class="promo-title">Sách Lập Trình</div>
+        <div class="promo-sub">Giảm đến 30% cho sách kỹ thuật</div>
+      </div>
+      <div class="promo-card promo-card-2" onclick="filterCat('fiction')">
+        <div class="promo-badge">MỚI</div>
+        <div class="promo-title">Tiểu Thuyết Hay</div>
+        <div class="promo-sub">Bestseller tháng này</div>
+      </div>
+      <div class="promo-card promo-card-3" onclick="filterCat('science')">
+        <div class="promo-badge">ĐỀ XUẤT</div>
+        <div class="promo-title">Khoa Học & Tự Nhiên</div>
+        <div class="promo-sub">Mở rộng kiến thức mỗi ngày</div>
+      </div>
+    </div>
+
+    <!-- CATEGORIES -->
+    <div class="section">
+      <div class="section-hdr"><div class="section-title">Danh mục sách</div></div>
+      <div class="cat-grid">
+        <div class="cat-card" onclick="filterCat('programming')"><div class="cat-icon">💻</div><div class="cat-name">Lập trình</div><div class="cat-count" id="cnt-programming">...</div></div>
+        <div class="cat-card" onclick="filterCat('science')"><div class="cat-icon">🔬</div><div class="cat-name">Khoa học</div><div class="cat-count" id="cnt-science">...</div></div>
+        <div class="cat-card" onclick="filterCat('history')"><div class="cat-icon">📜</div><div class="cat-name">Lịch sử & KN</div><div class="cat-count" id="cnt-history">...</div></div>
+        <div class="cat-card" onclick="filterCat('fiction')"><div class="cat-icon">📖</div><div class="cat-name">Tiểu thuyết</div><div class="cat-count" id="cnt-fiction">...</div></div>
+        <div class="cat-card" onclick="filterCat('math')"><div class="cat-icon">📐</div><div class="cat-name">Toán học</div><div class="cat-count" id="cnt-math">...</div></div>
+        <div class="cat-card" onclick="filterCat('')"><div class="cat-icon">📚</div><div class="cat-name">Tất cả</div><div class="cat-count" id="cnt-all">...</div></div>
+      </div>
+    </div>
+
+    <!-- BOOKS -->
+    <div class="section" id="bookSection">
+      <div class="section-hdr">
+        <div>
+          <div class="section-title" id="bookSectionTitle">Tất cả sách</div>
+          <div style="font-size:.8rem;color:var(--tm);margin-top:.2rem" id="booksMeta">Đang tải...</div>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <select id="sortBy" onchange="sortBooks()" title="Sắp xếp sách" aria-label="Sắp xếp sách" style="padding:.38rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.82rem;background:#FFF7F8">
+            <option value="">Mặc định</option>
+            <option value="price_asc">Giá tăng dần</option>
+            <option value="price_desc">Giá giảm dần</option>
+            <option value="name">Tên A-Z</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadBooks(1)">🔄</button>
+        </div>
+      </div>
+      <div class="books-grid" id="booksGrid"><div class="loading"><div class="spin"></div><br>Đang tải sách...</div></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SEARCH RESULTS -->
+<div id="pane-search" style="display:none">
+  <div class="main-wrap">
+    <div class="section-hdr" style="margin-top:1rem">
+      <div><div class="section-title" id="searchTitle">Kết quả tìm kiếm</div><div style="font-size:.8rem;color:var(--tm);margin-top:.2rem" id="searchMeta"></div></div>
+      <button class="btn btn-ghost btn-sm" onclick="backHome()">← Về trang chủ</button>
+    </div>
+    <div class="books-grid" id="searchGrid"><div class="empty-state"><div class="empty-icon">🔍</div>Nhập từ khóa để tìm sách</div></div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div id="pane-orders" style="display:none">
+  <div class="main-wrap">
+    <div class="section-hdr" style="margin-top:1rem">
+      <div class="section-title">📦 Đơn hàng của tôi</div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-ghost btn-sm" onclick="loadOrders()">🔄 Làm mới</button>
+        <button class="btn btn-ghost btn-sm" onclick="backHome()">← Trang chủ</button>
+      </div>
+    </div>
+    <div id="ordersPane"><div class="empty-state"><div class="empty-icon">🔒</div>Đăng nhập để xem đơn hàng</div></div>
+  </div>
+</div>
+
+<!-- MY RATINGS -->
+<div id="pane-ratings" style="display:none">
+  <div class="main-wrap">
+    <div class="section-hdr" style="margin-top:1rem">
+      <div class="section-title">⭐ Đánh giá của tôi</div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn btn-ghost btn-sm" onclick="loadMyRatings()">🔄 Làm mới</button>
+        <button class="btn btn-ghost btn-sm" onclick="backHome()">← Trang chủ</button>
+      </div>
+    </div>
+    <div id="ratingsPane"><div class="empty-state"><div class="empty-icon">🔒</div>Đăng nhập để xem lịch sử đánh giá</div></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="pane-profile" style="display:none">
+  <div class="main-wrap">
+    <div class="section-hdr" style="margin-top:1rem">
+      <div class="section-title">👤 Hồ sơ cá nhân</div>
+      <button class="btn btn-ghost btn-sm" onclick="backHome()">← Trang chủ</button>
+    </div>
+    <div class="profile-card">
+      <div id="profileDisplay"></div>
+      <hr style="border:none;border-top:1px solid var(--b);margin:1.1rem 0">
+      <div style="font-weight:700;margin-bottom:.85rem">✏️ Cập nhật thông tin</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem">
+        <div class="form-group"><label>Email</label><input type="email" id="profEmail"></div>
+        <div class="form-group"><label>Họ</label><input type="text" id="profFirst"></div>
+        <div class="form-group"><label>Tên</label><input type="text" id="profLast"></div>
+      </div>
+      <button class="btn btn-p btn-sm" onclick="saveProfile()">💾 Lưu thay đổi</button>
+      <span id="profMsg" style="font-size:.82rem;color:var(--tm);margin-left:.6rem"></span>
+    </div>
+    <div class="profile-card">
+      <div class="section-hdr">
+        <div style="font-weight:700">⭐ Lịch sử đánh giá</div>
+        <button class="btn btn-p btn-sm" onclick="showPane('ratings')">Xem ngay</button>
+      </div>
+      <div style="font-size:.88rem;color:var(--tm);line-height:1.7;margin-top:.2rem">
+        Xem lại những sản phẩm bạn đã đánh giá, số sao đã cho và nội dung nhận xét trước đây.
+      </div>
+    </div>
+    <div class="profile-card">
+      <div class="section-hdr">
+        <div style="font-weight:700">📍 Địa chỉ của tôi</div>
+        <button class="btn btn-p btn-sm" onclick="openAddrModal()">+ Thêm địa chỉ</button>
+      </div>
+      <div id="addrList"><div class="empty-state" style="padding:1rem 0"><div class="empty-icon">📍</div>Chưa có địa chỉ</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo" style="color:#fff;font-size:1.2rem">📕 book<em>store</em></div>
+        <p>Nhà sách trực tuyến hàng đầu Việt Nam. Mang tri thức đến mọi nhà với giá tốt nhất.</p>
+        <div style="margin-top:.85rem;display:flex;gap:.5rem">
+          <span style="background:rgba(255,255,255,.15);padding:.3rem .6rem;border-radius:6px;font-size:.78rem">📘 Facebook</span>
+          <span style="background:rgba(255,255,255,.15);padding:.3rem .6rem;border-radius:6px;font-size:.78rem">📸 Instagram</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Danh mục</h4>
+        <a href="#" onclick="filterCat('programming');return false">Lập trình</a>
+        <a href="#" onclick="filterCat('science');return false">Khoa học</a>
+        <a href="#" onclick="filterCat('fiction');return false">Tiểu thuyết</a>
+        <a href="#" onclick="filterCat('history');return false">Lịch sử & Kỹ năng</a>
+        <a href="#" onclick="filterCat('math');return false">Toán học</a>
+      </div>
+      <div class="footer-col">
+        <h4>Hỗ trợ</h4>
+        <a href="#">Hướng dẫn mua hàng</a>
+        <a href="#">Chính sách đổi trả</a>
+        <a href="#">Chính sách vận chuyển</a>
+        <a href="#">Câu hỏi thường gặp</a>
+      </div>
+      <div class="footer-col">
+        <h4>Liên hệ</h4>
+        <a href="#">📞 1800-6789 (miễn phí)</a>
+        <a href="#">✉️ support@bookstore.vn</a>
+        <a href="#">📍 123 Nguyễn Huệ, Q.1, TP.HCM</a>
+        <a href="#">🕐 8:00 - 22:00 hàng ngày</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 bookstore. Tất cả quyền được bảo lưu.</span>
+      <span>Được xây dựng với ❤️ tại Việt Nam</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══ MODALS ═══ -->
+<div class="overlay" id="detailModal">
+  <div class="modal modal-lg">
+    <div class="modal-hdr"><span class="modal-title" id="detailTitle">Chi tiết sách</span><button class="btn-x" onclick="closeModal('detailModal')">✕</button></div>
+    <div id="detailBody"></div>
+  </div>
+</div>
+<div class="overlay" id="orderDetailModal">
+  <div class="modal modal-lg">
+    <div class="modal-hdr"><span class="modal-title">Chi tiết đơn hàng</span><button class="btn-x" onclick="closeModal('orderDetailModal')">✕</button></div>
+    <div id="orderDetailBody"></div>
+  </div>
+</div>
+<div class="overlay" id="addrModal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="addrModalTitle">📍 Thêm địa chỉ</span><button class="btn-x" onclick="closeModal('addrModal')">✕</button></div>
+    <input type="hidden" id="addrId">
+    <div class="form-group"><label>Đường / Số nhà</label><input type="text" id="addrStreet" placeholder="123 Nguyễn Huệ"></div>
+    <div class="form-group"><label>Thành phố</label><input type="text" id="addrCity" placeholder="TP. Hồ Chí Minh"></div>
+    <div class="form-group"><label>Quốc gia</label><input type="text" id="addrCountry" value="Việt Nam"></div>
+    <button class="btn btn-p" style="width:100%;padding:.75rem;margin-top:.5rem" onclick="saveAddr()">Lưu địa chỉ</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let user=null, currentBookId=null, reviewRating=5;
+let allBooks=[], currentPage=1, totalPages=1, currentCat='';
+const PAGE_SIZE=12;
+const API='/api';
+const EMOJI={programming:'💻',science:'🔬',history:'📜',fiction:'📖',math:'📐'};
+const BADGES=['','badge-new','badge-sale','badge-hot','','badge-new','badge-sale'];
+
+document.addEventListener('DOMContentLoaded',()=>{
+  try{user=JSON.parse(localStorage.getItem('cb_user')||'null');}catch(e){}
+  if(user?.role==='staff'||user?.role==='admin'){window.location.href='/staff/';return;}
+  if(user?.role==='manager'){window.location.href='/manager/';return;}
+  updateNav();
+  loadBooks(1);
+  const pane=new URLSearchParams(window.location.search).get('pane');
+  if(pane&&['home','search','orders','ratings','profile'].includes(pane))showPane(pane);
+  document.addEventListener('click',e=>{if(!e.target.closest('.profile-wrap'))closeDropdown();});
+});
+
+function toast(msg,type=''){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(type?' '+type:'');setTimeout(()=>el.className='toast',3200);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function authH(){const h={'Content-Type':'application/json'};if(user?.access_token)h['Authorization']='Bearer '+user.access_token;return h;}
+async function api(path,opts={}){opts.headers={...authH(),...(opts.headers||{})};return fetch(API+path,opts);}
+async function fetchAllPages(url){
+  let next=url, out=[], guard=0;
+  while(next&&guard<40){
+    const r=await fetch(next);
+    if(!r.ok)throw new Error('load failed');
+    const data=await r.json();
+    if(Array.isArray(data)){out=out.concat(data);break;}
+    out=out.concat(data.results||data.books||[]);
+    next=data.next||null;
+    if(next&&next.startsWith('http')){
+      try{const u=new URL(next);next=u.pathname+u.search;}catch(e){}
+    }
+    guard++;
+  }
+  return out;
+}
+function fmt(n){return Number(n).toLocaleString('vi-VN')+'₫';}
+function starsHtml(r){const n=Math.round(r||0);return'★'.repeat(n)+'☆'.repeat(5-n);}
+function statusBadge(s){const m={pending:'s-pending Chờ xử lý',paid:'s-paid Đã thanh toán',shipped:'s-shipped Đang giao',canceled:'s-canceled Đã hủy',delivered:'s-delivered Đã giao',processing:'s-processing Đang xử lý',success:'s-success Thành công',failed:'s-failed Thất bại',refunded:'s-refunded Đã hoàn',scheduled:'s-scheduled Lên lịch',started:'s-started Đang làm',ended:'s-ended Kết thúc',cancelled:'s-cancelled Đã hủy'};const p=(m[s]||'s-pending '+s).split(' ');return`<span class="status-badge ${p[0]}">${p.slice(1).join(' ')}</span>`;}
+function escHtml(v){return String(v??'').replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));}
+async function resolveCustomerNames(customerIds){
+  const ids=[...new Set((customerIds||[]).map(v=>Number(v)).filter(v=>Number.isFinite(v)&&v>0))];
+  const out={};
+  await Promise.all(ids.map(async id=>{
+    try{
+      const r=await api('/customers/'+id+'/');
+      if(!r.ok)return;
+      const d=await r.json();
+      const name=d.username||d.user_name||d.email||('Khách hàng #'+id);
+      out[id]=String(name);
+    }catch(e){}
+  }));
+  return out;
+}
+function coverHtml(book,h='200px'){
+  if(book.cover_image_url)return`<img src="${book.cover_image_url}" alt="${book.title}" style="width:100%;height:${h};object-fit:cover" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="book-cover-fallback" style="display:none;height:${h}">${EMOJI[book.category]||'📚'}</div>`;
+  return`<div class="book-cover-fallback" style="height:${h}">${EMOJI[book.category]||'📚'}</div>`;
+}
+
+// ── NAV ──────────────────────────────────────────────────
+function updateNav(){
+  const el=document.getElementById('navRight');
+  if(user){
+    const init=(user.username||'U')[0].toUpperCase();
+    el.innerHTML=`
+      <a href="/cart/" class="cart-btn">🛒 Giỏ hàng <span class="cart-badge" id="cartBadge">0</span></a>
+      <div class="profile-wrap">
+        <button class="profile-btn" onclick="toggleDropdown(event)">
+          <div class="avatar">${init}</div>${user.username} <span style="font-size:.7rem;color:var(--tm)">▾</span>
+        </button>
+        <div class="dropdown" id="profileDropdown">
+          <div class="dd-header">${user.username}</div>
+          <div class="dd-sep"></div>
+          <button class="dd-item" onclick="showPane('profile');closeDropdown()">👤 Thông tin cá nhân</button>
+          <button class="dd-item" onclick="showPane('ratings');closeDropdown()">⭐ Đánh giá của tôi</button>
+          <button class="dd-item" onclick="showPane('orders');closeDropdown()">📦 Đơn hàng của tôi</button>
+          <div class="dd-sep"></div>
+          <button class="dd-item" onclick="doLogout()" style="color:#DC2626">🚪 Đăng xuất</button>
+        </div>
+      </div>`;
+    fetchCartCount();
+  } else {
+    el.innerHTML=`
+      <a href="/customer-login/" class="btn btn-o btn-sm">Đăng nhập</a>
+      <a href="/customer-login/?tab=register" class="btn btn-p btn-sm">Đăng ký</a>`;
+  }
+}
+function toggleDropdown(e){e.stopPropagation();document.getElementById('profileDropdown')?.classList.toggle('open');}
+function closeDropdown(){document.getElementById('profileDropdown')?.classList.remove('open');}
+async function fetchCartCount(){
+  if(!user?.cart_id)return;
+  try{const r=await api('/carts/'+user.cart_id+'/');if(r.ok){const d=await r.json();const b=document.getElementById('cartBadge');if(b)b.textContent=(d.items||[]).length;}}catch(e){}
+}
+function doLogout(){
+  if(user?.access_token)fetch(API+'/auth/logout/',{method:'POST',headers:authH(),body:JSON.stringify({access_token:user.access_token})}).catch(()=>{});
+  user=null;localStorage.removeItem('cb_user');updateNav();toast('Đã đăng xuất');showPane('home');
+}
+
+// ── PANES ────────────────────────────────────────────────
+function showPane(name){
+  ['home','search','orders','ratings','profile'].forEach(t=>{
+    const p=document.getElementById('pane-'+t);if(p)p.style.display=t===name?'block':'none';
+  });
+  if(name==='orders')loadOrders();
+  if(name==='ratings')loadMyRatings();
+  if(name==='profile')loadProfileTab();
+}
+function backHome(){showPane('home');}
+
+async function trackBehavior(productId, interactionType, extra = {}) {
+  if (!user?.service_user_id) return;
+  const body = {
+    customer_id: user.service_user_id,
+    interaction_type: interactionType,
+    ...extra,
+  };
+  if (productId !== undefined && productId !== null) {
+    body.product_id = productId;
+  }
+  try {
+    await fetch('/api/v1/track', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    // Non-blocking analytics event.
+  }
+}
+
+// ── BOOKS ────────────────────────────────────────────────
+async function loadBooks(page=1){
+  currentPage=page;
+  const grid=document.getElementById('booksGrid');
+  grid.innerHTML='<div class="loading"><div class="spin"></div><br>Đang tải sách...</div>';
+  document.getElementById('pagination').innerHTML='';
+  try{
+    let url='/api/books/?page=1';
+    if(currentCat)url+='&category='+currentCat;
+    allBooks=await fetchAllPages(url);
+    // Update category counts
+    updateCatCounts(allBooks);
+    // Hero preview
+    renderHeroPreview(allBooks.slice(0,4));
+    sortAndRender();
+  }catch(e){
+    grid.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>Không thể tải sách. Kiểm tra kết nối.</div>';
+    document.getElementById('booksMeta').textContent='Lỗi kết nối';
+  }
+}
+
+function updateCatCounts(books){
+  const cats={programming:0,science:0,history:0,fiction:0,math:0};
+  books.forEach(b=>{if(cats[b.category]!==undefined)cats[b.category]++;});
+  Object.entries(cats).forEach(([k,v])=>{const el=document.getElementById('cnt-'+k);if(el)el.textContent=v+' cuốn';});
+  const allEl=document.getElementById('cnt-all');if(allEl)allEl.textContent=books.length+' cuốn';
+}
+
+function renderHeroPreview(books){
+  const el=document.getElementById('heroBooksPreview');
+  if(!el)return;
+  const fallback=[
+    'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=320&q=80',
+    'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=320&q=80',
+    'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?auto=format&fit=crop&w=320&q=80',
+    'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=320&q=80'
+  ];
+  const items=books.filter(b=>b.cover_image_url).slice(0,4);
+  if(items.length){
+    el.innerHTML=items.map(b=>`
+      <div class="hero-book-thumb" onclick="openDetail(${b.id})">
+        <img src="${b.cover_image_url}" alt="${b.title}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+      </div>`).join('');
+    return;
+  }
+  el.innerHTML=fallback.map((src,i)=>`
+    <div class="hero-book-thumb">
+      <img src="${src}" alt="Ảnh sách mẫu ${i+1}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+    </div>`).join('');
+}
+
+function filterCat(cat){
+  showPane('home');
+  currentCat=cat;
+  // Update cat nav
+  document.querySelectorAll('.cat-link').forEach(el=>{
+    el.classList.toggle('active',el.getAttribute('onclick')?.includes(`'${cat}'`)||(cat===''&&el.textContent.includes('Tất cả')));
+  });
+  const title=document.getElementById('bookSectionTitle');
+  const catNames={programming:'💻 Sách Lập Trình',science:'🔬 Khoa Học',history:'📜 Lịch Sử & Kỹ Năng',fiction:'📖 Tiểu Thuyết',math:'📐 Toán Học','':`Tất cả sách`};
+  if(title)title.textContent=catNames[cat]||'Tất cả sách';
+  loadBooks(1);
+  requestAnimationFrame(()=>{
+    document.getElementById('bookSection')?.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+
+function sortBooks(){sortAndRender();}
+
+function sortAndRender(){
+  const sort=document.getElementById('sortBy')?.value||'';
+  let books=[...allBooks];
+  if(sort==='price_asc')books.sort((a,b)=>parseFloat(a.price)-parseFloat(b.price));
+  else if(sort==='price_desc')books.sort((a,b)=>parseFloat(b.price)-parseFloat(a.price));
+  else if(sort==='name')books.sort((a,b)=>a.title.localeCompare(b.title,'vi'));
+  totalPages=Math.ceil(books.length/PAGE_SIZE)||1;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const pageBooks=books.slice(start,start+PAGE_SIZE);
+  document.getElementById('booksMeta').textContent=`${books.length} cuốn sách · Trang ${currentPage}/${totalPages}`;
+  renderBooks(pageBooks,document.getElementById('booksGrid'));
+  renderPagination(books.length);
+}
+
+function renderPagination(total){
+  const el=document.getElementById('pagination');
+  if(totalPages<=1){el.innerHTML='';return;}
+  let html=`<button class="pg-btn" onclick="loadBooks(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Trước</button>`;
+  for(let i=1;i<=totalPages;i++){
+    if(i===1||i===totalPages||Math.abs(i-currentPage)<=1)html+=`<button class="pg-btn ${i===currentPage?'active':''}" onclick="loadBooks(${i})">${i}</button>`;
+    else if(Math.abs(i-currentPage)===2)html+=`<span class="pg-info">…</span>`;
+  }
+  html+=`<button class="pg-btn" onclick="loadBooks(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Sau ›</button>`;
+  el.innerHTML=html;
+}
+
+async function doSearch(){
+  const q=document.getElementById('navSearch').value.trim();
+  const cat=document.getElementById('searchCatFilter').value;
+  if(!q&&!cat)return;
+  showPane('search');
+  document.getElementById('searchTitle').textContent=q?`Kết quả cho "${q}"`:'Duyệt theo danh mục';
+  const grid=document.getElementById('searchGrid');
+  grid.innerHTML='<div class="loading"><div class="spin"></div><br>Đang tìm...</div>';
+  try{
+    let url='/api/books/search/?q='+encodeURIComponent(q);
+    if(cat)url+='&category='+cat;
+    const r=await fetch(url);
+    const data=await r.json();
+    const books=data.results||data.books||(Array.isArray(data)?data:[]);
+    document.getElementById('searchMeta').textContent=books.length+' kết quả';
+    if (q) {
+      trackBehavior(0, 'search', {query: q});
+    }
+    renderBooks(books,grid);
+  }catch(e){grid.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>Lỗi tìm kiếm</div>';}
+}
+
+function renderBooks(books,grid){
+  if(!books.length){grid.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Không tìm thấy sách nào</div>';return;}
+  grid.innerHTML=books.map((b,i)=>{
+    const oos=b.stock<=0;
+    const badgeClass=BADGES[i%BADGES.length];
+    const badgeLabel=badgeClass==='badge-new'?'MỚI':badgeClass==='badge-sale'?'SALE':badgeClass==='badge-hot'?'HOT':'';
+    return`<div class="book-card" onclick="openDetail(${b.id})">
+      ${badgeLabel?`<span class="book-badge ${badgeClass}">${badgeLabel}</span>`:''}
+      <div class="book-cover">${coverHtml(b,'200px')}<span class="cover-cat">${b.category||'book'}</span></div>
+      <div class="book-body">
+        <div class="book-title">${b.title}</div>
+        <div class="book-author">✍️ ${b.author||'Không rõ'}</div>
+        <div class="book-rating"><span class="stars">${starsHtml(b.average_rating||0)}</span> ${(b.average_rating||0).toFixed(1)} (${b.total_reviews||0})</div>
+        <div class="book-footer">
+          <div><span class="book-price">${fmt(b.price)}</span></div>
+          ${oos?'<span class="oos-tag">Hết hàng</span>'
+            :`<button class="btn-cart" onclick="event.stopPropagation();addToCart(${b.id},${b.price},'${b.title.replace(/'/g,"\\'")}')">🛒 Thêm</button>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+
+<script>
+// ── BOOK DETAIL ───────────────────────────────────────────
+async function openDetail(bookId){
+  currentBookId=bookId;reviewRating=5;
+  trackBehavior(bookId, 'view');
+  openModal('detailModal');
+  document.getElementById('detailBody').innerHTML='<div class="loading"><div class="spin"></div><br>Đang tải...</div>';
+  try{
+    const [bookR,revR]=await Promise.all([fetch('/api/books/'+bookId+'/'),fetch('/api/comments/by_book/?book_id='+bookId)]);
+    const book=await bookR.json();
+    const revData=revR.ok?await revR.json():{};
+    const reviews=revData.comments||[];
+    const authorMap=await resolveCustomerNames(reviews.map(rv=>rv.customer_id));
+    const avg=revData.average_rating||0;
+    const total=revData.total_reviews||0;
+    const oos=book.stock<=0;
+    const coverDetail=book.cover_image_url
+      ?`<img src="${book.cover_image_url}" alt="${book.title}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
+      :`<span style="font-size:3rem">${EMOJI[book.category]||'📚'}</span>`;
+    document.getElementById('detailTitle').textContent=book.title;
+    document.getElementById('detailBody').innerHTML=`
+      <div class="detail-grid">
+        <div class="detail-cover">${coverDetail}</div>
+        <div class="detail-info">
+          <div class="detail-title">${book.title}</div>
+          <div class="detail-author">✍️ ${book.author||'Không rõ tác giả'}</div>
+          <div class="detail-meta">
+            <span class="chip">📂 ${book.category||'—'}</span>
+            <span class="chip">📦 Còn ${book.stock} cuốn</span>
+            ${book.publisher_detail?`<span class="chip">🏢 ${book.publisher_detail.name}</span>`:''}
+          </div>
+          <div class="detail-price">${fmt(book.price)}</div>
+          <div class="book-rating"><span class="stars">${starsHtml(avg)}</span> ${avg.toFixed(1)} · ${total} đánh giá</div>
+          ${book.description?`<div class="detail-desc">${book.description}</div>`:''}
+          <div style="display:flex;gap:.6rem;margin-top:.75rem;flex-wrap:wrap">
+            ${oos?'<span class="oos-tag" style="font-size:.85rem">Hết hàng</span>'
+              :`<button class="btn btn-p" style="padding:.65rem 1.5rem;font-size:.92rem" onclick="addToCart(${book.id},${book.price},'${book.title.replace(/'/g,"\\'")}');closeModal('detailModal')">🛒 Thêm vào giỏ hàng</button>
+                <a href="/cart/" class="btn btn-o">Xem giỏ hàng →</a>`}
+          </div>
+        </div>
+      </div>
+      <div class="reviews-sec">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem">
+          <div style="font-size:1rem;font-weight:700">💬 Đánh giá (${total})</div>
+          ${total>0?`<div style="font-size:.85rem;color:var(--tm)">Trung bình: <strong style="color:var(--orange)">${avg.toFixed(1)}/5</strong></div>`:''}
+        </div>
+        ${reviews.length?reviews.map(rv=>`
+          <div class="rev-card">
+            <div class="rev-hdr">
+              <span class="rev-author">👤 ${escHtml(authorMap[rv.customer_id] || (user&&Number(user.service_user_id)===Number(rv.customer_id)?user.username:('Khách hàng #'+rv.customer_id)))}</span>
+              <div style="display:flex;align-items:center;gap:.5rem">
+                <span class="stars">${starsHtml(rv.rating)}</span>
+                <span class="rev-date">${new Date(rv.created_at).toLocaleDateString('vi-VN')}</span>
+                ${user&&Number(user.service_user_id)===Number(rv.customer_id)?`<button class="btn btn-ghost btn-sm" onclick="deleteMyReview(${rv.id},${bookId})">Xóa</button>`:''}
+              </div>
+            </div>
+            <div class="rev-body">${rv.content}</div>
+          </div>`).join('')
+          :'<div class="empty-state" style="padding:1rem 0">Chưa có đánh giá nào. Hãy là người đầu tiên!</div>'}
+        ${user?`
+        <div class="write-rev">
+          <h4>✏️ Viết đánh giá của bạn</h4>
+          <div class="star-row" id="starRow">${[1,2,3,4,5].map(i=>`<button class="star-btn" id="star${i}" onclick="setRating(${i})">★</button>`).join('')}</div>
+          <div class="form-group"><textarea id="revContent" rows="3" placeholder="Chia sẻ cảm nhận của bạn về cuốn sách..."></textarea></div>
+          <button class="btn btn-p btn-sm" onclick="submitReview()">Gửi đánh giá</button>
+          <span id="revMsg" style="font-size:.8rem;color:var(--tm);margin-left:.5rem"></span>
+        </div>`
+        :`<p style="font-size:.85rem;color:var(--tm);margin-top:.75rem"><a href="/customer-login/" style="color:var(--p);font-weight:600">Đăng nhập</a> để viết đánh giá</p>`}
+      </div>`;
+    setRating(5);
+  }catch(e){document.getElementById('detailBody').innerHTML='<div class="empty-state">Lỗi tải chi tiết sách</div>';}
+}
+
+function setRating(n){reviewRating=n;for(let i=1;i<=5;i++){const s=document.getElementById('star'+i);if(s)s.style.color=i<=n?'#F59E0B':'#D1D5DB';}}
+
+async function submitReview(){
+  if(!user){toast('Đăng nhập để đánh giá','err');return;}
+  const content=document.getElementById('revContent').value.trim();
+  if(!content){toast('Nhập nội dung đánh giá','err');return;}
+  const msg=document.getElementById('revMsg');msg.textContent='Đang gửi...';
+  try{
+    const r=await api('/comments/',{method:'POST',body:JSON.stringify({customer_id:user.service_user_id,book_id:currentBookId,content,rating:reviewRating})});
+    const d=await r.json();
+    if(r.ok){msg.textContent='✅ Đã gửi!';trackBehavior(currentBookId,'rate',{rating:reviewRating});document.getElementById('revContent').value='';setTimeout(()=>openDetail(currentBookId),800);}
+    else msg.textContent='❌ Không thể gửi đánh giá';
+  }catch(e){msg.textContent='❌ Lỗi kết nối';}
+}
+
+async function deleteMyReview(reviewId, bookId){
+  if(!user){toast('Đăng nhập để thao tác','err');return;}
+  if(!confirm('Xóa đánh giá này?'))return;
+  try{
+    const r=await api('/comments/'+reviewId+'/',{method:'DELETE'});
+    if(r.ok||r.status===204){
+      toast('Đã xóa đánh giá','ok');
+      if(bookId)openDetail(bookId);
+      if(document.getElementById('pane-ratings')?.style.display==='block')loadMyRatings();
+      return;
+    }
+    const d=await r.json().catch(()=>({}));
+    toast('❌ Không thể xóa đánh giá','err');
+  }catch(e){
+    toast('Lỗi kết nối','err');
+  }
+}
+
+// ── CART ─────────────────────────────────────────────────
+async function addToCart(bookId,price,title){
+  if(!user){toast('Đăng nhập để thêm vào giỏ','err');window.location.href='/customer-login/?next=/';return;}
+  if(!user.cart_id){toast('Không tìm thấy giỏ hàng','err');return;}
+  try{
+    const r=await api('/customers/'+user.service_user_id+'/updateCart/',{method:'POST',body:JSON.stringify({book_id:bookId,quantity:1})});
+    if(r.ok){toast('✅ Đã thêm "'+title+'" vào giỏ','ok');trackBehavior(bookId,'cart');fetchCartCount();}
+    else{toast('❌ Không thể thêm sản phẩm vào giỏ','err');}
+  }catch(e){toast('Lỗi kết nối','err');}
+}
+
+async function loadMyRatings(){
+  const el=document.getElementById('ratingsPane');
+  if(!user){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🔒</div>Đăng nhập để xem lịch sử đánh giá<br><a href="/customer-login/" class="btn btn-p btn-sm" style="display:inline-block;margin-top:.75rem">Đăng nhập</a></div>';
+    return;
+  }
+  el.innerHTML='<div class="loading"><div class="spin"></div><br>Đang tải lịch sử đánh giá...</div>';
+  try{
+    const r=await api('/comments/by_customer/?customer_id='+user.service_user_id);
+    const data=await r.json();
+    const comments=Array.isArray(data)?data:(data.comments||[]);
+    if(!comments.length){
+      el.innerHTML='<div class="empty-state"><div class="empty-icon">📝</div>Bạn chưa đánh giá sản phẩm nào</div>';
+      return;
+    }
+
+    const ids=[...new Set(comments.map(c=>c.book_id).filter(Boolean))];
+    const books=await Promise.all(ids.map(async id=>{
+      try{
+        const br=await fetch('/api/books/'+id+'/');
+        if(!br.ok)return [id,null];
+        return [id,await br.json()];
+      }catch(e){
+        return [id,null];
+      }
+    }));
+    const bookMap=Object.fromEntries(books);
+
+    el.innerHTML=comments.map(c=>{
+      const b=bookMap[c.book_id]||null;
+      const title=escHtml(b?.title||('Sách #'+c.book_id));
+      const content=escHtml(c.content||'');
+      const dateText=new Date(c.created_at).toLocaleDateString('vi-VN');
+      return `
+        <div class="order-card" style="cursor:default;margin-bottom:.85rem">
+          <div class="order-hdr" style="align-items:flex-start;gap:.8rem;flex-wrap:wrap">
+            <div style="font-weight:700">📚 ${title}</div>
+            <div style="display:flex;align-items:center;gap:.35rem">
+              <span class="stars">${starsHtml(c.rating)}</span>
+              <strong style="color:var(--orange)">${Number(c.rating||0).toFixed(1)}/5</strong>
+            </div>
+          </div>
+          <div style="font-size:.82rem;color:var(--tm);margin:.35rem 0 .55rem">🗓️ ${dateText}</div>
+          <div style="font-size:.88rem;line-height:1.6;color:var(--t);margin-bottom:.7rem">${content||'<em style="color:var(--tm)">Không có nội dung nhận xét</em>'}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">
+            <div style="font-size:.82rem;color:var(--tm)">Mã sách: #${c.book_id}</div>
+            <div style="display:flex;gap:.45rem;align-items:center">
+              <button class="btn btn-ghost btn-sm" onclick="openDetail(${c.book_id})">Xem sản phẩm</button>
+              <button class="btn btn-ghost btn-sm" onclick="deleteMyReview(${c.id},${c.book_id})">Xóa đánh giá</button>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>Không tải được lịch sử đánh giá</div>';
+  }
+}
+
+// ── ORDERS ───────────────────────────────────────────────
+async function loadOrders(){
+  const el=document.getElementById('ordersPane');
+  if(!user){el.innerHTML='<div class="empty-state"><div class="empty-icon">🔒</div>Đăng nhập để xem đơn hàng<br><a href="/customer-login/" class="btn btn-p btn-sm" style="display:inline-block;margin-top:.75rem">Đăng nhập</a></div>';return;}
+  el.innerHTML='<div class="loading"><div class="spin"></div><br>Đang tải...</div>';
+  try{
+    const r=await api('/orders/by_customer/?customer_id='+user.service_user_id);
+    const d=await r.json();const orders=d.orders||[];
+    if(!orders.length){el.innerHTML='<div class="empty-state"><div class="empty-icon">📭</div>Chưa có đơn hàng nào<br><a href="/" onclick="backHome();return false" class="btn btn-p btn-sm" style="display:inline-block;margin-top:.75rem">Mua sắm ngay</a></div>';return;}
+    el.innerHTML=orders.map(o=>`
+      <div class="order-card" onclick="openOrderDetail(${o.id})">
+        <div class="order-hdr"><span class="order-id">Đơn #${o.id}</span>${statusBadge(o.status)}</div>
+        <div style="font-size:.82rem;color:var(--tm);margin-bottom:.4rem">📅 ${new Date(o.created_at).toLocaleString('vi-VN')} · ${o.items?.length||0} sản phẩm</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:800;color:var(--red);font-size:.95rem">${fmt(o.total_amount)}</div>
+          ${o.status==='pending'?`<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();cancelOrder(${o.id})">Hủy đơn</button>`:''}
+        </div>
+      </div>`).join('');
+  }catch(e){el.innerHTML='<div class="empty-state">Lỗi tải đơn hàng</div>';}
+}
+
+async function openOrderDetail(orderId){
+  openModal('orderDetailModal');
+  const el=document.getElementById('orderDetailBody');
+  el.innerHTML='<div class="loading"><div class="spin"></div></div>';
+  try{
+    const [oR,sR]=await Promise.all([api('/orders/'+orderId+'/order_details/'),api('/shipments/track_by_order/?order_id='+orderId)]);
+    const od=await oR.json();const order=od.order||od;
+    const itemIds=[...new Set((order.items||[]).map(i=>i.book_id).filter(Boolean))];
+    const itemBooks=await Promise.all(itemIds.map(async id=>{
+      try{
+        const br=await fetch('/api/books/'+id+'/');
+        if(!br.ok)return [id,null];
+        return [id,await br.json()];
+      }catch(e){
+        return [id,null];
+      }
+    }));
+    const itemBookMap=Object.fromEntries(itemBooks);
+    const ship=sR.ok?await sR.json():null;
+    el.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <div><strong style="font-size:1rem">Đơn hàng #${order.id}</strong> ${statusBadge(order.status)}</div>
+        <div style="font-weight:800;color:var(--red);font-size:1.1rem">${fmt(order.total_amount)}</div>
+      </div>
+      <div style="font-size:.85rem;color:var(--tm);margin-bottom:.85rem;line-height:1.7">
+        📅 ${new Date(order.created_at).toLocaleString('vi-VN')}<br>📍 ${order.shipping_address||'—'}
+      </div>
+      <div style="font-weight:700;margin-bottom:.6rem">Sản phẩm đặt mua</div>
+      ${(order.items||[]).map(i=>{
+        const title=escHtml(itemBookMap[i.book_id]?.title||('Sách #'+i.book_id));
+        return `<div style="display:flex;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--b);font-size:.88rem"><span>📚 ${title} × ${i.quantity}</span><span style="font-weight:700;color:var(--red)">${fmt(i.price)}</span></div>`;
+      }).join('')}
+      ${ship?`<div style="margin-top:1rem;padding:1rem;background:var(--pll);border-radius:var(--rs);border:1px solid var(--b)">
+        <div style="font-weight:700;margin-bottom:.5rem">🚚 Thông tin vận chuyển</div>
+        <div style="font-size:.85rem;color:var(--tm);line-height:1.8">
+          Mã tracking: <strong>${ship.tracking_number||'—'}</strong><br>
+          Trạng thái: ${statusBadge(ship.status)}<br>
+          Dự kiến giao: <strong>${ship.estimated_delivery||'—'}</strong>
+        </div>
+      </div>`:''}`;
+  }catch(e){el.innerHTML='<div class="empty-state">Lỗi tải chi tiết</div>';}
+}
+
+async function cancelOrder(orderId){
+  if(!confirm('Hủy đơn hàng #'+orderId+'?'))return;
+  try{
+    const r=await api('/orders/'+orderId+'/cancel_order/',{method:'POST',body:'{}'});
+    const d=await r.json();
+    if(r.ok){toast('Đã hủy đơn hàng','ok');loadOrders();}
+    else toast('❌ Không thể hủy đơn hàng','err');
+  }catch(e){toast('Lỗi kết nối','err');}
+}
+
+// ── PROFILE ──────────────────────────────────────────────
+async function loadProfileTab(){
+  if(!user)return;
+  const init=(user.username||'U')[0].toUpperCase();
+  document.getElementById('profileDisplay').innerHTML=`
+    <div style="display:flex;gap:1rem;align-items:center;margin-bottom:.5rem">
+      <div class="profile-avatar-lg">${init}</div>
+      <div>
+        <div style="font-weight:800;font-size:1.1rem">${user.username}</div>
+        <div style="color:var(--tm);font-size:.85rem">${user.email||'—'}</div>
+        <span style="background:var(--pll);color:var(--pd);padding:.18rem .6rem;border-radius:20px;font-size:.73rem;font-weight:700">${user.role||'customer'}</span>
+      </div>
+    </div>`;
+  document.getElementById('profEmail').value=user.email||'';
+  if(user.service_user_id){
+    try{const r=await api('/customers/'+user.service_user_id+'/');if(r.ok){const d=await r.json();document.getElementById('profFirst').value=d.first_name||'';document.getElementById('profLast').value=d.last_name||'';}}catch(e){}
+  }
+  loadAddresses();
+}
+
+async function saveProfile(){
+  if(!user?.service_user_id)return;
+  const body={email:document.getElementById('profEmail').value,first_name:document.getElementById('profFirst').value,last_name:document.getElementById('profLast').value};
+  const msg=document.getElementById('profMsg');msg.textContent='Đang lưu...';
+  try{
+    const r=await api('/customers/'+user.service_user_id+'/updateCustomer/',{method:'PATCH',body:JSON.stringify(body)});
+    if(r.ok){msg.textContent='✅ Đã cập nhật';user.email=body.email;localStorage.setItem('cb_user',JSON.stringify(user));toast('Cập nhật thành công','ok');}
+    else{msg.textContent='❌ Không thể cập nhật thông tin';}
+  }catch(e){msg.textContent='❌ Lỗi kết nối';}
+}
+
+async function loadAddresses(){
+  const el=document.getElementById('addrList');
+  try{
+    const r=await api('/addresses/');if(!r.ok){el.innerHTML='<div class="empty-state" style="padding:1rem 0">Lỗi tải địa chỉ</div>';return;}
+    const d=await r.json();const addrs=d.results||d;
+    if(!addrs.length){el.innerHTML='<div class="empty-state" style="padding:1rem 0"><div class="empty-icon">📍</div>Chưa có địa chỉ nào</div>';return;}
+    el.innerHTML=addrs.map(a=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem;border:1px solid var(--b);border-radius:var(--rs);margin-bottom:.5rem;background:var(--pll)">
+        <div><div style="font-weight:600;font-size:.88rem">📍 ${a.street}</div><div style="font-size:.8rem;color:var(--tm)">${a.city}, ${a.country}</div></div>
+        <div style="display:flex;gap:.35rem">
+          <button class="btn btn-ghost btn-sm" onclick="editAddr(${a.id},'${a.street.replace(/'/g,"\\'")}','${a.city}','${a.country}')">✏️</button>
+          <button class="btn btn-sm" style="background:#FEE2E2;color:#991B1B;border:none;cursor:pointer" onclick="deleteAddr(${a.id})">🗑️</button>
+        </div>
+      </div>`).join('');
+  }catch(e){el.innerHTML='<div class="empty-state" style="padding:1rem 0">Lỗi tải địa chỉ</div>';}
+}
+
+function openAddrModal(id='',street='',city='',country='Việt Nam'){
+  document.getElementById('addrId').value=id;document.getElementById('addrStreet').value=street;
+  document.getElementById('addrCity').value=city;document.getElementById('addrCountry').value=country;
+  document.getElementById('addrModalTitle').textContent=id?'✏️ Sửa địa chỉ':'📍 Thêm địa chỉ';
+  openModal('addrModal');
+}
+function editAddr(id,street,city,country){openAddrModal(id,street,city,country);}
+
+async function saveAddr(){
+  const id=document.getElementById('addrId').value;
+  const body={street:document.getElementById('addrStreet').value.trim(),city:document.getElementById('addrCity').value.trim(),country:document.getElementById('addrCountry').value.trim()};
+  if(!body.street||!body.city){toast('Nhập đầy đủ thông tin địa chỉ','err');return;}
+  try{
+    const r=await api(id?'/addresses/'+id+'/':'/addresses/',{method:id?'PATCH':'POST',body:JSON.stringify(body)});
+    if(r.ok){closeModal('addrModal');toast(id?'Đã cập nhật địa chỉ':'Đã thêm địa chỉ','ok');loadAddresses();}
+    else{toast('❌ Không thể lưu địa chỉ','err');}
+  }catch(e){toast('Lỗi kết nối','err');}
+}
+
+async function deleteAddr(id){
+  if(!confirm('Xóa địa chỉ này?'))return;
+  try{
+    const r=await api('/addresses/'+id+'/',{method:'DELETE'});
+    if(r.ok||r.status===204){toast('Đã xóa địa chỉ','ok');loadAddresses();}
+    else toast('Không thể xóa','err');
+  }catch(e){toast('Lỗi kết nối','err');}
+}
+</script>
+
+<!-- ═══════════════════ AI CHATBOT WIDGET ═══════════════════ -->
+<style>
+#chatBtn{position:fixed;bottom:1.5rem;left:1.5rem;width:52px;height:52px;border-radius:50%;background:var(--p);color:#fff;border:none;font-size:1.5rem;cursor:pointer;box-shadow:var(--shl);z-index:800;transition:all .2s}
+#chatBtn:hover{background:var(--pd);transform:scale(1.08)}
+#chatBox{position:fixed;bottom:5rem;left:1.5rem;width:340px;max-height:520px;background:var(--s);border-radius:var(--r);box-shadow:var(--shl);z-index:800;display:none;flex-direction:column;overflow:hidden;border:1.5px solid var(--b)}
+#chatBox.open{display:flex}
+.chat-hdr{background:var(--p);color:#fff;padding:.75rem 1rem;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.9rem}
+.chat-hdr span{font-size:.75rem;opacity:.85}
+#chatMsgs{flex:1;overflow-y:auto;padding:.75rem;display:flex;flex-direction:column;gap:.5rem;min-height:200px;max-height:360px}
+.msg{max-width:85%;padding:.55rem .8rem;border-radius:12px;font-size:.83rem;line-height:1.5;white-space:pre-wrap}
+.msg.user{background:var(--p);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.bot{background:var(--bg);color:var(--t);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid var(--b)}
+.msg.typing{opacity:.6;font-style:italic}
+.chat-inp{display:flex;gap:.4rem;padding:.6rem;border-top:1px solid var(--b);background:var(--s)}
+.chat-inp input{flex:1;padding:.45rem .7rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:var(--bg)}
+.chat-inp input:focus{outline:none;border-color:var(--p)}
+.chat-inp button{background:var(--p);color:#fff;border:none;border-radius:var(--rs);padding:.45rem .75rem;font-size:.85rem;cursor:pointer}
+.chat-inp button:hover{background:var(--pd)}
+.chat-quick{display:flex;flex-wrap:wrap;gap:.3rem;padding:.4rem .6rem;border-top:1px solid var(--b)}
+.qbtn{background:var(--bg);border:1px solid var(--b);border-radius:20px;padding:.22rem .65rem;font-size:.75rem;cursor:pointer;color:var(--pd);font-weight:600}
+.qbtn:hover{background:var(--pll)}
+</style>
+
+<button id="chatBtn" onclick="toggleChat()" title="AI Assistant">🤖</button>
+
+<div id="chatBox">
+  <div class="chat-hdr">
+    <div>🤖 AI Assistant <span>bookstore</span></div>
+    <button onclick="toggleChat()" style="background:none;border:none;color:#fff;font-size:1.1rem;cursor:pointer">✕</button>
+  </div>
+  <div id="chatMsgs">
+    <div class="msg bot">Xin chào! 👋 Tôi là AI Assistant của bookstore. Tôi có thể giúp bạn gợi ý sách, tìm kiếm, tra cứu đơn hàng và giải đáp thắc mắc!</div>
+  </div>
+  <div class="chat-quick" id="quickBtns">
+    <button class="qbtn" onclick="sendQuick('Goi y sach cho toi', 'recommend')">💡 Gợi ý sách</button>
+    <button class="qbtn" onclick="sendQuick('Chinh sach doi tra', 'return_policy')">🔄 Đổi trả</button>
+    <button class="qbtn" onclick="sendQuick('Don hang cua toi', 'order_support')">📦 Đơn hàng</button>
+    <button class="qbtn" onclick="sendQuick('Phuong thuc thanh toan', 'payment_support')">💳 Thanh toán</button>
+  </div>
+  <div class="chat-inp">
+    <input type="text" id="chatInput" placeholder="Nhập câu hỏi..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button onclick="sendChat()">➤</button>
+  </div>
+</div>
+
+<script>
+// ── Chatbot ───────────────────────────────────────────────
+let _chatSessionId = null;
+
+function toggleChat() {
+  const box = document.getElementById('chatBox');
+  box.classList.toggle('open');
+  if (box.classList.contains('open')) {
+    document.getElementById('chatInput').focus();
+  }
+}
+
+function sendQuick(msg, quickAction) {
+  document.getElementById('chatInput').value = msg;
+  sendChat(quickAction);
+}
+
+async function sendChat(quickAction) {
+  const inp = document.getElementById('chatInput');
+  const msg = inp.value.trim();
+  if (!msg) return;
+  inp.value = '';
+
+  appendMsg(msg, 'user');
+  const typingEl = appendMsg('...', 'bot typing');
+
+  try {
+    const body = {
+      message:    msg,
+      session_id: _chatSessionId || undefined,
+    };
+    if (quickAction) body.quick_action = quickAction;
+    if (user?.service_user_id) body.customer_id = user.service_user_id;
+    if (user?.username)        body.username     = user.username;
+
+    const r = await fetch('/api/v1/chat', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify(body),
+    });
+    const d = await r.json();
+    typingEl.remove();
+
+    if (r.ok) {
+      _chatSessionId = d.session_id;
+      appendMsg(d.answer || d.response, 'bot');
+
+      // Show book cards if returned
+      const bookCandidates = (d.books && d.books.length)
+        ? d.books
+        : (d.recommendations || []).map(r => ({
+            id: r.id || r.product_id,
+            title: r.title,
+            price: r.price,
+          }));
+
+      if (bookCandidates.length) {
+        const booksHtml = bookCandidates.slice(0, 3).map(b =>
+          `<div style="background:var(--pll);border-radius:8px;padding:.4rem .6rem;margin-top:.3rem;font-size:.78rem;cursor:pointer" onclick="openDetail(${b.id})">
+            📚 <strong>${b.title}</strong><br>
+            <span style="color:var(--pd)">${Number(b.price).toLocaleString('vi-VN')}₫</span>
+          </div>`
+        ).join('');
+        const el = document.createElement('div');
+        el.className = 'msg bot';
+        el.innerHTML = booksHtml;
+        document.getElementById('chatMsgs').appendChild(el);
+      }
+    } else {
+      appendMsg('Xin lỗi, có lỗi xảy ra. Thử lại nhé!', 'bot');
+    }
+  } catch(e) {
+    typingEl.remove();
+    appendMsg('Không thể kết nối AI service. Thử lại sau!', 'bot');
+  }
+
+  const msgs = document.getElementById('chatMsgs');
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendMsg(text, cls) {
+  const el = document.createElement('div');
+  el.className = 'msg ' + cls;
+  el.textContent = text;
+  const msgs = document.getElementById('chatMsgs');
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+</script>
+</body>
+</html>

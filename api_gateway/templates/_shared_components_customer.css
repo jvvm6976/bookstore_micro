@@ -1,0 +1,28 @@
+.btn{padding:.45rem .95rem;border-radius:var(--rs);font-weight:600;font-size:.84rem;border:none;cursor:pointer;transition:all .2s;line-height:1.4}
+.btn-o{background:transparent;border:1.5px solid var(--p);color:var(--p)}.btn-o:hover{background:var(--pll)}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pd)}
+.btn-sm{padding:.32rem .7rem;font-size:.8rem}
+.btn-ghost{background:transparent;border:1px solid var(--b);color:var(--tm)}.btn-ghost:hover{border-color:var(--p);color:var(--p)}
+.btn-x{background:transparent;border:none;font-size:1.3rem;color:var(--tm);cursor:pointer;padding:.2rem;border-radius:6px;line-height:1}.btn-x:hover{background:var(--b);color:var(--t)}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:500;align-items:center;justify-content:center;padding:1rem;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:var(--s);border-radius:var(--r);padding:1.75rem;width:100%;max-width:480px;box-shadow:var(--shl);max-height:92vh;overflow-y:auto}
+.modal-lg{max-width:860px}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.modal-title{font-size:1.1rem;font-weight:700}
+
+.form-group{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.85rem}
+.form-group label{font-size:.8rem;font-weight:600;color:var(--tm)}
+.form-group input,.form-group select,.form-group textarea{padding:.52rem .8rem;border:1.5px solid var(--b);border-radius:var(--rs);color:var(--t);background:#FFF7F8;font-size:.88rem;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--p)}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--pdd);color:#fff;padding:.75rem 1.2rem;border-radius:var(--rs);font-size:.85rem;font-weight:600;z-index:9999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;box-shadow:var(--shl)}
+.toast.show{opacity:1;transform:translateY(0)}.toast.err{background:#DC2626}.toast.ok{background:#059669}
+
+.loading{text-align:center;padding:3rem;color:var(--tm)}
+.spin{display:inline-block;width:34px;height:34px;border:3px solid var(--b);border-top-color:var(--p);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:.75rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state,.empty-cart{text-align:center;color:var(--tm);padding:2.5rem;font-size:.9rem}
+.empty-icon{font-size:2.5rem;margin-bottom:.6rem}

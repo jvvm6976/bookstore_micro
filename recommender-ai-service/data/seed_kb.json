@@ -1,0 +1,50 @@
+[
+  {
+    "category": "faq",
+    "title": "Làm thế nào để đặt hàng tại MoonBooks?",
+    "content": "Để đặt hàng tại MoonBooks: 1. Đăng nhập tài khoản. 2. Tìm sách bạn muốn mua. 3. Nhấn 'Thêm vào giỏ hàng'. 4. Vào giỏ hàng, nhập địa chỉ giao hàng. 5. Chọn phương thức thanh toán và nhấn 'Đặt hàng'. Đơn hàng sẽ được xác nhận qua email.",
+    "keywords": ["đặt hàng", "dat hang", "mua sách", "mua sach", "giỏ hàng", "gio hang", "checkout", "order", "moonbooks"]
+  },
+  {
+    "category": "policy",
+    "title": "Chính sách đổi trả hàng MoonBooks",
+    "content": "MoonBooks chấp nhận đổi trả trong vòng 7 ngày kể từ ngày nhận hàng. Điều kiện: sách còn nguyên vẹn, chưa qua sử dụng, còn đầy đủ bao bì gốc. Quy trình: liên hệ support@moonbooks.vn hoặc hotline 1800-xxxx, cung cấp mã đơn hàng và lý do đổi trả. Hoàn tiền trong 3-5 ngày làm việc.",
+    "keywords": ["đổi trả", "doi tra", "hoàn tiền", "hoan tien", "refund", "return", "chính sách", "chinh sach", "policy", "7 ngày", "7 ngay"]
+  },
+  {
+    "category": "policy",
+    "title": "Phương thức thanh toán tại MoonBooks",
+    "content": "MoonBooks hỗ trợ các phương thức thanh toán: 1. Thẻ tín dụng/ghi nợ (Visa, Mastercard, JCB). 2. COD - Thanh toán khi nhận hàng (áp dụng nội thành). 3. Chuyển khoản ngân hàng. 4. Ví điện tử (MoMo, ZaloPay, VNPay). Tất cả giao dịch được mã hóa SSL 256-bit.",
+    "keywords": ["thanh toán", "thanh toan", "payment", "thẻ tín dụng", "the tin dung", "visa", "mastercard", "cod", "chuyển khoản", "chuyen khoan", "momo", "vnpay", "zalopay"]
+  },
+  {
+    "category": "policy",
+    "title": "Thời gian và phí giao hàng MoonBooks",
+    "content": "Thời gian giao hàng: Nội thành HCM/HN: 1-2 ngày làm việc. Tỉnh thành khác: 3-5 ngày làm việc. Giao hàng nhanh (hỏa tốc): 2-4 giờ (nội thành, phụ phí 30.000đ). Phí vận chuyển: Miễn phí cho đơn từ 300.000đ. Dưới 300.000đ: 25.000-35.000đ tùy khu vực.",
+    "keywords": ["giao hàng", "giao hang", "vận chuyển", "van chuyen", "shipping", "delivery", "thời gian", "thoi gian", "phí ship", "phi ship", "miễn phí", "mien phi", "hỏa tốc", "hoa toc"]
+  },
+  {
+    "category": "faq",
+    "title": "Làm thế nào để theo dõi đơn hàng?",
+    "content": "Để theo dõi đơn hàng tại MoonBooks: 1. Đăng nhập tài khoản. 2. Vào mục 'Đơn hàng của tôi'. 3. Chọn đơn hàng cần theo dõi. 4. Xem trạng thái và mã tracking. Bạn cũng có thể hỏi chatbot: 'Đơn hàng #[mã đơn]' để xem chi tiết.",
+    "keywords": ["theo dõi", "theo doi", "tracking", "đơn hàng", "don hang", "order", "trạng thái", "trang thai", "status", "kiểm tra", "kiem tra"]
+  },
+  {
+    "category": "faq",
+    "title": "Đăng ký tài khoản MoonBooks",
+    "content": "Để đăng ký tài khoản MoonBooks: 1. Nhấn 'Đăng ký' ở góc trên bên phải. 2. Điền tên đăng nhập, email và mật khẩu (tối thiểu 6 ký tự). 3. Nhấn 'Tạo tài khoản'. Tài khoản được tạo ngay lập tức. Lợi ích: lưu giỏ hàng, theo dõi đơn hàng, nhận gợi ý cá nhân hóa.",
+    "keywords": ["đăng ký", "dang ky", "register", "tài khoản", "tai khoan", "account", "mật khẩu", "mat khau", "password", "signup"]
+  },
+  {
+    "category": "faq",
+    "title": "Giới thiệu về MoonBooks",
+    "content": "MoonBooks là nhà sách trực tuyến hàng đầu Việt Nam, cung cấp hàng nghìn đầu sách thuộc các thể loại: lập trình, khoa học, lịch sử, tiểu thuyết, toán học, kinh doanh, kỹ năng sống. Chúng tôi cam kết mang đến trải nghiệm mua sắm tốt nhất với giá cả hợp lý và dịch vụ chăm sóc khách hàng tận tâm.",
+    "keywords": ["moonbooks", "giới thiệu", "gioi thieu", "about", "nhà sách", "nha sach", "bookstore", "sách", "sach"]
+  },
+  {
+    "category": "faq",
+    "title": "Chương trình khách hàng thân thiết MoonBooks",
+    "content": "MoonBooks có chương trình tích điểm: mỗi 10.000đ mua hàng = 1 điểm. 100 điểm = giảm 10.000đ cho đơn tiếp theo. Hạng thành viên: Bạc (0-499đ), Vàng (500-1999đ), Kim cương (2000đ+). Thành viên Kim cương được ưu tiên giao hàng và hỗ trợ 24/7.",
+    "keywords": ["tích điểm", "tich diem", "loyalty", "thành viên", "thanh vien", "member", "ưu đãi", "uu dai", "discount", "khuyến mãi", "khuyen mai"]
+  }
+]

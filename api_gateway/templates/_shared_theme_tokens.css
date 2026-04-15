@@ -1,0 +1,17 @@
+/* Shared core design tokens for bookstore theme */
+:root{
+  --p:#C2182B;
+  --pl:#EF9A9A;
+  --pll:#FFEBEE;
+  --pd:#8E1120;
+  --pdd:#6A0C17;
+  --bg:#FFF5F5;
+  --s:#ffffff;
+  --t:#2C0D10;
+  --tm:#7F3D43;
+  --b:#F3CDD1;
+  --sh:0 8px 24px rgba(194,24,43,.12);
+  --shl:0 16px 34px rgba(194,24,43,.18);
+  --r:14px;
+  --rs:10px;
+}

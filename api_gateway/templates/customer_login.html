@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bookstore – Đăng nhập / Đăng ký</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--bg:#FFF5F5;--s:#fff;--t:#2C0D10;--tm:#7F3D43;--b:#F3CDD1;--r:16px;--rs:10px;--sh:0 8px 30px rgba(194,24,43,.16)}
+body{font-family:'Be Vietnam Pro',sans-serif;background:radial-gradient(circle at 20% 15%,#fff 0%,#fff3f4 48%,#ffe9eb 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.wrap{width:100%;max-width:440px}
+.logo-area{text-align:center;margin-bottom:1.5rem}
+.logo{font-size:2rem;font-weight:800;color:var(--pd);text-decoration:none;display:inline-flex;align-items:center;letter-spacing:.01em}
+.logo em{color:var(--p);font-style:normal}
+.logo-sub{font-size:.85rem;color:var(--tm);margin-top:.35rem}
+.box{background:var(--s);border-radius:var(--r);padding:2rem 2rem 1.75rem;box-shadow:var(--sh);border:1px solid rgba(194,24,43,.12)}
+.tabs{display:flex;background:#FFF1F2;border-radius:var(--rs);padding:.3rem;margin-bottom:1.75rem;gap:.3rem}
+.rtab{flex:1;padding:.55rem;border:none;border-radius:8px;font-weight:600;font-size:.88rem;color:var(--tm);cursor:pointer;font-family:inherit;transition:all .2s;background:transparent}
+.rtab.active{background:var(--s);color:var(--p);box-shadow:0 2px 8px rgba(194,24,43,.16)}
+.form-group{margin-bottom:1rem}
+.form-group label{display:block;font-size:.78rem;font-weight:700;color:var(--tm);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em}
+.form-group input{width:100%;padding:.7rem 1rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.92rem;color:var(--t);background:#FFF7F8;font-family:inherit;transition:all .2s}
+.form-group input:focus{outline:none;border-color:var(--p);background:var(--s);box-shadow:0 0 0 3px rgba(194,24,43,.12)}
+.btn-main{width:100%;padding:.85rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:.5rem}
+.btn-main:hover{background:var(--pd);transform:translateY(-1px);box-shadow:0 6px 16px rgba(194,24,43,.28)}
+.btn-main:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.err{color:#DC2626;font-size:.82rem;text-align:center;margin-top:.65rem;min-height:1.1rem;font-weight:500}
+.divider{text-align:center;color:var(--tm);font-size:.8rem;margin:.85rem 0;position:relative}
+.divider::before,.divider::after{content:'';position:absolute;top:50%;width:44%;height:1px;background:var(--b)}
+.divider::before{left:0}.divider::after{right:0}
+.link-row{text-align:center;font-size:.83rem;color:var(--tm);margin-top:.5rem}
+.link-row a{color:var(--p);font-weight:600;text-decoration:none}
+.link-row a:hover{text-decoration:underline}
+.staff-link{display:block;text-align:center;margin-top:1.25rem;font-size:.8rem;color:var(--tm);padding:.6rem;border:1px dashed var(--b);border-radius:var(--rs);background:#FFF2F3}
+.staff-link a{color:var(--tm);text-decoration:none;font-weight:600}
+.staff-link a:hover{color:var(--p)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-area">
+    <a href="/" class="logo">📕 book<em>store</em></a>
+    <div class="logo-sub">Đăng nhập hoặc tạo tài khoản để tiếp tục mua sắm</div>
+  </div>
+  <div class="box">
+    <div class="tabs">
+      <button class="rtab" id="tabLogin" onclick="showPane('login')">Đăng nhập</button>
+      <button class="rtab" id="tabReg"   onclick="showPane('register')">Đăng ký</button>
+    </div>
+
+    <!-- ── LOGIN ── -->
+    <div id="paneLogin">
+      <div class="form-group">
+        <label>Tên đăng nhập</label>
+        <input type="text" id="logUser" placeholder="Nhập tên đăng nhập..." autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu</label>
+        <input type="password" id="logPass" placeholder="Nhập mật khẩu..." autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-main" id="loginBtn" onclick="doLogin()">Đăng nhập</button>
+      <div class="err" id="loginErr"></div>
+      <div class="divider">hoặc</div>
+      <div class="link-row">Chưa có tài khoản? <a href="#" onclick="showPane('register');return false">Đăng ký ngay</a></div>
+    </div>
+
+    <!-- ── REGISTER ── -->
+    <div id="paneRegister" style="display:none">
+      <div class="form-group">
+        <label>Tên đăng nhập</label>
+        <input type="text" id="regUser" placeholder="Chọn tên đăng nhập..." autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="email@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu</label>
+        <input type="password" id="regPass" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label>Xác nhận mật khẩu</label>
+        <input type="password" id="regPass2" placeholder="Nhập lại mật khẩu" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+      </div>
+      <button class="btn-main" id="regBtn" onclick="doRegister()">Tạo tài khoản</button>
+      <div class="err" id="regErr"></div>
+      <div class="divider">hoặc</div>
+      <div class="link-row">Đã có tài khoản? <a href="#" onclick="showPane('login');return false">Đăng nhập</a></div>
+    </div>
+
+    <div class="staff-link">Nhân viên / Quản lý? <a href="/login/">Đăng nhập tại đây →</a></div>
+  </div>
+</div>
+<script>
+// Auto-redirect if already logged in
+(function(){
+  try {
+    const u=JSON.parse(localStorage.getItem('cb_user')||'null');
+    if(!u) return;
+    const next=new URLSearchParams(location.search).get('next')||'/';
+    if(u.role==='customer') window.location.href=next;
+    else if(u.role==='staff'||u.role==='admin') window.location.href='/staff/';
+    else if(u.role==='manager') window.location.href='/manager/';
+  } catch(e){}
+})();
+
+// Determine initial pane from URL param
+const _initTab = new URLSearchParams(location.search).get('tab')||'login';
+
+function showPane(p) {
+  document.getElementById('paneLogin').style.display    = p==='login'    ? '' : 'none';
+  document.getElementById('paneRegister').style.display = p==='register' ? '' : 'none';
+  document.getElementById('tabLogin').classList.toggle('active', p==='login');
+  document.getElementById('tabReg').classList.toggle('active',   p==='register');
+  document.getElementById('loginErr').textContent='';
+  document.getElementById('regErr').textContent='';
+}
+
+// Init correct pane
+showPane(_initTab);
+
+async function doLogin() {
+  const username=document.getElementById('logUser').value.trim();
+  const password=document.getElementById('logPass').value;
+  const errEl=document.getElementById('loginErr');
+  const btn=document.getElementById('loginBtn');
+  errEl.textContent='';
+  if(!username||!password){errEl.textContent='Vui lòng nhập đầy đủ thông tin';return;}
+  btn.textContent='Đang đăng nhập...';btn.disabled=true;
+  try {
+    const r=await fetch('/api/auth/login/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const d=await r.json();
+    if(!r.ok){errEl.textContent='Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';return;}
+    const role=d.user?.role;
+    if(role==='staff'||role==='admin'){window.location.href='/staff/';return;}
+    if(role==='manager'){window.location.href='/manager/';return;}
+    localStorage.setItem('cb_user',JSON.stringify({...d.user,access_token:d.access_token,refresh_token:d.refresh_token}));
+    window.location.href=new URLSearchParams(location.search).get('next')||'/';
+  } catch(e){errEl.textContent='Lỗi kết nối đến server';}
+  finally{btn.textContent='Đăng nhập';btn.disabled=false;}
+}
+
+async function doRegister() {
+  const username=document.getElementById('regUser').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const password=document.getElementById('regPass').value;
+  const pass2=document.getElementById('regPass2').value;
+  const errEl=document.getElementById('regErr');
+  const btn=document.getElementById('regBtn');
+  errEl.textContent='';
+  if(!username||!email||!password){errEl.textContent='Vui lòng nhập đầy đủ thông tin';return;}
+  if(password!==pass2){errEl.textContent='Mật khẩu xác nhận không khớp';return;}
+  if(password.length<6){errEl.textContent='Mật khẩu tối thiểu 6 ký tự';return;}
+  btn.textContent='Đang tạo tài khoản...';btn.disabled=true;
+  try {
+    const r=await fetch('/api/auth/register/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,email,password,role:'customer'})});
+    const d=await r.json();
+    if(!r.ok){errEl.textContent='Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.';return;}
+    localStorage.setItem('cb_user',JSON.stringify({...d.user,access_token:d.access_token,refresh_token:d.refresh_token}));
+    window.location.href=new URLSearchParams(location.search).get('next')||'/';
+  } catch(e){errEl.textContent='Lỗi kết nối đến server';}
+  finally{btn.textContent='Tạo tài khoản';btn.disabled=false;}
+}
+</script>
+</body>
+</html>

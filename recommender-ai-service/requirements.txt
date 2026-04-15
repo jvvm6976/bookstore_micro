@@ -1,0 +1,26 @@
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# Django ORM (for interaction tracking DB)
+Django==5.2.12
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+psycopg2-binary==2.9.9
+
+# HTTP clients
+requests==2.31.0
+urllib3==2.2.1
+
+# Deep Learning
+numpy==1.26.4
+torch==2.3.0+cpu
+
+# Vector search — installed in Dockerfile separately
+# faiss-cpu==1.8.0
+
+# Utilities
+python-dotenv==1.0.0
+cryptography==41.0.7
+packaging==24.0

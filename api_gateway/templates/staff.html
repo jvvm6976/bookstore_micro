@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bookstore – Cổng nhân viên</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+{% include "_shared_theme_tokens.css" %}
+{% include "_shared_status_tokens.css" %}
+{% include "_shared_components_portal.css" %}
+body{font-family:'Be Vietnam Pro',sans-serif;background:radial-gradient(circle at 12% 10%,#fff 0%,#FFF1F2 48%,#FFE7EA 100%);color:var(--t);min-height:100vh;display:flex;flex-direction:column}
+button,input,select,textarea{font-family:inherit}
+nav{background:var(--s);padding:.75rem 2rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300;border-bottom:2px solid #F1C3CA}
+.logo{font-size:1.3rem;font-weight:800;color:var(--pd);text-decoration:none}.logo em{color:var(--p);font-style:normal}
+.nav-right{display:flex;gap:.5rem;align-items:center}
+.role-badge{padding:.22rem .75rem;border-radius:20px;font-size:.73rem;font-weight:700;background:var(--p);color:#fff}
+.sidebar{width:230px;background:var(--s);box-shadow:var(--sh);padding:1rem 0;flex-shrink:0;border-right:1px solid var(--b)}
+.nav-item{display:flex;align-items:center;gap:.6rem;padding:.65rem 1.25rem;font-size:.87rem;font-weight:600;color:var(--tm);cursor:pointer;transition:all .2s;border-left:3px solid transparent}
+.nav-item:hover{background:var(--bg);color:var(--pd)}
+.nav-item.active{background:var(--pll);color:var(--pd);border-left-color:var(--p)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.85rem}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th{background:var(--bg);padding:.6rem .85rem;text-align:left;font-weight:700;color:var(--tm);border-bottom:2px solid var(--b);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+td{padding:.65rem .85rem;border-bottom:1px solid var(--b);vertical-align:middle}
+tr:hover td{background:#FFF3F5}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.85rem;margin-bottom:1.25rem}
+.kpi{background:var(--s);border-radius:var(--r);padding:1rem 1.1rem;box-shadow:var(--sh);border-left:4px solid var(--p);border:1px solid var(--b)}
+.kpi-label{font-size:.75rem;color:var(--tm);font-weight:600;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em}
+.kpi-value{font-size:1.5rem;font-weight:800;color:var(--pd)}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">📕 book<em>store</em></a>
+  <div class="nav-right">
+    <span id="navName" style="font-size:.88rem;font-weight:600;color:var(--pd)"></span>
+    <span class="role-badge" id="navRole">NHÂN VIÊN</span>
+    <button class="btn btn-o btn-sm" onclick="doLogout()">Đăng xuất</button>
+  </div>
+</nav>
+<main>
+  <div class="sidebar">
+    <div class="nav-item active" onclick="showPage('profile')"  id="nav-profile">👤 Hồ sơ</div>
+    <div class="nav-item"        onclick="showPage('shifts')"   id="nav-shifts">🕐 Ca làm việc</div>
+    <div class="nav-item"        onclick="showPage('orders')"   id="nav-orders">📦 Duyệt đơn hàng</div>
+    <div class="nav-item"        onclick="showPage('shipments')" id="nav-shipments">🚚 Vận chuyển</div>
+    <div class="nav-item"        onclick="showPage('books')"    id="nav-books">📚 Kho sách</div>
+    <div class="nav-item"        onclick="showPage('payments')" id="nav-payments">💳 Thanh toán</div>
+    <div class="nav-item"        onclick="showPage('logs')"     id="nav-logs">📋 Nhật ký hoạt động</div>
+  </div>
+  <div class="content">
+
+    <!-- ── PROFILE ── -->
+    <div class="page active" id="page-profile">
+      <div class="sec-hdr"><div class="sec-title">👤 Hồ sơ cá nhân</div></div>
+      <div class="card">
+        <div id="profileInfo" class="loading"><div class="spin"></div></div>
+        <hr style="border:none;border-top:1px solid var(--b);margin:1rem 0">
+        <div style="font-weight:700;margin-bottom:.85rem">✏️ Cập nhật thông tin</div>
+        <div class="grid2">
+          <div class="form-group"><label>Email</label><input type="email" id="pEmail"></div>
+          <div class="form-group"><label>Phòng ban</label><input type="text" id="pDept"></div>
+          <div class="form-group"><label>Họ</label><input type="text" id="pFirst"></div>
+          <div class="form-group"><label>Tên</label><input type="text" id="pLast"></div>
+        </div>
+        <div class="form-group"><label>Mật khẩu mới (để trống nếu không đổi)</label><input type="password" id="pPass" placeholder="••••••"></div>
+        <button class="btn btn-p btn-sm" onclick="updateProfile()">💾 Lưu thay đổi</button>
+        <span id="profileMsg" style="font-size:.82rem;color:var(--tm);margin-left:.6rem"></span>
+      </div>
+    </div>
+
+    <!-- ── SHIFTS ── -->
+    <div class="page" id="page-shifts">
+      <div class="sec-hdr">
+        <div class="sec-title">🕐 Ca làm việc của tôi</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadShifts()">🔄 Làm mới</button>
+      </div>
+      <div class="info-box">ℹ️ Ca làm việc được lên lịch bởi quản lý. Bạn có thể bắt đầu / kết thúc ca tại đây.</div>
+      <div id="shiftsPane" class="loading"><div class="spin"></div></div>
+    </div>
+
+    <!-- ── ORDERS ── -->
+    <div class="page" id="page-orders">
+      <div class="sec-hdr">
+        <div class="sec-title">📦 Duyệt & Xử lý đơn hàng</div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="number" id="orderSearchId" placeholder="Tìm Order ID..." style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC;width:140px">
+          <button class="btn btn-p btn-sm" onclick="searchOrderById()">Tìm</button>
+          <select id="orderFilter" onchange="loadOrders()" style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC">
+            <option value="">Tất cả trạng thái</option>
+            <option value="pending">Chờ xử lý</option>
+            <option value="paid">Đã thanh toán</option>
+            <option value="shipped">Đang giao</option>
+            <option value="delivered">Đã giao</option>
+            <option value="canceled">Đã hủy</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadOrders()">🔄 Làm mới</button>
+        </div>
+      </div>
+      <div class="info-box">ℹ️ <strong>Duyệt đơn hàng:</strong> Xem thông tin đơn, xác nhận hoặc hủy đơn (kèm lý do). Trạng thái vận chuyển quản lý ở mục Vận chuyển.</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="ordersPane" class="loading" style="padding:2rem"><div class="spin"></div></div>
+      </div>
+    </div>
+
+    <!-- ── SHIPMENTS ── -->
+    <div class="page" id="page-shipments">
+      <div class="sec-hdr">
+        <div class="sec-title">🚚 Quản lý vận chuyển</div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="number" id="shipSearchOrderId" placeholder="Tìm theo Order ID..." style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC;width:160px">
+          <button class="btn btn-p btn-sm" onclick="searchShipmentByOrder()">Tìm</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadShipments()">🔄 Làm mới</button>
+        </div>
+      </div>
+      <div class="info-box">ℹ️ <strong>Vận chuyển:</strong> Cập nhật trạng thái giao hàng. Bấm "Giao hàng" → trạng thái chuyển sang <em>Đang giao</em>. Bấm "Đã giao" → chuyển sang <em>Đã giao</em> và cập nhật đơn hàng.</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="shipmentsPane" class="loading" style="padding:2rem"><div class="spin"></div></div>
+      </div>
+    </div>
+
+    <!-- ── BOOKS ── -->
+    <div class="page" id="page-books">
+      <div class="sec-hdr">
+        <div class="sec-title">📚 Cập nhật tồn kho sách</div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="text" id="bookSearch" placeholder="Tìm tên sách..." style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC;width:180px" oninput="filterBooks()">
+          <button class="btn btn-ghost btn-sm" onclick="loadBooks()">🔄 Làm mới</button>
+        </div>
+      </div>
+      <div class="info-box">ℹ️ Bạn có thể cập nhật số lượng tồn kho. Để chỉnh sửa thông tin sách, liên hệ quản lý.</div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="booksPane" class="loading" style="padding:2rem"><div class="spin"></div></div>
+      </div>
+    </div>
+
+    <!-- ── PAYMENTS ── -->
+    <div class="page" id="page-payments">
+      <div class="sec-hdr">
+        <div class="sec-title">💳 Tra cứu thanh toán</div>
+        <div style="display:flex;gap:.5rem">
+          <input type="number" id="payOrderId" placeholder="Nhập Order ID..." style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC;width:160px">
+          <button class="btn btn-p btn-sm" onclick="lookupPayment()">Tra cứu</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadAllPayments()">Tất cả</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="paymentsPane" class="loading" style="padding:2rem"><div class="spin"></div></div>
+      </div>
+    </div>
+
+    <!-- ── LOGS ── -->
+    <div class="page" id="page-logs">
+      <div class="sec-hdr">
+        <div class="sec-title">📋 Nhật ký hoạt động của tôi</div>
+        <button class="btn btn-ghost btn-sm" onclick="loadLogs()">🔄 Làm mới</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <div id="logsPane" class="loading" style="padding:2rem"><div class="spin"></div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<!-- Modal: update stock -->
+<div class="overlay" id="stockModal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">📦 Cập nhật tồn kho</span><button class="btn-x" onclick="closeModal('stockModal')">✕</button></div>
+    <input type="hidden" id="stockBookId">
+    <div class="form-group"><label>Tên sách</label><input type="text" id="stockBookTitle" readonly style="background:var(--bg)"></div>
+    <div class="form-group"><label>Tồn kho hiện tại</label><input type="number" id="stockCurrent" readonly style="background:var(--bg)"></div>
+    <div class="form-group"><label>Tồn kho mới</label><input type="number" id="stockNew" min="0"></div>
+    <button class="btn btn-p" style="width:100%;padding:.75rem;margin-top:.5rem" onclick="saveStock()">💾 Cập nhật</button>
+  </div>
+</div>
+
+<!-- Modal: order detail -->
+<div class="overlay" id="orderModal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-hdr"><span class="modal-title" id="orderModalTitle">Chi tiết đơn hàng</span><button class="btn-x" onclick="closeModal('orderModal')">✕</button></div>
+    <div id="orderModalBody"></div>
+  </div>
+</div>
+
+<!-- Modal: cancel order with reason -->
+<div class="overlay" id="cancelModal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">🚫 Hủy đơn hàng</span><button class="btn-x" onclick="closeModal('cancelModal')">✕</button></div>
+    <input type="hidden" id="cancelOrderId">
+    <div style="font-size:.88rem;color:var(--tm);margin-bottom:1rem">Đơn hàng <strong id="cancelOrderLabel"></strong> sẽ bị hủy. Hành động này không thể hoàn tác.</div>
+    <div class="form-group"><label>Lý do hủy đơn</label>
+      <select id="cancelReason" onchange="toggleCustomReason()">
+        <option value="Khách hàng yêu cầu hủy">Khách hàng yêu cầu hủy</option>
+        <option value="Hết hàng">Hết hàng</option>
+        <option value="Thông tin giao hàng sai">Thông tin giao hàng sai</option>
+        <option value="Thanh toán không hợp lệ">Thanh toán không hợp lệ</option>
+        <option value="other">Lý do khác...</option>
+      </select>
+    </div>
+    <div class="form-group" id="customReasonGroup" style="display:none"><label>Nhập lý do</label><input type="text" id="customReason" placeholder="Nhập lý do cụ thể..."></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn btn-danger" style="flex:1;padding:.75rem" onclick="confirmCancelOrder()">🚫 Xác nhận hủy</button>
+      <button class="btn btn-ghost" style="flex:1;padding:.75rem" onclick="closeModal('cancelModal')">Quay lại</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let staffUser = null;
+const API = '/api';
+
+// ── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  try { staffUser = JSON.parse(localStorage.getItem('cb_user')||'null'); } catch(e){}
+  if (!staffUser || !['staff','admin','manager'].includes(staffUser.role)) {
+    window.location.href = '/login/'; return;
+  }
+  document.getElementById('navName').textContent = staffUser.username;
+  document.getElementById('navRole').textContent = (staffUser.role||'staff').toUpperCase();
+  loadProfile();
+});
+
+// ── Helpers ───────────────────────────────────────────────
+function toast(msg, type='') {
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show'+(type?' '+type:'');
+  setTimeout(()=>el.className='toast',3200);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function authH() {
+  const h={'Content-Type':'application/json'};
+  if(staffUser?.access_token) h['Authorization']='Bearer '+staffUser.access_token;
+  return h;
+}
+async function api(path, opts={}) {
+  opts.headers={...authH(),...(opts.headers||{})};
+  return fetch(API+path, opts);
+}
+function fmt(n) { return Number(n).toLocaleString('vi-VN')+'₫'; }
+function fmtDate(d) { return d ? new Date(d).toLocaleString('vi-VN') : '—'; }
+function statusBadge(s, map) {
+  const m = map || {pending:'s-pending Chờ xử lý',paid:'s-paid Đã thanh toán',shipped:'s-shipped Đang giao',canceled:'s-canceled Đã hủy',delivered:'s-delivered Đã giao',processing:'s-processing Đang xử lý',success:'s-success Thành công',failed:'s-failed Thất bại',refunded:'s-refunded Đã hoàn',cancelled:'s-cancelled Đã hủy',scheduled:'s-scheduled Lên lịch',started:'s-started Đang làm',ended:'s-ended Kết thúc'};
+  const p=(m[s]||'s-pending '+s).split(' ');
+  return `<span class="badge ${p[0]}">${p.slice(1).join(' ')}</span>`;
+}
+function doLogout() {
+  localStorage.removeItem('cb_user');
+  window.location.href='/login/';
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if(name==='shifts') loadShifts();
+  if(name==='orders') loadOrders();
+  if(name==='shipments') loadShipments();
+  if(name==='books') loadBooks();
+  if(name==='payments') loadAllPayments();
+  if(name==='logs') loadLogs();
+}
+
+// ── PROFILE ───────────────────────────────────────────────
+async function loadProfile() {
+  if (!staffUser?.service_user_id) { document.getElementById('profileInfo').innerHTML='<div class="empty">Không tìm thấy thông tin</div>'; return; }
+  try {
+    const r = await api('/staff/'+staffUser.service_user_id+'/');
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+    document.getElementById('profileInfo').innerHTML=`
+      <div style="display:flex;gap:1rem;align-items:center">
+        <div style="width:52px;height:52px;background:var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.3rem;font-weight:800">${(d.username||'S')[0].toUpperCase()}</div>
+        <div>
+          <div style="font-weight:800;font-size:1.05rem">${d.username}</div>
+          <div style="color:var(--tm);font-size:.85rem">${d.email||'—'}</div>
+          <div style="margin-top:.3rem;display:flex;gap:.4rem">
+            <span class="badge" style="background:var(--pll);color:var(--pd)">${(d.role||'staff').toUpperCase()}</span>
+            ${d.department?`<span class="badge" style="background:#F1F5F9;color:var(--tm)">${d.department}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+    document.getElementById('pEmail').value = d.email||'';
+    document.getElementById('pDept').value  = d.department||'';
+    document.getElementById('pFirst').value = d.first_name||'';
+    document.getElementById('pLast').value  = d.last_name||'';
+  } catch(e) { document.getElementById('profileInfo').innerHTML='<div class="empty">Lỗi tải hồ sơ</div>'; }
+}
+
+async function updateProfile() {
+  const body={email:document.getElementById('pEmail').value,department:document.getElementById('pDept').value,first_name:document.getElementById('pFirst').value,last_name:document.getElementById('pLast').value};
+  const pass=document.getElementById('pPass').value;
+  if(pass) body.password=pass;
+  const msg=document.getElementById('profileMsg');
+  msg.textContent='Đang lưu...';
+  try {
+    const r=await api('/staff/'+staffUser.service_user_id+'/update_profile/',{method:'PATCH',body:JSON.stringify(body)});
+    if(r.ok) { msg.textContent='✅ Đã cập nhật'; toast('Cập nhật thành công','ok'); document.getElementById('pPass').value=''; }
+    else { msg.textContent='❌ Không thể cập nhật hồ sơ'; }
+  } catch(e) { msg.textContent='❌ Lỗi kết nối'; }
+}
+
+// ── SHIFTS ────────────────────────────────────────────────
+async function loadShifts() {
+  const el=document.getElementById('shiftsPane');
+  el.innerHTML='<div class="loading"><div class="spin"></div></div>';
+  try {
+    const r=await api('/staff/shifts/?requester_id='+staffUser.service_user_id);
+    if(!r.ok) throw new Error();
+    const d=await r.json();
+    const shifts=d.shifts||[];
+    if(!shifts.length) { el.innerHTML='<div class="empty">Chưa có ca làm việc nào</div>'; return; }
+    el.innerHTML=shifts.map(s=>`
+      <div class="shift-card">
+        <div class="shift-hdr">
+          <div>
+            <div style="font-weight:700;font-size:.9rem">Ca #${s.id}</div>
+            <div style="font-size:.8rem;color:var(--tm)">🕐 ${fmtDate(s.start_time)} ${s.end_time?'→ '+fmtDate(s.end_time):''}</div>
+            ${s.notes?`<div style="font-size:.8rem;color:var(--tm);margin-top:.2rem">📝 ${s.notes}</div>`:''}
+          </div>
+          <div style="display:flex;gap:.4rem;align-items:center">
+            ${statusBadge(s.status)}
+            ${s.status==='scheduled'?`<button class="btn btn-success btn-sm" onclick="startShift(${s.id})">▶ Bắt đầu</button>`:''}
+            ${s.status==='started'?`<button class="btn btn-warn btn-sm" onclick="endShift(${s.id})">⏹ Kết thúc</button>`:''}
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải ca làm việc</div>'; }
+}
+
+async function startShift(shiftId) {
+  try {
+    const r=await api('/staff/start_shift/',{method:'POST',body:JSON.stringify({staff_id:staffUser.service_user_id,shift_id:shiftId})});
+    if(r.ok) { toast('Đã bắt đầu ca làm việc','ok'); loadShifts(); }
+    else { toast('❌ Không thể bắt đầu ca làm việc','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+async function endShift(shiftId) {
+  try {
+    const r=await api('/staff/end_shift/',{method:'POST',body:JSON.stringify({staff_id:staffUser.service_user_id,shift_id:shiftId})});
+    if(r.ok) { toast('Đã kết thúc ca làm việc','ok'); loadShifts(); }
+    else { toast('❌ Không thể kết thúc ca làm việc','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+// ── ORDERS ────────────────────────────────────────────────
+async function loadOrders() {
+  const el=document.getElementById('ordersPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  const filter=document.getElementById('orderFilter').value;
+  try {
+    const r=await api('/orders/'+(filter?'?status='+filter:''));
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    const orders=Array.isArray(data)?data:(data.results||data.orders||[]);
+    if(!orders.length) { el.innerHTML='<div class="empty">Không có đơn hàng nào</div>'; return; }
+    el.innerHTML=`<table>
+      <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+      <tbody>${orders.map(o=>`
+        <tr>
+          <td><strong>#${o.id}</strong></td>
+          <td>KH #${o.customer_id}</td>
+          <td style="font-weight:700;color:var(--pd)">${fmt(o.total_amount)}</td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="color:var(--tm);font-size:.8rem">${fmtDate(o.created_at)}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="viewOrder(${o.id})">Chi tiết</button>
+            ${o.status==='pending'?`<button class="btn btn-danger btn-sm" style="margin-left:.3rem" onclick="cancelOrder(${o.id})">Hủy</button>`:''}
+          </td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải đơn hàng</div>'; }
+}
+
+async function viewOrder(orderId) {
+  openModal('orderModal');
+  document.getElementById('orderModalTitle').textContent='Chi tiết đơn hàng #'+orderId;
+  document.getElementById('orderModalBody').innerHTML='<div class="loading"><div class="spin"></div></div>';
+  try {
+    const [oR,sR,pR]=await Promise.all([
+      api('/orders/'+orderId+'/order_details/'),
+      api('/shipments/track_by_order/?order_id='+orderId),
+      api('/payments/by_order/?order_id='+orderId)
+    ]);
+    const od=await oR.json(); const order=od.order||od;
+    const ship=sR.ok?await sR.json():null;
+    const pay=pR.ok?await pR.json():null;
+    document.getElementById('orderModalBody').innerHTML=`
+      <div style="display:flex;justify-content:space-between;margin-bottom:.85rem">
+        <div>${statusBadge(order.status)}</div>
+        <div style="font-weight:800;color:var(--pd);font-size:1.05rem">${fmt(order.total_amount)}</div>
+      </div>
+      <div style="font-size:.85rem;color:var(--tm);margin-bottom:.85rem;line-height:1.8">
+        👤 Khách hàng #${order.customer_id}<br>
+        📅 ${fmtDate(order.created_at)}<br>
+        📍 ${order.shipping_address||'—'}
+      </div>
+      <div style="font-weight:700;margin-bottom:.5rem">Sản phẩm</div>
+      ${(order.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--b);font-size:.85rem"><span>📚 Sách #${i.book_id} × ${i.quantity}</span><span style="font-weight:700;color:var(--pd)">${fmt(i.price)}</span></div>`).join('')}
+      ${pay?`<div style="margin-top:.85rem;padding:.75rem;background:var(--bg);border-radius:var(--rs);border:1px solid var(--b);font-size:.85rem">
+        <div style="font-weight:700;margin-bottom:.35rem">💳 Thanh toán</div>
+        <div style="color:var(--tm)">Phương thức: ${pay.payment_method||'—'} · Trạng thái: ${statusBadge(pay.status)} · ${fmt(pay.amount)}</div>
+      </div>`:''}
+      ${ship?`<div style="margin-top:.75rem;padding:.75rem;background:var(--bg);border-radius:var(--rs);border:1px solid var(--b);font-size:.85rem">
+        <div style="font-weight:700;margin-bottom:.35rem">🚚 Vận chuyển</div>
+        <div style="color:var(--tm)">Tracking: <strong>${ship.tracking_number||'—'}</strong> · ${statusBadge(ship.status)}</div>
+        <div style="margin-top:.5rem;display:flex;gap:.4rem;flex-wrap:wrap">
+          ${ship.status==='processing'?`<button class="btn btn-p btn-sm" onclick="shipOrder(${ship.id})">📦 Giao hàng</button>`:''}
+          ${ship.status==='shipped'?`<button class="btn btn-success btn-sm" onclick="deliverOrder(${ship.id})">✅ Đã giao</button>`:''}
+        </div>
+      </div>`:''}`;
+  } catch(e) { document.getElementById('orderModalBody').innerHTML='<div class="empty">Lỗi tải chi tiết</div>'; }
+}
+
+async function cancelOrder(orderId) {
+  if(!confirm('Hủy đơn hàng #'+orderId+'?')) return;
+  try {
+    const r=await api('/orders/'+orderId+'/cancel_order/',{method:'POST',body:'{}'});
+    if(r.ok) { toast('Đã hủy đơn hàng','ok'); loadOrders(); }
+    else { toast('❌ Không thể hủy đơn hàng','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+// ── SHIPMENTS ─────────────────────────────────────────────
+async function loadShipments() {
+  const el=document.getElementById('shipmentsPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    const r=await api('/shipments/');
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    const ships=Array.isArray(data)?data:(data.results||data.shipments||[]);
+    if(!ships.length) { el.innerHTML='<div class="empty">Không có vận đơn nào</div>'; return; }
+    el.innerHTML=`<table>
+      <thead><tr><th>Mã vận đơn</th><th>Đơn hàng</th><th>Tracking</th><th>Địa chỉ</th><th>Trạng thái</th><th>Dự kiến</th><th>Thao tác</th></tr></thead>
+      <tbody>${ships.map(s=>`
+        <tr>
+          <td><strong>#${s.id}</strong></td>
+          <td>#${s.order_id}</td>
+          <td style="font-family:monospace;font-size:.78rem">${s.tracking_number||'—'}</td>
+          <td style="font-size:.8rem;color:var(--tm);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.shipping_address||'—'}</td>
+          <td>${statusBadge(s.status)}</td>
+          <td style="font-size:.8rem;color:var(--tm)">${s.estimated_delivery||'—'}</td>
+          <td style="display:flex;gap:.3rem;flex-wrap:wrap">
+            ${s.status==='processing'?`<button class="btn btn-p btn-sm" onclick="shipOrder(${s.id})">📦 Giao</button>`:''}
+            ${s.status==='shipped'?`<button class="btn btn-success btn-sm" onclick="deliverOrder(${s.id})">✅ Giao xong</button>`:''}
+          </td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải vận chuyển</div>'; }
+}
+
+async function shipOrder(shipmentId) {
+  try {
+    const r=await api('/shipments/ship_order/',{method:'POST',body:JSON.stringify({shipment_id:shipmentId})});
+    if(r.ok) { toast('Đã cập nhật: Đang giao hàng','ok'); loadShipments(); closeModal('orderModal'); }
+    else { toast('❌ Không thể giao hàng','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+async function deliverOrder(shipmentId) {
+  try {
+    const r=await api('/shipments/deliver_order/',{method:'POST',body:JSON.stringify({shipment_id:shipmentId})});
+    if(r.ok) { toast('Đã cập nhật: Đã giao hàng','ok'); loadShipments(); closeModal('orderModal'); }
+    else { toast('❌ Không thể giao hàng','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+// ── BOOKS ─────────────────────────────────────────────────
+async function loadBooks() {
+  const el=document.getElementById('booksPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    const r=await fetch('/api/books/?page_size=100');
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    const books=Array.isArray(data)?data:(data.results||[]);
+    if(!books.length) { el.innerHTML='<div class="empty">Không có sách nào</div>'; return; }
+    el.innerHTML=`<table>
+      <thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Thể loại</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
+      <tbody>${books.map(b=>`
+        <tr>
+          <td style="color:var(--tm)">#${b.id}</td>
+          <td style="font-weight:600">${b.title}</td>
+          <td style="color:var(--tm)">${b.author||'—'}</td>
+          <td><span class="badge" style="background:var(--pll);color:var(--pd)">${b.category||'—'}</span></td>
+          <td style="font-weight:700;color:var(--pd)">${fmt(b.price)}</td>
+          <td>
+            <span style="font-weight:700;color:${b.stock<5?'#DC2626':b.stock<10?'#D97706':'#059669'}">${b.stock}</span>
+            ${b.stock<10?`<span style="font-size:.72rem;color:#D97706;margin-left:.3rem">⚠️ Thấp</span>`:''}
+          </td>
+          <td><button class="btn btn-p btn-sm" onclick="openStockModal(${b.id},'${b.title.replace(/'/g,"\\'")}',${b.stock})">✏️ Sửa kho</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải sách</div>'; }
+}
+
+function openStockModal(id, title, stock) {
+  document.getElementById('stockBookId').value=id;
+  document.getElementById('stockBookTitle').value=title;
+  document.getElementById('stockCurrent').value=stock;
+  document.getElementById('stockNew').value=stock;
+  openModal('stockModal');
+}
+
+async function saveStock() {
+  const id=document.getElementById('stockBookId').value;
+  const newStock=parseInt(document.getElementById('stockNew').value);
+  if(isNaN(newStock)||newStock<0) { toast('Số lượng không hợp lệ','err'); return; }
+  try {
+    const r=await api('/books/'+id+'/update_stock/',{method:'PATCH',body:JSON.stringify({stock:newStock})});
+    if(r.ok) { toast('Đã cập nhật tồn kho','ok'); closeModal('stockModal'); loadBooks(); }
+    else { toast('❌ Không thể cập nhật tồn kho','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+// ── PAYMENTS ──────────────────────────────────────────────
+async function loadAllPayments() {
+  const el=document.getElementById('paymentsPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    const r=await api('/payments/');
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    const pays=Array.isArray(data)?data:(data.results||[]);
+    renderPayments(pays, el);
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải thanh toán</div>'; }
+}
+
+async function lookupPayment() {
+  const orderId=document.getElementById('payOrderId').value.trim();
+  if(!orderId) return;
+  const el=document.getElementById('paymentsPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    const r=await api('/payments/by_order/?order_id='+orderId);
+    if(!r.ok) { el.innerHTML='<div class="empty">Không tìm thấy thanh toán cho đơn #'+orderId+'</div>'; return; }
+    const pay=await r.json();
+    renderPayments([pay], el);
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tra cứu</div>'; }
+}
+
+function renderPayments(pays, el) {
+  if(!pays.length) { el.innerHTML='<div class="empty">Không có dữ liệu thanh toán</div>'; return; }
+  const statusMap={pending:'s-pending Chờ xử lý',success:'s-success Thành công',failed:'s-failed Thất bại',refunded:'s-refunded Đã hoàn tiền'};
+  el.innerHTML=`<table>
+    <thead><tr><th>ID</th><th>Đơn hàng</th><th>Số tiền</th><th>Phương thức</th><th>Trạng thái</th><th>Ngày</th></tr></thead>
+    <tbody>${pays.map(p=>`
+      <tr>
+        <td style="color:var(--tm)">#${p.id}</td>
+        <td>#${p.order_id}</td>
+        <td style="font-weight:700;color:var(--pd)">${fmt(p.amount)}</td>
+        <td>${p.payment_method||'—'}</td>
+        <td>${statusBadge(p.status,statusMap)}</td>
+        <td style="font-size:.8rem;color:var(--tm)">${fmtDate(p.created_at)}</td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── LOGS ──────────────────────────────────────────────────
+async function loadLogs() {
+  const el=document.getElementById('logsPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    const r=await api('/staff/activity_logs/?requester_id='+staffUser.service_user_id+'&actor_id='+staffUser.service_user_id+'&limit=50');
+    if(!r.ok) throw new Error();
+    const d=await r.json();
+    const logs=d.logs||[];
+    if(!logs.length) { el.innerHTML='<div class="empty">Chưa có hoạt động nào</div>'; return; }
+    el.innerHTML=`<table>
+      <thead><tr><th>Thời gian</th><th>Hành động</th><th>Loại</th><th>ID tài nguyên</th><th>Ghi chú</th></tr></thead>
+      <tbody>${logs.map(l=>`
+        <tr>
+          <td style="font-size:.8rem;color:var(--tm)">${fmtDate(l.created_at)}</td>
+          <td><span class="badge" style="background:var(--pll);color:var(--pd)">${l.action}</span></td>
+          <td style="color:var(--tm)">${l.resource_type||'—'}</td>
+          <td style="color:var(--tm)">${l.resource_id||'—'}</td>
+          <td style="font-size:.8rem;color:var(--tm)">${l.message||'—'}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải nhật ký</div>'; }
+}
+</script>
+</body>
+</html>
+
+<script>
+// ── OVERRIDE: Orders with search, cancel with reason ──────
+let allOrdersData = [];
+
+async function loadOrders() {
+  const el=document.getElementById('ordersPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  const filter=document.getElementById('orderFilter').value;
+  try {
+    const r=await api('/orders/'+(filter?'?status='+filter:''));
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    allOrdersData=Array.isArray(data)?data:(data.results||data.orders||[]);
+    renderOrdersTable(allOrdersData);
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải đơn hàng</div>'; }
+}
+
+function searchOrderById() {
+  const id=document.getElementById('orderSearchId').value.trim();
+  if(!id) { loadOrders(); return; }
+  const found=allOrdersData.filter(o=>String(o.id)===id);
+  if(found.length) { renderOrdersTable(found); return; }
+  // Fetch directly
+  api('/orders/'+id+'/order_details/').then(r=>r.ok?r.json():null).then(d=>{
+    if(d) renderOrdersTable([d.order||d]);
+    else document.getElementById('ordersPane').innerHTML='<div class="empty">Không tìm thấy đơn #'+id+'</div>';
+  }).catch(()=>{ document.getElementById('ordersPane').innerHTML='<div class="empty">Lỗi tìm kiếm</div>'; });
+}
+
+function renderOrdersTable(orders) {
+  const el=document.getElementById('ordersPane');
+  if(!orders.length) { el.innerHTML='<div class="empty">Không có đơn hàng nào</div>'; return; }
+  el.innerHTML=`<table>
+    <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead>
+    <tbody>${orders.map(o=>`
+      <tr>
+        <td><strong>#${o.id}</strong></td>
+        <td>KH #${o.customer_id}</td>
+        <td style="font-weight:700;color:var(--pd)">${fmt(o.total_amount)}</td>
+        <td>${statusBadge(o.status)}</td>
+        <td style="color:var(--tm);font-size:.8rem">${fmtDate(o.created_at)}</td>
+        <td style="display:flex;gap:.3rem">
+          <button class="btn btn-ghost btn-sm" onclick="viewOrder(${o.id})">Chi tiết</button>
+          ${['pending','paid'].includes(o.status)?`<button class="btn btn-danger btn-sm" onclick="openCancelModal(${o.id})">Hủy</button>`:''}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function viewOrder(orderId) {
+  openModal('orderModal');
+  document.getElementById('orderModalTitle').textContent='Chi tiết đơn hàng #'+orderId;
+  document.getElementById('orderModalBody').innerHTML='<div class="loading"><div class="spin"></div></div>';
+  try {
+    const [oR,pR]=await Promise.all([
+      api('/orders/'+orderId+'/order_details/'),
+      api('/payments/by_order/?order_id='+orderId)
+    ]);
+    const od=await oR.json(); const order=od.order||od;
+    const pay=pR.ok?await pR.json():null;
+    document.getElementById('orderModalBody').innerHTML=`
+      <div style="display:flex;justify-content:space-between;margin-bottom:.85rem">
+        <div>${statusBadge(order.status)}</div>
+        <div style="font-weight:800;color:var(--pd);font-size:1.05rem">${fmt(order.total_amount)}</div>
+      </div>
+      <div style="font-size:.85rem;color:var(--tm);margin-bottom:.85rem;line-height:1.8">
+        👤 Khách hàng #${order.customer_id} · 📅 ${fmtDate(order.created_at)}<br>
+        📍 ${order.shipping_address||'—'}
+      </div>
+      <div style="font-weight:700;margin-bottom:.5rem">Sản phẩm</div>
+      ${(order.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--b);font-size:.85rem"><span>📚 Sách #${i.book_id} × ${i.quantity}</span><span style="font-weight:700;color:var(--pd)">${fmt(i.price)}</span></div>`).join('')}
+      ${pay?`<div style="margin-top:.85rem;padding:.75rem;background:var(--bg);border-radius:var(--rs);border:1px solid var(--b);font-size:.85rem">
+        <div style="font-weight:700;margin-bottom:.35rem">💳 Thanh toán</div>
+        <div style="color:var(--tm)">Phương thức: <strong>${pay.payment_method||'—'}</strong> · ${statusBadge(pay.status)} · <strong>${fmt(pay.amount)}</strong></div>
+      </div>`:''}
+      ${['pending','paid'].includes(order.status)?`<div style="margin-top:1rem"><button class="btn btn-danger btn-sm" onclick="closeModal('orderModal');openCancelModal(${order.id})">🚫 Hủy đơn hàng này</button></div>`:''}`;
+  } catch(e) { document.getElementById('orderModalBody').innerHTML='<div class="empty">Lỗi tải chi tiết</div>'; }
+}
+
+function openCancelModal(orderId) {
+  document.getElementById('cancelOrderId').value=orderId;
+  document.getElementById('cancelOrderLabel').textContent='#'+orderId;
+  document.getElementById('cancelReason').value='Khách hàng yêu cầu hủy';
+  document.getElementById('customReasonGroup').style.display='none';
+  openModal('cancelModal');
+}
+function toggleCustomReason() {
+  document.getElementById('customReasonGroup').style.display=document.getElementById('cancelReason').value==='other'?'':'none';
+}
+async function confirmCancelOrder() {
+  const orderId=document.getElementById('cancelOrderId').value;
+  const sel=document.getElementById('cancelReason').value;
+  const reason=sel==='other'?document.getElementById('customReason').value.trim():sel;
+  if(!reason) { toast('Nhập lý do hủy đơn','err'); return; }
+  try {
+    const r=await api('/orders/'+orderId+'/cancel_order/',{method:'POST',body:JSON.stringify({reason})});
+    if(r.ok) { toast('Đã hủy đơn #'+orderId+' — '+reason,'ok'); closeModal('cancelModal'); loadOrders(); }
+    else { toast('❌ Không thể hủy đơn hàng','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+async function cancelOrder(orderId) { openCancelModal(orderId); }
+
+// ── OVERRIDE: Shipments with order search ─────────────────
+let allShipmentsData = [];
+
+async function loadShipments() {
+  const el=document.getElementById('shipmentsPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    const r=await api('/shipments/');
+    if(!r.ok) throw new Error();
+    const data=await r.json();
+    allShipmentsData=Array.isArray(data)?data:(data.results||data.shipments||[]);
+    renderShipmentsTable(allShipmentsData);
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải vận chuyển</div>'; }
+}
+
+function searchShipmentByOrder() {
+  const orderId=document.getElementById('shipSearchOrderId').value.trim();
+  if(!orderId) { renderShipmentsTable(allShipmentsData); return; }
+  const found=allShipmentsData.filter(s=>String(s.order_id)===orderId);
+  if(found.length) { renderShipmentsTable(found); return; }
+  api('/shipments/track_by_order/?order_id='+orderId).then(r=>r.ok?r.json():null).then(d=>{
+    if(d) renderShipmentsTable([d]);
+    else document.getElementById('shipmentsPane').innerHTML='<div class="empty">Không tìm thấy vận đơn cho đơn #'+orderId+'</div>';
+  }).catch(()=>{ document.getElementById('shipmentsPane').innerHTML='<div class="empty">Lỗi tìm kiếm</div>'; });
+}
+
+function renderShipmentsTable(ships) {
+  const el=document.getElementById('shipmentsPane');
+  if(!ships.length) { el.innerHTML='<div class="empty">Không có vận đơn nào</div>'; return; }
+  el.innerHTML=`<table>
+    <thead><tr><th>Mã VĐ</th><th>Đơn hàng</th><th>Tracking</th><th>Địa chỉ</th><th>Trạng thái</th><th>Dự kiến</th><th>Thao tác</th></tr></thead>
+    <tbody>${ships.map(s=>`
+      <tr>
+        <td><strong>#${s.id}</strong></td>
+        <td>#${s.order_id}</td>
+        <td style="font-family:monospace;font-size:.78rem">${s.tracking_number||'—'}</td>
+        <td style="font-size:.8rem;color:var(--tm);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.shipping_address||'—'}</td>
+        <td>${statusBadge(s.status)}</td>
+        <td style="font-size:.8rem;color:var(--tm)">${s.estimated_delivery||'—'}</td>
+        <td style="display:flex;gap:.3rem">
+          ${s.status==='processing'?`<button class="btn btn-p btn-sm" onclick="doShipOrder(${s.id})">📦 Giao hàng</button>`:''}
+          ${s.status==='shipped'?`<button class="btn btn-success btn-sm" onclick="doDeliverOrder(${s.id})">✅ Đã giao</button>`:''}
+          ${['processing','shipped'].includes(s.status)?'':'<span style="font-size:.78rem;color:var(--tm)">—</span>'}
+        </td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+async function doShipOrder(shipmentId) {
+  try {
+    const r=await api('/shipments/ship_order/',{method:'POST',body:JSON.stringify({shipment_id:shipmentId})});
+    if(r.ok) { toast('✅ Đã cập nhật: Đang giao hàng','ok'); loadShipments(); }
+    else { toast('❌ Giao hàng thất bại','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+async function doDeliverOrder(shipmentId) {
+  try {
+    const r=await api('/shipments/deliver_order/',{method:'POST',body:JSON.stringify({shipment_id:shipmentId})});
+    if(r.ok) { toast('✅ Đã cập nhật: Đã giao hàng','ok'); loadShipments(); }
+    else { toast('❌ Xác nhận đã giao thất bại','err'); }
+  } catch(e) { toast('Lỗi kết nối','err'); }
+}
+
+// ── OVERRIDE: Books with search filter ────────────────────
+let allBooksData = [];
+
+async function fetchAllBooks() {
+  const books = [];
+  let page = 1;
+  while (true) {
+    const r = await fetch('/api/books/?page=' + page);
+    if (!r.ok) throw new Error('failed to load books page ' + page);
+    const data = await r.json();
+    if (Array.isArray(data)) return data;
+
+    books.push(...(data.results || []));
+    if (!data.next) break;
+
+    const m = String(data.next).match(/[?&]page=(\d+)/);
+    if (!m) break;
+    const nextPage = parseInt(m[1], 10);
+    if (!Number.isFinite(nextPage) || nextPage === page) break;
+    page = nextPage;
+  }
+  return books;
+}
+
+async function loadBooks() {
+  const el=document.getElementById('booksPane');
+  el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
+  try {
+    allBooksData = await fetchAllBooks();
+    renderBooksTable(allBooksData);
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải sách</div>'; }
+}
+
+function filterBooks() {
+  const q=(document.getElementById('bookSearch').value||'').toLowerCase();
+  const filtered=q?allBooksData.filter(b=>(b.title||'').toLowerCase().includes(q)||(b.author||'').toLowerCase().includes(q)):allBooksData;
+  renderBooksTable(filtered);
+}
+
+function renderBooksTable(books) {
+  const el=document.getElementById('booksPane');
+  if(!books.length) { el.innerHTML='<div class="empty">Không có sách nào</div>'; return; }
+  el.innerHTML=`<table>
+    <thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Thể loại</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
+    <tbody>${books.map(b=>`
+      <tr>
+        <td style="color:var(--tm)">#${b.id}</td>
+        <td style="font-weight:600">${b.title}</td>
+        <td style="color:var(--tm)">${b.author||'—'}</td>
+        <td><span class="badge" style="background:var(--pll);color:var(--pd)">${b.category||'—'}</span></td>
+        <td style="font-weight:700;color:var(--pd)">${fmt(b.price)}</td>
+        <td><span style="font-weight:700;color:${b.stock<5?'#DC2626':b.stock<10?'#D97706':'#059669'}">${b.stock}</span>${b.stock<10?` <span style="font-size:.7rem;color:#D97706">⚠️</span>`:''}</td>
+        <td><button class="btn btn-p btn-sm" onclick="openStockModal(${b.id},'${b.title.replace(/'/g,"\\'")}',${b.stock})">✏️ Sửa kho</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+</script>
