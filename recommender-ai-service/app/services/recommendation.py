@@ -26,6 +26,26 @@ logger = logging.getLogger(__name__)
 WEIGHTS = {"view": 1, "search": 2, "cart": 4, "purchase": 8, "rate": 3}
 
 
+def _book_category_key(book: dict) -> str | None:
+    category_detail = book.get("category_detail")
+    if isinstance(category_detail, dict):
+        slug = category_detail.get("slug")
+        if slug:
+            return str(slug)
+        name = category_detail.get("name")
+        if name:
+            return str(name)
+
+    category = book.get("category")
+    if category is None:
+        return None
+    return str(category)
+
+
+def _book_title(book: dict) -> str:
+    return str(book.get("title") or book.get("name") or "")
+
+
 def _get_purchased_ids(customer_id: int) -> set[int]:
     orders = order_client.get_orders_by_customer(customer_id)
     ids: set[int] = set()
@@ -103,8 +123,9 @@ def get_personalized(
         book = catalog_client.get_product_by_id(bid)
         if not book:
             continue
-        if book.get("category"):
-            cat_affinity[book["category"]] += score
+        category_key = _book_category_key(book)
+        if category_key:
+            cat_affinity[category_key] += score
         if book.get("author"):
             author_affinity[book["author"]] += score
 
@@ -134,6 +155,8 @@ def get_personalized(
         if not bid or bid in purchased or book.get("stock", 0) <= 0:
             continue
 
+        book_category = _book_category_key(book)
+
         # Filter: exclude books customer rated poorly (< 3⭐)
         if bid in customer_ratings:
             cust_rating = customer_ratings[bid]
@@ -146,7 +169,7 @@ def get_personalized(
             continue
         if budget_max is not None and price > budget_max:
             continue
-        if category and book.get("category") != category:
+        if category and book_category != category:
             continue
 
         score   = 0.0
@@ -166,10 +189,10 @@ def get_personalized(
                 reasons.append(f"bạn đã đánh giá cao ⭐{cust_rating} trước đây")
 
         # Category match
-        if book.get("category") in top_cats:
+        if book_category in top_cats:
             score += 2.0
-            reasons.append(f"thể loại {book['category']} bạn yêu thích")
-        elif book.get("category") in profile_pref_cats:
+            reasons.append(f"thể loại {book_category} bạn yêu thích")
+        elif book_category in profile_pref_cats:
             score += 1.2
             reasons.append(f"phù hợp hồ sơ sở thích thể loại của bạn")
 
@@ -192,9 +215,9 @@ def get_personalized(
         if score > 0 or not reasons:
             candidates.append({
                 "product_id": bid,
-                "title":      book.get("title", ""),
+                "title":      _book_title(book),
                 "author":     book.get("author", ""),
-                "category":   book.get("category", ""),
+                "category":   book_category or "",
                 "price":      price,
                 "score":      round(score, 3),
                 "reason":     ", ".join(reasons) if reasons else "phổ biến trong cộng đồng",
@@ -228,7 +251,7 @@ def get_similar(
     product_ids = [b["id"] for b in all_books if b.get("id")]
     ratings = _rating_map(product_ids)
 
-    target_cat    = target.get("category", "")
+    target_cat    = _book_category_key(target) or ""
     target_author = target.get("author", "")
     target_price  = float(target.get("price", 0))
 
@@ -237,6 +260,8 @@ def get_similar(
         bid = book.get("id")
         if not bid or bid == product_id or book.get("stock", 0) <= 0:
             continue
+
+        book_category = _book_category_key(book)
 
         # Filter: exclude books customer rated poorly (< 3⭐)
         if bid in customer_ratings:
@@ -247,7 +272,7 @@ def get_similar(
         score   = 0.0
         reasons = []
 
-        if book.get("category") == target_cat:
+        if book_category == target_cat:
             score += 3.0
             reasons.append(f"cùng thể loại {target_cat}")
         if book.get("author") == target_author and target_author:
@@ -275,9 +300,9 @@ def get_similar(
             rm = ratings.get(bid, {})
             candidates.append({
                 "product_id": bid,
-                "title":      book.get("title", ""),
+                "title":      _book_title(book),
                 "author":     book.get("author", ""),
-                "category":   book.get("category", ""),
+                "category":   book_category or "",
                 "price":      price,
                 "score":      round(score, 3),
                 "reason":     ", ".join(reasons) if reasons else "sản phẩm tương tự",
@@ -299,14 +324,15 @@ def get_popular(limit: int = 10) -> list[dict[str, Any]]:
         bid = book.get("id")
         if not bid or book.get("stock", 0) <= 0:
             continue
+        book_category = _book_category_key(book)
         rm    = ratings.get(bid, {})
         score = _popularity_score(bid, ratings)
         if score > 0 or rm.get("count", 0) > 0:
             result.append({
                 "product_id": bid,
-                "title":      book.get("title", ""),
+                "title":      _book_title(book),
                 "author":     book.get("author", ""),
-                "category":   book.get("category", ""),
+                "category":   book_category or "",
                 "price":      float(book.get("price", 0)),
                 "score":      round(score, 3),
                 "reason":     f"phổ biến ({rm.get('count', 0)} đánh giá)",

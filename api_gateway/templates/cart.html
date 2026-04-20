@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>bookstore - Giỏ hàng</title>
+<title>ShopSphere - Giỏ hàng</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--p:#C2182B;--pd:#8E1120;--pl:#EF9A9A;--pll:#FFEBEE;--bg:#FFF5F5;--s:#fff;--t:#2C0D10;--tm:#7F3D43;--b:#F3CDD1;--r:14px;--rs:10px;--sh:0 10px 30px rgba(194,24,43,.15)}
@@ -26,12 +26,12 @@ main{max-width:920px;margin:1.2rem auto;padding:0 1rem}
 </head>
 <body>
 <nav>
-  <a href="/" class="logo">bookstore</a>
+  <a href="/" class="logo">ShopSphere</a>
 </nav>
 <main>
   <section class="banner">
     <h1>Giỏ hàng của bạn</h1>
-    <p>Thông tin sản phẩm đã chọn tại bookstore</p>
+    <p>Thông tin sản phẩm đã chọn tại ShopSphere</p>
   </section>
 
   <section class="panel">
@@ -39,7 +39,7 @@ main{max-width:920px;margin:1.2rem auto;padding:0 1rem}
       {% for item in items %}
       <div class="row">
         <div>
-          <div style="font-weight:700">Sách #{{ item.book_id }}</div>
+          <div style="font-weight:700">SP #{{ item.book_id }}</div>
           <div class="id">Sản phẩm trong giỏ hàng</div>
         </div>
         <div class="qty">SL: {{ item.quantity }}</div>
@@ -53,3 +53,4 @@ main{max-width:920px;margin:1.2rem auto;padding:0 1rem}
 </main>
 </body>
 </html>
+

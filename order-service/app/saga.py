@@ -16,6 +16,7 @@ CART_SVC   = 'http://cart-service:8000'
 PAY_SVC    = 'http://pay-service:8000'
 SHIP_SVC   = 'http://ship-service:8000'
 BOOK_SVC   = 'http://book-service:8000'
+PRODUCT_SVC = 'http://product-service:8000'
 
 _TIMEOUT = 15
 
@@ -109,12 +110,12 @@ class OrderSaga:
         """Decrement stock for each book ordered."""
         for item in self.items:
             try:
-                book_resp = requests.get(f'{BOOK_SVC}/api/books/{item["book_id"]}/', timeout=5)
+                book_resp = requests.get(f'{PRODUCT_SVC}/api/books/{item["book_id"]}/', timeout=5)
                 if book_resp.status_code == 200:
                     current_stock = book_resp.json().get('stock', 0)
                     new_stock = max(0, current_stock - item['quantity'])
                     requests.patch(
-                        f'{BOOK_SVC}/api/books/{item["book_id"]}/update_stock/',
+                        f'{PRODUCT_SVC}/api/books/{item["book_id"]}/update_stock/',
                         json={'stock': new_stock}, timeout=5,
                     )
             except Exception:

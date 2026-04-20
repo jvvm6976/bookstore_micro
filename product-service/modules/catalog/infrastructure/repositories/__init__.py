@@ -1,0 +1,1 @@
+from .product_repository_impl import DjangoProductRepository

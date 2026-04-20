@@ -14,7 +14,7 @@ from .schemas import (
     TrackRequest,
 )
 from ..orchestrator import orchestrator
-from ..services.recommendation   import recommendation_service as rec_svc
+from ..application.hybrid_recommender import hybrid_recommendation_service as rec_svc
 from ..services.behavior_analysis import behavior_service
 from ..services.kb_ingestion     import kb_service
 from ..services.rag_retrieval    import rag_service

@@ -94,6 +94,96 @@ DEFAULT_KB = [
         ),
         'keywords': ['cloudbooks', 'giới thiệu', 'about', 'nhà sách', 'bookstore'],
     },
+    {
+        'category': 'faq',
+        'title': 'Tôi có thể mua sách như thế nào nếu chưa đăng nhập?',
+        'content': 'Bạn có thể xem sản phẩm và thêm vào giỏ hàng, nhưng để đặt hàng và theo dõi đơn thì cần đăng nhập tài khoản.',
+        'keywords': ['chưa đăng nhập', 'guest', 'mua sách', 'dat hang', 'dang nhap'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi muốn tìm sách theo thể loại thì làm sao?',
+        'content': 'Hãy nhập tên thể loại như lập trình, khoa học, lịch sử, tiểu thuyết hoặc toán học; hệ thống sẽ trả về các cuốn sách phù hợp nhất.',
+        'keywords': ['the loai', 'tìm sách theo thể loại', 'tim sach', 'category', 'genre'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Sách nào phù hợp cho người mới học lập trình?',
+        'content': 'Người mới học lập trình thường bắt đầu với Clean Code, Python Crash Course hoặc The Pragmatic Programmer để nắm tư duy nền tảng và thực hành tốt hơn.',
+        'keywords': ['người mới', 'lap trinh', 'python', 'clean code', 'pragmatic programmer'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi muốn mua sách dưới 300k có được gợi ý không?',
+        'content': 'Có. Bạn chỉ cần nói rõ ngân sách, ví dụ dưới 300k hoặc 200000đ, hệ thống sẽ lọc các sách phù hợp với mức giá đó.',
+        'keywords': ['dưới 300k', 'duoi 300k', 'ngân sách', 'budget', 'gia'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Làm sao biết sách còn hàng hay không?',
+        'content': 'Trạng thái tồn kho hiển thị ngay trên trang sản phẩm. Nếu bạn hỏi chatbot, hệ thống cũng có thể trả lời theo dữ liệu tồn kho hiện tại.',
+        'keywords': ['còn hàng', 'con hang', 'tồn kho', 'stock', 'het hang'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi có thể đổi địa chỉ giao hàng sau khi đặt không?',
+        'content': 'Nếu đơn chưa chuyển sang trạng thái giao hàng, bạn có thể liên hệ hỗ trợ để cập nhật địa chỉ. Khi đơn đã xuất kho thì việc đổi địa chỉ sẽ khó hơn.',
+        'keywords': ['đổi địa chỉ', 'doi dia chi', 'giao hang', 'shipping address', 'sua dia chi'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Có thể hủy đơn hàng sau khi đặt không?',
+        'content': 'Đơn hàng có thể hủy nếu chưa thanh toán hoặc chưa được xử lý giao hàng. Hãy cung cấp mã đơn để được kiểm tra trạng thái.',
+        'keywords': ['hủy đơn', 'huy don', 'cancel', 'order', 'ma don'],
+    },
+    {
+        'category': 'policy',
+        'title': 'Khi nào tôi nhận được hóa đơn?',
+        'content': 'Hóa đơn điện tử sẽ được gửi sau khi đơn hàng được xác nhận thanh toán thành công. Nếu chưa nhận được, hãy kiểm tra email hoặc mục hóa đơn trong tài khoản.',
+        'keywords': ['hóa đơn', 'hoa don', 'invoice', 'bill', 'thanh toán thành công'],
+    },
+    {
+        'category': 'policy',
+        'title': 'Có chương trình khuyến mãi nào cho khách hàng thân thiết không?',
+        'content': 'Khách hàng thân thiết được tích điểm theo giá trị đơn hàng và có thể đổi điểm lấy ưu đãi, giảm giá hoặc quà tặng theo từng chiến dịch.',
+        'keywords': ['khuyến mãi', 'khuyen mai', 'thân thiết', 'than thiet', 'tich diem', 'danh cho khach hang'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi cần hỗ trợ về tài khoản bị khóa thì làm gì?',
+        'content': 'Hãy liên hệ hỗ trợ khách hàng, cung cấp email hoặc username để kiểm tra trạng thái tài khoản và mở khóa nếu xác thực thành công.',
+        'keywords': ['tài khoản bị khóa', 'bi khoa', 'account locked', 'support', 'mo khoa'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Làm sao để xem lịch sử mua hàng của tôi?',
+        'content': 'Đăng nhập vào tài khoản và mở mục đơn hàng hoặc lịch sử mua hàng. Tại đó bạn sẽ thấy các đơn gần đây, trạng thái và chi tiết từng sản phẩm.',
+        'keywords': ['lịch sử mua hàng', 'lich su mua hang', 'order history', 'don hang'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi muốn tìm sách giống với cuốn tôi đã thích thì sao?',
+        'content': 'Bạn có thể nhập tên cuốn sách đã thích, hoặc hỏi kiểu “gợi ý sách tương tự”. Hệ thống sẽ ưu tiên các sách cùng thể loại, tác giả hoặc chủ đề.',
+        'keywords': ['sách giống', 'sach tuong tu', 'similar', 'goi y', 'same genre'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Phí ship được tính như thế nào?',
+        'content': 'Phí ship phụ thuộc khu vực giao hàng và giá trị đơn. Đơn đủ điều kiện có thể được miễn phí vận chuyển; các đơn khác sẽ hiển thị phí ngay trước khi thanh toán.',
+        'keywords': ['phí ship', 'phi ship', 'vận chuyển', 'mien phi ship', 'shipping fee'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi nên chọn phương thức thanh toán nào?',
+        'content': 'Bạn có thể chọn thẻ, chuyển khoản, COD hoặc ví điện tử tùy nhu cầu. Nếu muốn nhanh, ví điện tử và thẻ thường xử lý tức thì hơn COD.',
+        'keywords': ['phương thức thanh toán', 'thanh toan nao', 'cod', 'momo', 'vnpay', 'the'],
+    },
+    {
+        'category': 'faq',
+        'title': 'Tôi muốn hỏi về sản phẩm điện tử thì có được không?',
+        'content': 'Có. Hệ thống ecommerce hiện hỗ trợ nhiều loại sản phẩm như sách, laptop, mobile, tablet, tai nghe, màn hình, chuột, loa, máy in, router và phụ kiện khác.',
+        'keywords': ['điện tử', 'dien tu', 'laptop', 'mobile', 'tablet', 'phu kien'],
+    },
 ]
 
 

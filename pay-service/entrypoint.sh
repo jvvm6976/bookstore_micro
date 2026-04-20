@@ -26,5 +26,8 @@ if [ $migrate_ok -ne 1 ]; then
     exit 1
 fi
 
+echo "Seeding payment fixtures..."
+python manage.py seed_payment_fixtures
+
 echo "Starting pay-service..."
 python manage.py runserver 0.0.0.0:8000

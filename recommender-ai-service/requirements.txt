@@ -12,6 +12,7 @@ psycopg2-binary==2.9.9
 # HTTP clients
 requests==2.31.0
 urllib3==2.2.1
+neo4j==5.22.0
 
 # Deep Learning
 numpy==1.26.4

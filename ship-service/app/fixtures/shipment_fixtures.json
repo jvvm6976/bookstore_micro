@@ -1,0 +1,14 @@
+{
+  "shipments": [
+    {"id": 1, "order_id": 1, "status": "processing", "shipping_address": "123 Nguyen Hue, Q1, TP HCM", "tracking_number": "TRK-ORD-0001", "shipping_method": "standard", "estimated_delivery": "2026-04-18"},
+    {"id": 2, "order_id": 2, "status": "shipped", "shipping_address": "45 Hoan Kiem, Ha Noi", "tracking_number": "TRK-ORD-0002", "shipping_method": "express", "estimated_delivery": "2026-04-17"},
+    {"id": 3, "order_id": 3, "status": "pending", "shipping_address": "78 Bach Dang, Da Nang", "tracking_number": "TRK-ORD-0003", "shipping_method": "standard", "estimated_delivery": "2026-04-20"},
+    {"id": 4, "order_id": 4, "status": "processing", "shipping_address": "12 Ninh Kieu, Can Tho", "tracking_number": "TRK-ORD-0004", "shipping_method": "standard", "estimated_delivery": "2026-04-19"},
+    {"id": 5, "order_id": 5, "status": "cancelled", "shipping_address": "56 Le Loi, Hue", "tracking_number": "TRK-ORD-0005", "shipping_method": "standard", "estimated_delivery": "2026-04-21"},
+    {"id": 6, "order_id": 6, "status": "delivered", "shipping_address": "90 Dong Khoi, Bien Hoa", "tracking_number": "TRK-ORD-0006", "shipping_method": "express", "estimated_delivery": "2026-04-16"},
+    {"id": 7, "order_id": 7, "status": "shipped", "shipping_address": "34 Tran Phu, Vung Tau", "tracking_number": "TRK-ORD-0007", "shipping_method": "standard", "estimated_delivery": "2026-04-17"},
+    {"id": 8, "order_id": 8, "status": "pending", "shipping_address": "67 NTMK, Nha Trang", "tracking_number": "TRK-ORD-0008", "shipping_method": "standard", "estimated_delivery": "2026-04-22"},
+    {"id": 9, "order_id": 9, "status": "processing", "shipping_address": "11 PBC, Quy Nhon", "tracking_number": "TRK-ORD-0009", "shipping_method": "express", "estimated_delivery": "2026-04-18"},
+    {"id": 10, "order_id": 10, "status": "delivered", "shipping_address": "22 THD, Hai Phong", "tracking_number": "TRK-ORD-0010", "shipping_method": "standard", "estimated_delivery": "2026-04-16"}
+  ]
+}

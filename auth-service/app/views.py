@@ -107,8 +107,13 @@ def register(request):
 
 @api_view(['POST'])
 def login(request):
-    username = request.data.get('username', '').strip()
-    password = request.data.get('password', '')
+    try:
+        data = request.data if request.data else {}
+    except:
+        data = {}
+    
+    username = data.get('username', '').strip() if isinstance(data.get('username'), str) else ''
+    password = data.get('password', '') if isinstance(data.get('password'), str) else ''
 
     if not username or not password:
         return _err('username and password are required')

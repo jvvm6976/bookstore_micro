@@ -17,10 +17,11 @@ from typing import Any
 from .services.intent_detector  import detect as detect_intent
 from .services.entity_extractor import extract as extract_entities
 from .services.rag_retrieval    import retrieve as rag_retrieve, build_context_string
-from .services.recommendation   import recommendation_service as rec_svc
+from .application.hybrid_recommender import hybrid_recommendation_service as rec_svc
 from .services.behavior_analysis import behavior_service
 from .services.order_support    import order_support_service
 from .services.response_composer import compose
+from .clients.order_client import order_client
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,37 @@ def _get_interactions(customer_id: int) -> dict[str, dict[int, int]]:
         return {}
 
 
+def _sync_purchase_interactions(customer_id: int) -> None:
+    """
+    Backfill purchase signals from order history into interaction storage.
+    Keeps recommendation/chat personalization aligned with real purchases.
+    """
+    if not customer_id:
+        return
+    try:
+        from django.apps import apps
+        CustomerBookInteraction = apps.get_model("app", "CustomerBookInteraction")
+        orders = order_client.get_orders_by_customer(customer_id)
+        purchase_counts: dict[int, int] = {}
+        for order in orders:
+            for item in (order.get("items") or []):
+                pid = item.get("book_id") or item.get("product_id") or item.get("id")
+                if not pid:
+                    continue
+                qty = int(item.get("quantity", 1) or 1)
+                purchase_counts[int(pid)] = purchase_counts.get(int(pid), 0) + max(qty, 1)
+
+        for product_id, count in purchase_counts.items():
+            CustomerBookInteraction.objects.update_or_create(
+                customer_id=customer_id,
+                book_id=product_id,
+                interaction_type="purchase",
+                defaults={"count": count},
+            )
+    except Exception as exc:
+        logger.debug("Could not sync purchase interactions for C%s: %s", customer_id, exc)
+
+
 def _get_customer_ratings(customer_id: int) -> dict[int, int]:
     """Extract customer's own rating history: {book_id: rating_value}."""
     try:
@@ -220,6 +252,9 @@ class ChatOrchestrator:
         """
         if not session_id:
             session_id = str(uuid.uuid4())
+
+        if customer_id:
+            _sync_purchase_interactions(customer_id)
 
         _save_message(session_id, "user", message)
 
@@ -653,6 +688,7 @@ class ChatOrchestrator:
             "meta": {
                 "entities":    entities,
                 "customer_id": customer_id,
+                "behavior_profile": (behavior_service.analyze(customer_id, {k: sum(v.values()) for k, v in _get_interactions(customer_id).items()}) if customer_id else None),
             },
         }
 

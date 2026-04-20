@@ -46,5 +46,89 @@
     "title": "Chương trình khách hàng thân thiết MoonBooks",
     "content": "MoonBooks có chương trình tích điểm: mỗi 10.000đ mua hàng = 1 điểm. 100 điểm = giảm 10.000đ cho đơn tiếp theo. Hạng thành viên: Bạc (0-499đ), Vàng (500-1999đ), Kim cương (2000đ+). Thành viên Kim cương được ưu tiên giao hàng và hỗ trợ 24/7.",
     "keywords": ["tích điểm", "tich diem", "loyalty", "thành viên", "thanh vien", "member", "ưu đãi", "uu dai", "discount", "khuyến mãi", "khuyen mai"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi có thể mua hàng khi chưa có tài khoản không?",
+    "content": "Bạn có thể xem sản phẩm mà không cần đăng nhập, nhưng để thêm vào giỏ, đặt hàng và theo dõi trạng thái đơn thì nên tạo tài khoản. Tài khoản giúp lưu lịch sử mua và nhận gợi ý chính xác hơn.",
+    "keywords": ["chưa có tài khoản", "mua hàng không cần đăng nhập", "guest checkout", "dang ky", "đặt hàng", "dat hang"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi muốn tìm sách dưới 300k thì làm thế nào?",
+    "content": "Hãy nhập ngân sách của bạn, ví dụ 'gợi ý sách dưới 300k' hoặc 'sách học lập trình khoảng 200 nghìn'. Hệ thống sẽ lọc theo khoảng giá và ưu tiên sản phẩm phù hợp.",
+    "keywords": ["dưới 300k", "duoi 300k", "ngân sách", "budget", "khoảng giá", "gia"]
+  },
+  {
+    "category": "faq",
+    "title": "Cuốn sách nào phù hợp cho người mới học lập trình?",
+    "content": "Với người mới học lập trình, các tựa như Clean Code, Python Crash Course, The Pragmatic Programmer hoặc Design Patterns là những lựa chọn phổ biến. Bạn có thể hỏi cụ thể theo ngôn ngữ hoặc mục tiêu học.",
+    "keywords": ["người mới học", "lập trình", "lap trinh", "python", "clean code", "pragmatic programmer"]
+  },
+  {
+    "category": "faq",
+    "title": "Làm sao biết sản phẩm còn hàng?",
+    "content": "Trang sản phẩm sẽ hiển thị trạng thái tồn kho. Nếu sản phẩm hết hàng, nút mua sẽ bị vô hiệu hoặc được đánh dấu hết hàng. Bạn cũng có thể hỏi chatbot để kiểm tra nhanh.",
+    "keywords": ["còn hàng", "con hang", "hết hàng", "het hang", "tồn kho", "stock"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi muốn xem lại lịch sử mua hàng thì ở đâu?",
+    "content": "Đăng nhập tài khoản và vào mục đơn hàng hoặc lịch sử mua hàng. Tại đây bạn có thể xem đơn gần đây, trạng thái giao hàng và các sản phẩm đã mua.",
+    "keywords": ["lịch sử mua hàng", "lich su mua hang", "đơn hàng của tôi", "order history"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi có thể đổi địa chỉ giao hàng sau khi đặt không?",
+    "content": "Nếu đơn chưa chuyển sang trạng thái giao hàng, bạn có thể liên hệ hỗ trợ để cập nhật địa chỉ. Khi đơn đã xuất kho thì việc thay đổi sẽ phụ thuộc trạng thái xử lý thực tế.",
+    "keywords": ["đổi địa chỉ", "doi dia chi", "shipping address", "địa chỉ giao hàng", "address"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi muốn hủy đơn hàng vừa đặt thì làm sao?",
+    "content": "Nếu đơn còn ở trạng thái chờ xử lý hoặc chưa thanh toán, bạn có thể yêu cầu hủy đơn. Hãy cung cấp mã đơn để bộ phận hỗ trợ kiểm tra nhanh trạng thái.",
+    "keywords": ["hủy đơn", "huy don", "cancel order", "mã đơn", "ma don"]
+  },
+  {
+    "category": "policy",
+    "title": "Phí vận chuyển được tính như thế nào?",
+    "content": "Phí vận chuyển phụ thuộc khu vực giao hàng, trọng lượng đơn và giá trị đơn hàng. Một số đơn đạt mức tối thiểu sẽ được miễn phí ship hoặc giảm phí ship.",
+    "keywords": ["phí vận chuyển", "phi van chuyen", "phí ship", "shipping fee", "free ship"]
+  },
+  {
+    "category": "policy",
+    "title": "Tôi có thể thanh toán bằng những cách nào?",
+    "content": "MoonBooks hỗ trợ thẻ tín dụng/ghi nợ, chuyển khoản ngân hàng, ví điện tử và COD. Tùy từng đơn hàng, một số phương thức có thể được bật hoặc tắt theo khu vực.",
+    "keywords": ["thanh toán", "payment", "momo", "vnpay", "cod", "chuyển khoản"]
+  },
+  {
+    "category": "policy",
+    "title": "Bao lâu tôi nhận được hàng?",
+    "content": "Thời gian giao hàng thông thường từ 1 đến 5 ngày làm việc tùy địa chỉ nhận hàng. Đơn nội thành có thể được giao nhanh hơn nếu chọn dịch vụ ưu tiên.",
+    "keywords": ["bao lâu", "thời gian giao hàng", "giao hàng", "delivery time", "shipping"]
+  },
+  {
+    "category": "faq",
+    "title": "Có thể hỏi chatbot để so sánh hai sản phẩm không?",
+    "content": "Có. Bạn có thể gửi tên hai sản phẩm và hỏi so sánh theo giá, cấu hình, đánh giá hoặc tính năng. Hệ thống sẽ cố gắng tóm tắt điểm khác nhau một cách rõ ràng.",
+    "keywords": ["so sánh", "compare", "hai sản phẩm", "so sanh gia", "tính năng"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi có thể tìm sản phẩm theo thương hiệu không?",
+    "content": "Có. Hãy nhập tên thương hiệu như Apple, Samsung, Sony, Logitech, Canon hoặc TP-Link, hệ thống sẽ lọc ra các sản phẩm liên quan.",
+    "keywords": ["thương hiệu", "thuong hieu", "brand", "lọc theo brand", "theo hãng"]
+  },
+  {
+    "category": "faq",
+    "title": "Tôi muốn tìm sản phẩm công nghệ thay vì sách thì sao?",
+    "content": "Hệ thống ecommerce hiện hỗ trợ nhiều nhóm sản phẩm như sách, laptop, mobile, tablet, tai nghe, màn hình, chuột, loa, máy in, router và phụ kiện văn phòng.",
+    "keywords": ["sản phẩm công nghệ", "san pham cong nghe", "laptop", "mobile", "tablet", "phụ kiện"]
+  },
+  {
+    "category": "faq",
+    "title": "Nếu sản phẩm tôi cần không có trong kho thì sao?",
+    "content": "Bạn có thể để lại yêu cầu hoặc theo dõi lại sau. Hệ thống có thể gợi ý sản phẩm tương tự dựa trên danh mục, thương hiệu và ngân sách của bạn.",
+    "keywords": ["không có trong kho", "khong co trong kho", "gợi ý tương tự", "similar products"]
   }
 ]

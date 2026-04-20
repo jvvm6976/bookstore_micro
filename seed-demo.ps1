@@ -3,6 +3,7 @@ param(
     [string]$Book = "http://localhost:8002/api",
     [string]$Cart = "http://localhost:8003/api",
     [string]$Cmt  = "http://localhost:8008/api",
+  [string]$AI   = "http://localhost:8011/api/v1",
     [string]$Staff= "http://localhost:8007/api",
     [string]$Cust = "http://localhost:8001/api",
     [int]$WaitSeconds = 60
@@ -271,7 +272,7 @@ $staffAccounts = @(
 )
 foreach ($sa in $staffAccounts) {
     try {
-        $sr = Invoke-Api -Method POST -Base $Staff -Path "staff/" -Body $sa
+    Invoke-Api -Method POST -Base $Staff -Path "staff/" -Body $sa | Out-Null
         Write-Host "  Created: $($sa.username) ($($sa.role))" -ForegroundColor Green
     } catch { Write-Host "  Exists: $($sa.username)" -ForegroundColor Yellow }
 }
@@ -298,6 +299,16 @@ try {
         Write-Host "  Bob added book to cart" -ForegroundColor Green
     }
 } catch { Write-Host "  Bob exists or failed" -ForegroundColor Yellow }
+
+# ── AI knowledge base ──────────────────────────────────────
+Write-Host "`n[8] Seeding AI knowledge base..." -ForegroundColor Cyan
+try {
+  Invoke-Api -Method POST -Base $AI -Path "kb/seed/" | Out-Null
+  $kb = Invoke-Api -Method POST -Base $AI -Path "kb/reindex/"
+  Write-Host "  KB reindexed: $($kb.count) entries" -ForegroundColor Green
+} catch {
+  Write-Host "  AI KB seed/reindex failed: $_" -ForegroundColor Yellow
+}
 
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "Seed completed!" -ForegroundColor Green

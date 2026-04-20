@@ -10,6 +10,7 @@ from .events import publish_order_created, publish_order_paid, publish_order_can
 
 logger = logging.getLogger(__name__)
 CART_SVC = 'http://cart-service:8000'
+PRODUCT_SVC = 'http://product-service:8000'
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -22,6 +23,8 @@ class OrderViewSet(viewsets.ModelViewSet):
         customer_id     = request.data.get('customer_id')
         cart_id         = request.data.get('cart_id')
         shipping_address = request.data.get('shipping_address', '')
+        shipping_phone  = request.data.get('shipping_phone', '')
+        shipping_address_id = request.data.get('shipping_address_id')
         payment_method  = request.data.get('payment_method', 'credit_card')
 
         if not customer_id or not cart_id:
@@ -40,12 +43,28 @@ class OrderViewSet(viewsets.ModelViewSet):
         if not items:
             return Response({'error': 'Cart is empty'}, status=400)
 
+        # Check stock again at checkout boundary.
+        for item in items:
+            book_id = item.get('book_id')
+            quantity = int(item.get('quantity', 0) or 0)
+            try:
+                book_resp = requests.get(f'{PRODUCT_SVC}/api/books/{book_id}/', timeout=8)
+                if book_resp.status_code != 200:
+                    return Response({'error': f'Book {book_id} not found'}, status=404)
+                stock = int(book_resp.json().get('stock', 0) or 0)
+                if stock < quantity:
+                    return Response({'error': f'Not enough stock for book {book_id}'}, status=400)
+            except requests.RequestException as e:
+                return Response({'error': f'Product service unavailable: {e}'}, status=503)
+
         # 2. Create order (PENDING)
         total = sum(float(i.get('price_at_add', 0)) * i.get('quantity', 1) for i in items)
         order = Order.objects.create(
             customer_id=customer_id,
             total_amount=total,
             shipping_address=shipping_address,
+            shipping_phone=shipping_phone,
+            shipping_address_id=shipping_address_id,
             status=OrderStatus.PENDING,
         )
         for i in items:

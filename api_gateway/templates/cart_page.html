@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>bookstore – Giỏ hàng</title>
+<title>ShopSphere – Giỏ hàng</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -70,7 +70,7 @@ main{flex:1;padding:1.5rem 2rem;max-width:1100px;margin:0 auto;width:100%}
 </head>
 <body>
 <nav>
-  <a href="/" class="logo">📕 book<em>store</em></a>
+  <a href="/" class="logo">🛍️ Shop<em>Sphere</em></a>
   <div class="nav-right" id="navRight"></div>
 </nav>
 <main>
@@ -95,28 +95,8 @@ main{flex:1;padding:1.5rem 2rem;max-width:1100px;margin:0 auto;width:100%}
       <div class="summary-row"><span>Phí vận chuyển</span><span style="color:#059669;font-weight:600">Miễn phí</span></div>
       <div class="summary-total"><span>Tổng cộng</span><span id="sumTotal">0₫</span></div>
       <div style="margin-top:1.25rem">
-        <div class="form-group" id="savedAddrWrap" style="display:none">
-          <label>Địa chỉ đã lưu</label>
-          <select id="savedAddr" title="Địa chỉ đã lưu" aria-label="Địa chỉ đã lưu" onchange="onSavedAddressChange()"></select>
-        </div>
-        <div class="form-group" id="manualAddrGroup">
-          <label>Địa chỉ giao hàng</label>
-          <textarea id="shipAddr" rows="2" placeholder="Nhập địa chỉ giao hàng đầy đủ..."></textarea>
-        </div>
-        <div class="form-group">
-          <label>Phương thức thanh toán</label>
-          <select id="payMethod" title="Phương thức thanh toán" aria-label="Phương thức thanh toán">
-            <option value="credit_card">💳 Thẻ tín dụng / Ghi nợ</option>
-            <option value="cod">💵 Thanh toán khi nhận hàng (COD)</option>
-            <option value="bank_transfer">🏦 Chuyển khoản ngân hàng</option>
-          </select>
-        </div>
-        <button class="btn-checkout" id="checkoutBtn" onclick="checkout()">✅ Đặt hàng ngay</button>
+        <button class="btn-checkout" id="checkoutBtn" onclick="goCheckout()">➡️ Mua hàng</button>
         <div id="checkoutMsg" style="font-size:.82rem;color:var(--tm);margin-top:.5rem;text-align:center"></div>
-        <div id="sagaBox" style="display:none" class="saga-box">
-          <div class="saga-title">⚙️ Đang xử lý đơn hàng...</div>
-          <div id="sagaSteps"></div>
-        </div>
       </div>
     </div>
   </div>
@@ -124,16 +104,14 @@ main{flex:1;padding:1.5rem 2rem;max-width:1100px;margin:0 auto;width:100%}
 <div class="toast" id="toast"></div>
 <script>
 let user = null, cartData = null;
-let savedAddresses = [];
 const API = '/api';
-const EMOJI = {programming:'💻',science:'🔬',history:'📜',fiction:'📖',math:'📐'};
+const EMOJI = {book:'🛍️',laptop:'💻',mobile:'📱',tablet:'📟',headphone:'🎧',monitor:'🖥️',keyboard:'⌨️',smartwatch:'⌚',camera:'📷',console:'🎮'};
 
 document.addEventListener('DOMContentLoaded', () => {
   try { user = JSON.parse(localStorage.getItem('cb_user')||'null'); } catch(e){}
   if (!user) { window.location.href = '/customer-login/?next=/cart/'; return; }
   updateNav();
   document.addEventListener('click',e=>{if(!e.target.closest('.profile-wrap'))closeDropdown();});
-  loadSavedAddresses();
   loadCart();
 });
 
@@ -173,69 +151,6 @@ function updateNav(){
 }
 function doLogout() { localStorage.removeItem('cb_user'); window.location.href='/customer-login/'; }
 
-function fmtAddr(a) {
-  const street = (a?.street || '').trim();
-  const city = (a?.city || '').trim();
-  const country = (a?.country || '').trim();
-  return [street, city, country].filter(Boolean).join(', ');
-}
-
-async function loadSavedAddresses() {
-  const selectWrap = document.getElementById('savedAddrWrap');
-  const select = document.getElementById('savedAddr');
-  const manualGroup = document.getElementById('manualAddrGroup');
-  const manualInput = document.getElementById('shipAddr');
-
-  if (!selectWrap || !select || !manualGroup || !manualInput) return;
-
-  savedAddresses = [];
-  try {
-    const r = await fetch(`${API}/addresses/`, { headers: authH() });
-    if (r.ok) {
-      const data = await r.json();
-      const list = Array.isArray(data) ? data : (data.results || []);
-      savedAddresses = list.filter(a => fmtAddr(a));
-    }
-  } catch (e) {}
-
-  if (!savedAddresses.length) {
-    selectWrap.style.display = 'none';
-    manualGroup.style.display = '';
-    manualInput.value = '';
-    manualInput.placeholder = 'Nhập địa chỉ giao hàng đầy đủ...';
-    return;
-  }
-
-  selectWrap.style.display = '';
-  manualGroup.style.display = 'none';
-  select.innerHTML = savedAddresses.map((a, idx) => {
-    const text = fmtAddr(a);
-    return `<option value="${idx}">${text}</option>`;
-  }).join('') + '<option value="__manual__">+ Nhập địa chỉ khác...</option>';
-  select.value = '0';
-  onSavedAddressChange();
-}
-
-function onSavedAddressChange() {
-  const select = document.getElementById('savedAddr');
-  const manualGroup = document.getElementById('manualAddrGroup');
-  const manualInput = document.getElementById('shipAddr');
-  if (!select || !manualGroup || !manualInput) return;
-
-  if (select.value === '__manual__') {
-    manualGroup.style.display = '';
-    manualInput.value = '';
-    manualInput.placeholder = 'Nhập địa chỉ giao hàng đầy đủ...';
-    return;
-  }
-
-  manualGroup.style.display = 'none';
-  const idx = Number(select.value);
-  if (Number.isInteger(idx) && savedAddresses[idx]) {
-    manualInput.value = fmtAddr(savedAddresses[idx]);
-  }
-}
-
 async function loadCart() {
   if (!user?.service_user_id) return;
   let cartId = user.cart_id;
@@ -246,7 +161,7 @@ async function loadCart() {
     } catch(e){}
   }
   if (!cartId) {
-    document.getElementById('cartItemsPane').innerHTML='<div class="empty-cart"><div class="empty-icon">🛒</div><div style="font-weight:600;margin-bottom:.5rem">Giỏ hàng trống</div><a href="/" class="btn btn-p btn-sm" style="display:inline-block;margin-top:.5rem">Khám phá sách ngay</a></div>';
+    document.getElementById('cartItemsPane').innerHTML='<div class="empty-cart"><div class="empty-icon">🛒</div><div style="font-weight:600;margin-bottom:.5rem">Giỏ hàng trống</div><a href="/" class="btn btn-p btn-sm" style="display:inline-block;margin-top:.5rem">Khám phá sản phẩm ngay</a></div>';
     document.getElementById('itemCount').textContent='0 sản phẩm';
     updateSummary([]);
     return;
@@ -268,17 +183,17 @@ function renderCart() {
   document.getElementById('itemCount').textContent = count+' sản phẩm';
   document.getElementById('itemCountBadge').textContent = count+' sản phẩm';
   if (!items.length) {
-    pane.innerHTML='<div class="empty-cart"><div class="empty-icon">🛒</div><div style="font-weight:600;font-size:1rem;margin-bottom:.5rem">Giỏ hàng trống</div><p style="font-size:.88rem;margin-bottom:1rem">Hãy thêm sách vào giỏ để tiếp tục</p><a href="/" class="btn btn-p btn-sm" style="display:inline-block">Khám phá sách ngay</a></div>';
+    pane.innerHTML='<div class="empty-cart"><div class="empty-icon">🛒</div><div style="font-weight:600;font-size:1rem;margin-bottom:.5rem">Giỏ hàng trống</div><p style="font-size:.88rem;margin-bottom:1rem">Hãy thêm sản phẩm vào giỏ để tiếp tục</p><a href="/" class="btn btn-p btn-sm" style="display:inline-block">Khám phá sản phẩm ngay</a></div>';
     updateSummary([]);
     return;
   }
   pane.innerHTML = items.map(item=>`
     <div class="cart-item" id="ci-${item.id}">
-      <div class="ci-cover" id="cover-${item.book_id}"><span>${EMOJI['fiction']||'📚'}</span></div>
+      <div class="ci-cover" id="cover-${item.book_id}"><span>${EMOJI['book']||'📦'}</span></div>
       <div class="ci-info">
         <div class="ci-title" id="title-${item.book_id}">Đang tải...</div>
         <div class="ci-author" id="author-${item.book_id}"></div>
-        <div class="ci-unit">${fmt(item.price_at_add)} / cuốn</div>
+        <div class="ci-unit">${fmt(item.price_at_add)} / sản phẩm</div>
       </div>
       <div class="ci-right">
         <div class="ci-subtotal">${fmt(parseFloat(item.price_at_add)*item.quantity)}</div>
@@ -302,12 +217,13 @@ async function fetchBookInfo(bookId) {
     const titleEl = document.getElementById('title-'+bookId);
     const authorEl = document.getElementById('author-'+bookId);
     const coverEl = document.getElementById('cover-'+bookId);
-    if (titleEl) titleEl.textContent = b.title||'Sách #'+bookId;
+    const typeSlug = (b.type_detail?.slug || b.product_type_slug || '').toLowerCase();
+    if (titleEl) titleEl.textContent = b.title||b.name||('Sản phẩm #'+bookId);
     if (authorEl) authorEl.textContent = b.author||'';
     if (coverEl && b.cover_image_url) {
-      coverEl.innerHTML = `<img src="${b.cover_image_url}" alt="${b.title}" onerror="this.parentElement.innerHTML='<span>${EMOJI[b.category]||'📚'}</span>'">`;
+      coverEl.innerHTML = `<img src="${b.cover_image_url}" alt="${b.title||b.name||'sản phẩm'}" onerror="this.parentElement.innerHTML='<span>${EMOJI[typeSlug]||'📦'}</span>'">`;
     } else if (coverEl) {
-      coverEl.innerHTML = `<span>${EMOJI[b.category]||'📚'}</span>`;
+      coverEl.innerHTML = `<span>${EMOJI[typeSlug]||'📦'}</span>`;
     }
   } catch(e){}
 }
@@ -349,47 +265,35 @@ async function updateQty(bookId, newQty) {
   } catch(e) { toast('Lỗi kết nối','err'); }
 }
 
-async function checkout() {
+async function goCheckout() {
   const items = cartData?.items||[];
   if (!items.length) { toast('Giỏ hàng trống','err'); return; }
-  const select = document.getElementById('savedAddr');
-  const manual = document.getElementById('shipAddr').value.trim();
-  let addr = manual;
 
-  if (savedAddresses.length && select && select.value !== '__manual__') {
-    const idx = Number(select.value);
-    addr = Number.isInteger(idx) && savedAddresses[idx] ? fmtAddr(savedAddresses[idx]) : '';
+  for (const item of items) {
+    try {
+      const r = await fetch(`${API}/books/${item.book_id}/`, { headers: authH() });
+      if (!r.ok) {
+        toast(`Khong tim thay san pham #${item.book_id}`,'err');
+        return;
+      }
+      const b = await r.json();
+      const stock = Number(b.stock || 0);
+      if (stock < Number(item.quantity || 0)) {
+        toast(`San pham ${b.title || b.name || item.book_id} khong du ton kho`,'err');
+        return;
+      }
+    } catch (e) {
+      toast('Khong kiem tra duoc ton kho, vui long thu lai','err');
+      return;
+    }
   }
 
-  if (!addr) { toast('Vui lòng nhập địa chỉ giao hàng','err'); return; }
-  const payMethod = document.getElementById('payMethod').value;
-  const cartId = user.cart_id||cartData?.id;
   const btn = document.getElementById('checkoutBtn');
   const msgEl = document.getElementById('checkoutMsg');
-  const sagaBox = document.getElementById('sagaBox');
-  const sagaSteps = document.getElementById('sagaSteps');
-  btn.disabled=true; btn.textContent='⏳ Đang xử lý...';
-  msgEl.textContent=''; sagaBox.style.display='block';
-  sagaSteps.innerHTML='<div class="saga-step"><span class="step-wait">⏳</span> Đang khởi tạo đơn hàng...</div>';
-  try {
-    const r = await fetch(`${API}/orders/checkout/`,{method:'POST',headers:authH(),body:JSON.stringify({customer_id:user.service_user_id,cart_id:cartId,shipping_address:addr,payment_method:payMethod})});
-    const d = await r.json();
-    if (r.ok && d.success) {
-      const steps = d.saga_steps||[];
-      sagaSteps.innerHTML = steps.map(s=>`<div class="saga-step"><span class="${s.status==='ok'?'step-ok':'step-fail'}">${s.status==='ok'?'✓':'✗'}</span> ${stepLabel(s.step)}</div>`).join('');
-      items.forEach(i => trackBehavior(i.book_id, 'purchase'));
-      toast('Đặt hàng thành công! 🎉','ok');
-      msgEl.innerHTML=`<span style="color:#059669;font-weight:600">✅ Đơn hàng #${d.order?.id} đã được tạo!</span>`;
-      cartData=null;
-      setTimeout(()=>window.location.href='/',2500);
-    } else {
-      sagaSteps.innerHTML=`<div class="saga-step"><span class="step-fail">✗</span> Đặt hàng thất bại</div>`;
-      toast('Đặt hàng thất bại','err');
-    }
-  } catch(e) {
-    sagaSteps.innerHTML='<div class="saga-step"><span class="step-fail">✗</span> Lỗi kết nối</div>';
-    toast('Lỗi kết nối','err');
-  } finally { btn.disabled=false; btn.textContent='✅ Đặt hàng ngay'; }
+  btn.disabled=true;
+  btn.textContent='⏳ Dang chuyen...';
+  msgEl.textContent='Dang chuyen sang man hinh checkout';
+  window.location.href = '/checkout/';
 }
 
 function stepLabel(step) {
@@ -398,3 +302,4 @@ function stepLabel(step) {
 </script>
 </body>
 </html>
+

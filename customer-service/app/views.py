@@ -5,15 +5,59 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
+from rest_framework.exceptions import PermissionDenied, NotAuthenticated
 from .models import Customer, Address, Job
-from .serializers import CustomerSerializer, AddressSerializer, JobSerializer
+from .serializers import CustomerSerializer, AddressSerializer, JobSerializer, ChangePasswordSerializer
+
+
+def _requester_service_user_id(request):
+    requester_id = (
+        request.headers.get('X-Service-User-Id')
+        or request.META.get('HTTP_X_SERVICE_USER_ID')
+        or request.headers.get('X-User-Id')
+        or request.META.get('HTTP_X_USER_ID')
+    )
+    try:
+        return int(requester_id)
+    except (TypeError, ValueError):
+        return None
 
 class AddressViewSet(viewsets.ModelViewSet):
-    queryset = Address.objects.all()
     serializer_class = AddressSerializer
     authentication_classes = []
     permission_classes = [AllowAny]
+
+    def _require_requester_id(self, request):
+        requester_id = _requester_service_user_id(request)
+        if requester_id is None:
+            raise NotAuthenticated('Authentication required')
+        return requester_id
+
+    def get_queryset(self):
+        requester_id = self._require_requester_id(self.request)
+        return Address.objects.filter(customer_id=requester_id).order_by('-is_default', 'id')
+
+    def perform_create(self, serializer):
+        requester_id = self._require_requester_id(self.request)
+
+        is_default = bool(serializer.validated_data.get('is_default', False))
+        if is_default:
+            Address.objects.filter(customer_id=requester_id, is_default=True).update(is_default=False)
+
+        serializer.save(customer_id=requester_id)
+
+    @action(detail=True, methods=['post'])
+    def set_default(self, request, pk=None):
+        requester_id = self._require_requester_id(request)
+        addr = self.get_object()
+        if requester_id != addr.customer_id:
+            return Response({'error': 'You can only modify your own addresses'}, status=status.HTTP_403_FORBIDDEN)
+
+        Address.objects.filter(customer_id=requester_id, is_default=True).update(is_default=False)
+        addr.is_default = True
+        addr.save(update_fields=['is_default'])
+        return Response({'message': 'Default address updated', 'address': AddressSerializer(addr).data}, status=status.HTTP_200_OK)
 
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all()
@@ -81,19 +125,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
 
         # Gateway forwards domain id in X-Service-User-Id.
         # Fallback to X-User-Id for backward compatibility when ids are aligned.
-        requester_id = (
-            request.headers.get('X-Service-User-Id')
-            or request.META.get('HTTP_X_SERVICE_USER_ID')
-            or request.headers.get('X-User-Id')
-            or request.META.get('HTTP_X_USER_ID')
-        )
+        requester_id = _requester_service_user_id(request)
         if requester_id is None and getattr(request, 'user', None) and request.user.is_authenticated:
             requester_id = request.user.id
-
-        try:
-            requester_id = int(requester_id)
-        except (TypeError, ValueError):
-            requester_id = None
 
         # Only allow updating own profile.
         if requester_id != customer.id:
@@ -104,6 +138,25 @@ class CustomerViewSet(viewsets.ModelViewSet):
             serializer.save()
             return Response({'status': 'customer updated', 'data': serializer.data})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def changePassword(self, request, pk=None):
+        customer = self.get_object()
+        requester_id = _requester_service_user_id(request)
+        if requester_id != customer.id:
+            return Response({'error': 'You can only change your own password'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        old_password = serializer.validated_data['old_password']
+        new_password = serializer.validated_data['new_password']
+        if not customer.check_password(old_password):
+            return Response({'error': 'Mat khau cu khong dung'}, status=status.HTTP_400_BAD_REQUEST)
+
+        customer.set_password(new_password)
+        customer.save(update_fields=['password'])
+        return Response({'message': 'Password changed successfully'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
     def profile(self, request, pk=None):

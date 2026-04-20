@@ -12,11 +12,32 @@ Priority order:
 import logging
 from collections import defaultdict
 
+from ..application.hybrid_recommender import hybrid_recommendation_service
 from ..models import Recommendation
 from ..clients import book_client, order_client, comment_client
 from . import behavior as beh
 
 logger = logging.getLogger(__name__)
+
+
+def _book_category_key(book: dict) -> str | None:
+    category_detail = book.get('category_detail')
+    if isinstance(category_detail, dict):
+        slug = category_detail.get('slug')
+        if slug:
+            return str(slug)
+        name = category_detail.get('name')
+        if name:
+            return str(name)
+
+    category = book.get('category')
+    if category is None:
+        return None
+    return str(category)
+
+
+def _book_title(book: dict) -> str:
+    return str(book.get('title') or book.get('name') or '')
 
 
 def _get_purchased_ids(customer_id: int) -> set[int]:
@@ -53,6 +74,37 @@ def generate(customer_id: int, limit: int = 8) -> list[dict]:
     Generate recommendations for a customer.
     Returns list of {book_id, score, reason, book_detail}.
     """
+    try:
+        hybrid_recs = hybrid_recommendation_service.get_personalized(customer_id=customer_id, limit=limit)
+    except Exception as exc:
+        logger.warning("Hybrid recommender failed, falling back to legacy logic: %s", exc)
+        hybrid_recs = []
+
+    if hybrid_recs:
+        chosen = []
+        for item in hybrid_recs[:limit]:
+            book_id = item.get('product_id') or item.get('book_id')
+            book = book_client.get_book(book_id) or {}
+            if not book:
+                continue
+            chosen.append({
+                'book_id': book_id,
+                'score': item.get('score', 0),
+                'reason': item.get('reason', 'phổ biến'),
+                'book': {**book, 'title': _book_title(book), 'category': _book_category_key(book) or ''},
+            })
+        if chosen:
+            Recommendation.objects.filter(customer_id=customer_id).delete()
+            for c in chosen:
+                Recommendation.objects.create(
+                    customer_id=customer_id,
+                    recommended_book_id=c['book_id'],
+                    score=c['score'],
+                    reason=c['reason'],
+                )
+            logger.info("Generated %d hybrid recommendations for C%s", len(chosen), customer_id)
+            return chosen
+
     # 1. Build/refresh behavior profile
     profile = beh.build_profile(customer_id)
     purchased = _get_purchased_ids(customer_id)
@@ -75,6 +127,8 @@ def generate(customer_id: int, limit: int = 8) -> list[dict]:
         if not bid or bid in purchased or book.get('stock', 0) <= 0:
             continue
 
+        book_category = _book_category_key(book)
+
         score  = 0.0
         reasons = []
 
@@ -85,9 +139,9 @@ def generate(customer_id: int, limit: int = 8) -> list[dict]:
             reasons.append(f"bạn đã xem/tìm {int(bscore)} lần")
 
         # Category match
-        if book.get('category') in top_cats:
+        if book_category in top_cats:
             score += 2.0
-            reasons.append(f"thể loại {book['category']} bạn yêu thích")
+            reasons.append(f"thể loại {book_category} bạn yêu thích")
 
         # Author match
         if book.get('author') in top_authors:
@@ -108,7 +162,7 @@ def generate(customer_id: int, limit: int = 8) -> list[dict]:
                 'book_id': bid,
                 'score':   round(score, 3),
                 'reason':  ', '.join(reasons) if reasons else 'phổ biến',
-                'book':    book,
+                'book':    {**book, 'title': _book_title(book), 'category': book_category or ''},
             })
 
     # Sort and take top N
@@ -139,6 +193,6 @@ def get_cached(customer_id: int) -> list[dict]:
             'book_id': r.recommended_book_id,
             'score':   r.score,
             'reason':  r.reason,
-            'book':    book,
+            'book':    {**book, 'title': _book_title(book), 'category': _book_category_key(book) or ''},
         })
     return result

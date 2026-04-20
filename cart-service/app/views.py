@@ -18,9 +18,9 @@ class CartViewSet(viewsets.ModelViewSet):
         if not book_id:
             return Response({'error': 'book_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Call Book Service to get book details
+        # Call Product Service to get product details
         try:
-            book_resp = requests.get(f'http://book-service:8000/api/books/{book_id}/')
+            book_resp = requests.get(f'http://product-service:8000/api/books/{book_id}/')
             if book_resp.status_code != 200:
                 return Response({'error': 'Book not found'}, status=status.HTTP_404_NOT_FOUND)
             
@@ -32,7 +32,7 @@ class CartViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Not enough stock'}, status=status.HTTP_400_BAD_REQUEST)
 
         except requests.exceptions.RequestException as e:
-            return Response({'error': 'Failed to communicate with Book Service'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({'error': 'Failed to communicate with Product Service'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         # Update or create CartItem
         cart_item, created = CartItem.objects.get_or_create(
@@ -59,6 +59,16 @@ class CartViewSet(viewsets.ModelViewSet):
             if quantity <= 0:
                 item.delete()
             else:
+                try:
+                    book_resp = requests.get(f'http://product-service:8000/api/books/{book_id}/')
+                    if book_resp.status_code != 200:
+                        return Response({'error': 'Book not found'}, status=status.HTTP_404_NOT_FOUND)
+                    book_data = book_resp.json()
+                    if int(book_data.get('stock', 0) or 0) < quantity:
+                        return Response({'error': 'Not enough stock'}, status=status.HTTP_400_BAD_REQUEST)
+                except requests.exceptions.RequestException:
+                    return Response({'error': 'Failed to communicate with Product Service'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
                 item.quantity = quantity
                 item.save()
             return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)

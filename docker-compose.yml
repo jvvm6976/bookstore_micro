@@ -106,8 +106,8 @@ services:
       - DB_PASSWORD=root
       - DB_HOST=db-mysql
 
-  book-service:
-    build: ./book-service
+  product-service:
+    build: ./product-service
     ports:
       - "8002:8000"
     depends_on:
@@ -117,11 +117,13 @@ services:
       - bookstore-network
     environment:
       - DEBUG=1
-      - DJANGO_SETTINGS_MODULE=book_service.settings
-      - POSTGRES_DB=bookstore_book
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=root
+      - DJANGO_SETTINGS_MODULE=config.settings.dev
+      - DB_ENGINE=django.db.backends.postgresql
+      - DB_NAME=bookstore_product
+      - DB_USER=postgres
+      - DB_PASSWORD=root
       - DB_HOST=db-postgres
+      - DB_PORT=5432
 
   cart-service:
     build: ./cart-service
@@ -228,23 +230,6 @@ services:
       - POSTGRES_PASSWORD=root
       - DB_HOST=db-postgres
 
-  catalog-service:
-    build: ./catalog-service
-    ports:
-      - "8009:8000"
-    depends_on:
-      db-postgres:
-        condition: service_healthy
-    networks:
-      - bookstore-network
-    environment:
-      - DEBUG=1
-      - DJANGO_SETTINGS_MODULE=catalog_service.settings
-      - POSTGRES_DB=bookstore_catalog
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=root
-      - DB_HOST=db-postgres
-
   manager-service:
     build: ./manager-service
     ports:
@@ -269,6 +254,8 @@ services:
     depends_on:
       db-postgres:
         condition: service_healthy
+      neo4j:
+        condition: service_healthy
     networks:
       - bookstore-network
     volumes:
@@ -280,16 +267,43 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=root
       - DB_HOST=db-postgres
-      - BOOK_SERVICE_URL=http://book-service:8000
-      - CATALOG_SERVICE_URL=http://catalog-service:8000
+      - PRODUCT_SERVICE_URL=http://product-service:8000
       - CUSTOMER_SERVICE_URL=http://customer-service:8000
       - ORDER_SERVICE_URL=http://order-service:8000
       - COMMENT_SERVICE_URL=http://comment-rate-service:8000
       - SHIP_SERVICE_URL=http://ship-service:8000
       - PAY_SERVICE_URL=http://pay-service:8000
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=bookstoreneo4j
       - ARTIFACTS_DIR=/app/artifacts
       - EMBED_DIM=64
       - LOG_LEVEL=INFO
+      - BEHAVIOR_MODEL_TRAIN_ENABLED=1
+      - BEHAVIOR_MODEL_TRAIN_INTERVAL_HOURS=24
+      - BEHAVIOR_MODEL_TRAIN_ON_START=0
+
+  neo4j:
+    image: neo4j:5.20
+    restart: always
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/bookstoreneo4j
+      NEO4J_server_memory_pagecache_size: 256M
+      NEO4J_server_memory_heap_initial__size: 256M
+      NEO4J_server_memory_heap_max__size: 512M
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -a bolt://localhost:7687 -u neo4j -p bookstoreneo4j 'RETURN 1' >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
 
   # ═══════════════════════════════════════════════════════════
   # API GATEWAY
@@ -301,14 +315,13 @@ services:
     depends_on:
       - auth-service
       - customer-service
-      - book-service
+      - product-service
       - cart-service
       - order-service
       - pay-service
       - ship-service
       - staff-service
       - comment-rate-service
-      - catalog-service
       - recommender-ai-service
     networks:
       - bookstore-network
@@ -325,3 +338,5 @@ volumes:
   postgres_data:
   rabbitmq_data:
   ai_artifacts:
+  neo4j_data:
+  neo4j_logs:

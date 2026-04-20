@@ -1,12 +1,12 @@
-"""CatalogServiceClient — proxies to book-service (catalog endpoint)."""
+"""CatalogServiceClient — proxies to product-service books endpoints."""
 from __future__ import annotations
 from .base import ServiceClient, _extract_list
-from ..core.config import BOOK_SERVICE_URL
+from ..core.config import PRODUCT_SERVICE_URL
 
 
 class CatalogServiceClient(ServiceClient):
     def __init__(self):
-        super().__init__(BOOK_SERVICE_URL, "catalog/book-service")
+        super().__init__(PRODUCT_SERVICE_URL, "catalog/product-service")
 
     def get_all_products(self, limit: int = 200) -> list[dict]:
         data = self.get("/api/books/", params={"page_size": limit})

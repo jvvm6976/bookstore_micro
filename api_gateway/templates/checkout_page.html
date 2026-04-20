@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopSphere - Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+{% include "_shared_theme_tokens.css" %}
+{% include "_shared_status_tokens.css" %}
+{% include "_shared_components_customer.css" %}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+button,input,select,textarea{font-family:inherit}
+nav{background:var(--s);padding:.75rem 1rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--b)}
+.logo{font-size:1.2rem;font-weight:800;color:var(--pd);text-decoration:none}
+.logo em{color:var(--p);font-style:normal}
+main{max-width:1120px;margin:0 auto;padding:1rem}
+.page-title{font-size:1.2rem;font-weight:800;margin-bottom:.9rem}
+.layout{display:grid;grid-template-columns:1fr 360px;gap:1rem;align-items:start}
+.card{background:var(--s);border:1px solid var(--b);border-radius:var(--r);box-shadow:var(--sh)}
+.card h3{padding:.9rem 1rem;border-bottom:1px solid var(--b);font-size:.95rem}
+.card-body{padding:1rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
+.form-grid .full{grid-column:1 / -1}
+.field{display:flex;flex-direction:column;gap:.3rem}
+.field label{font-size:.75rem;font-weight:700;color:var(--tm);text-transform:uppercase}
+.field input,.field select,.field textarea{border:1px solid var(--b);border-radius:10px;padding:.5rem .6rem}
+.addr-note{font-size:.78rem;color:var(--tm);margin-top:.35rem}
+.summary-row{display:flex;justify-content:space-between;font-size:.88rem;margin-bottom:.55rem;color:var(--tm)}
+.summary-total{display:flex;justify-content:space-between;font-weight:800;font-size:1rem;padding-top:.7rem;border-top:1px dashed var(--b);color:var(--pd)}
+.btn-main{width:100%;padding:.85rem;border:none;border-radius:10px;background:var(--p);color:#fff;font-weight:700;cursor:pointer;margin-top:.75rem}
+.btn-main:disabled{opacity:.6;cursor:not-allowed}
+.items{display:flex;flex-direction:column;gap:.55rem}
+.item{border:1px solid var(--b);border-radius:10px;padding:.65rem;background:#fff}
+.item-name{font-weight:700;font-size:.88rem}
+.item-meta{font-size:.8rem;color:var(--tm);margin-top:.25rem}
+.saga-box{margin-top:.7rem;border:1px solid var(--b);background:#fff;border-radius:10px;padding:.6rem}
+.saga-step{font-size:.8rem;padding:.2rem 0}
+.msg{margin-top:.45rem;font-size:.8rem;color:var(--tm)}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">Shop<em>Sphere</em></a>
+  <div>
+    <a href="/cart/" class="btn btn-ghost btn-sm">← Quay lại giỏ hàng</a>
+  </div>
+</nav>
+
+<main>
+  <div class="page-title">Checkout truoc khi thanh toan</div>
+  <div class="layout">
+    <section class="card">
+      <h3>1) Chon dia chi giao hang</h3>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Dia chi da luu</label>
+            <select id="savedAddress" onchange="onAddressChoiceChange()"></select>
+            <div class="addr-note">He thong mac dinh chon dia chi mac dinh trong profile neu co.</div>
+          </div>
+
+          <div id="newAddressWrap" class="full" style="display:none">
+            <div class="form-grid">
+              <div class="field">
+                <label>Nhan dia chi</label>
+                <input id="naLabel" placeholder="Nha rieng, Van phong...">
+              </div>
+              <div class="field">
+                <label>Ten nguoi nhan</label>
+                <input id="naRecipient" placeholder="Nguyen Van A">
+              </div>
+              <div class="field">
+                <label>So dien thoai</label>
+                <input id="naPhone" placeholder="09xxxxxxxx">
+              </div>
+              <div class="field full">
+                <label>So nha, ten duong</label>
+                <input id="naStreet" placeholder="123 Duong ABC">
+              </div>
+              <div class="field">
+                <label>Xa/Phuong</label>
+                <input id="naWard" placeholder="Phuong 1">
+              </div>
+              <div class="field">
+                <label>Tinh/Thanh pho</label>
+                <input id="naCity" placeholder="TP Ho Chi Minh">
+              </div>
+            </div>
+          </div>
+
+          <div class="field full">
+            <label>Phuong thuc thanh toan</label>
+            <select id="payMethod">
+              <option value="credit_card">The tin dung / ghi no</option>
+              <option value="cod">Thanh toan khi nhan hang (COD)</option>
+              <option value="bank_transfer">Chuyen khoan ngan hang</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="card">
+      <h3>2) Xac nhan don hang</h3>
+      <div class="card-body">
+        <div class="summary-row"><span>So luong</span><strong id="sumQty">0</strong></div>
+        <div class="summary-row"><span>Tam tinh</span><strong id="sumSubtotal">0₫</strong></div>
+        <div class="summary-row"><span>Phi ship</span><strong style="color:#059669">Mien phi</strong></div>
+        <div class="summary-total"><span>Tong cong</span><span id="sumTotal">0₫</span></div>
+        <button id="btnCheckout" class="btn-main" onclick="checkoutNow()">Thanh toan va dat hang</button>
+        <div id="msg" class="msg"></div>
+        <div id="saga" class="saga-box" style="display:none"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card" style="margin-top:1rem">
+    <h3>Danh sach san pham trong don</h3>
+    <div class="card-body">
+      <div id="items" class="items"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const API='/api';
+let user=null;
+let cartData=null;
+let addresses=[];
+
+function authH(){
+  const h={'Content-Type':'application/json'};
+  if(user?.access_token)h['Authorization']='Bearer '+user.access_token;
+  return h;
+}
+function fmt(n){return Number(n||0).toLocaleString('vi-VN')+'₫';}
+function toastMsg(msg){document.getElementById('msg').textContent=msg||'';}
+function formatAddress(a){
+  return [a.street,a.ward,a.city,a.country||'Viet Nam'].filter(Boolean).join(', ');
+}
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+  try{user=JSON.parse(localStorage.getItem('cb_user')||'null');}catch(e){}
+  if(!user){window.location.href='/customer-login/?next=/checkout/';return;}
+  await loadCart();
+  await loadAddresses();
+  renderOrderItems();
+  updateSummary();
+});
+
+async function resolveCartId(){
+  if(user?.cart_id)return user.cart_id;
+  const r=await fetch(`${API}/customers/${user.service_user_id}/`,{headers:authH()});
+  if(!r.ok)return null;
+  const d=await r.json();
+  if(d?.cart_id){
+    user.cart_id=d.cart_id;
+    localStorage.setItem('cb_user',JSON.stringify(user));
+    return d.cart_id;
+  }
+  return null;
+}
+
+async function loadCart(){
+  const cartId=await resolveCartId();
+  if(!cartId){cartData={items:[]};return;}
+  const r=await fetch(`${API}/carts/${cartId}/`,{headers:authH()});
+  if(!r.ok){cartData={items:[]};return;}
+  cartData=await r.json();
+}
+
+async function loadAddresses(){
+  addresses=[];
+  try{
+    const r=await fetch(`${API}/addresses/`,{headers:authH()});
+    if(r.ok){
+      const d=await r.json();
+      addresses=Array.isArray(d)?d:(d.results||[]);
+    }
+  }catch(e){}
+
+  const select=document.getElementById('savedAddress');
+  if(!select)return;
+  const ordered=[...addresses].sort((a,b)=>Number(b.is_default)-Number(a.is_default));
+  const options=ordered.map(a=>`<option value="${a.id}">${a.is_default?'[MAC DINH] ':''}${a.label||'Dia chi'} - ${formatAddress(a)} - ${a.phone_number||''}</option>`).join('');
+  select.innerHTML=options + '<option value="__new__">+ Nhap dia chi moi</option>';
+
+  if(ordered.length){
+    const def=ordered.find(a=>a.is_default) || ordered[0];
+    select.value=String(def.id);
+  }else{
+    select.value='__new__';
+  }
+  onAddressChoiceChange();
+}
+
+function onAddressChoiceChange(){
+  const v=document.getElementById('savedAddress').value;
+  document.getElementById('newAddressWrap').style.display = v==='__new__' ? '' : 'none';
+}
+
+function renderOrderItems(){
+  const box=document.getElementById('items');
+  const items=cartData?.items||[];
+  if(!items.length){box.innerHTML='<div class="item">Gio hang trong.</div>';return;}
+  box.innerHTML=items.map(it=>`<div class="item"><div class="item-name">San pham #${it.book_id}</div><div class="item-meta">So luong: ${it.quantity} · Don gia: ${fmt(it.price_at_add)} · Tam tinh: ${fmt(Number(it.price_at_add||0)*Number(it.quantity||0))}</div></div>`).join('');
+}
+
+function updateSummary(){
+  const items=cartData?.items||[];
+  const qty=items.reduce((s,it)=>s+Number(it.quantity||0),0);
+  const total=items.reduce((s,it)=>s+(Number(it.price_at_add||0)*Number(it.quantity||0)),0);
+  document.getElementById('sumQty').textContent=String(qty);
+  document.getElementById('sumSubtotal').textContent=fmt(total);
+  document.getElementById('sumTotal').textContent=fmt(total);
+}
+
+async function ensureStock(){
+  const items=cartData?.items||[];
+  for(const it of items){
+    const r=await fetch(`${API}/books/${it.book_id}/`,{headers:authH()});
+    if(!r.ok)return {ok:false,msg:`Khong tim thay san pham #${it.book_id}`};
+    const b=await r.json();
+    const stock=Number(b.stock||0);
+    if(stock<Number(it.quantity||0)){
+      return {ok:false,msg:`Ton kho khong du cho ${b.title||b.name||it.book_id}`};
+    }
+  }
+  return {ok:true};
+}
+
+async function createAddressFromForm(){
+  const payload={
+    label:document.getElementById('naLabel').value.trim(),
+    recipient_name:document.getElementById('naRecipient').value.trim(),
+    phone_number:document.getElementById('naPhone').value.trim(),
+    street:document.getElementById('naStreet').value.trim(),
+    ward:document.getElementById('naWard').value.trim(),
+    city:document.getElementById('naCity').value.trim(),
+    country:'Viet Nam',
+    is_default:false,
+  };
+
+  if(!payload.phone_number || !payload.street || !payload.ward || !payload.city){
+    throw new Error('Vui long nhap day du dia chi moi va so dien thoai');
+  }
+
+  const r=await fetch(`${API}/addresses/`,{method:'POST',headers:authH(),body:JSON.stringify(payload)});
+  const d=await r.json();
+  if(!r.ok)throw new Error(d.error||'Khong tao duoc dia chi moi');
+  return d;
+}
+
+function stepLabel(step){
+  return {
+    reserve_payment:'Xu ly thanh toan',
+    reserve_shipping:'Tao van don',
+    confirm_order:'Xac nhan don',
+    clear_cart:'Xoa gio hang',
+    update_stock:'Cap nhat ton kho'
+  }[step]||step;
+}
+
+async function checkoutNow(){
+  const items=cartData?.items||[];
+  if(!items.length){toastMsg('Gio hang trong');return;}
+
+  const stockCheck=await ensureStock();
+  if(!stockCheck.ok){toastMsg(stockCheck.msg);return;}
+
+  let shippingAddress='';
+  let shippingPhone='';
+  let shippingAddressId=null;
+
+  const choice=document.getElementById('savedAddress').value;
+  if(choice==='__new__'){
+    try{
+      const created=await createAddressFromForm();
+      shippingAddress=formatAddress(created);
+      shippingPhone=created.phone_number||'';
+      shippingAddressId=created.id;
+    }catch(e){
+      toastMsg(e.message||'Dia chi moi khong hop le');
+      return;
+    }
+  }else{
+    const selected=addresses.find(a=>String(a.id)===String(choice));
+    if(!selected){toastMsg('Vui long chon dia chi giao hang');return;}
+    shippingAddress=formatAddress(selected);
+    shippingPhone=selected.phone_number||'';
+    shippingAddressId=selected.id;
+  }
+
+  const payMethod=document.getElementById('payMethod').value;
+  const btn=document.getElementById('btnCheckout');
+  btn.disabled=true;
+  toastMsg('Dang xu ly don hang...');
+
+  const saga=document.getElementById('saga');
+  saga.style.display='block';
+  saga.innerHTML='<div class="saga-step">Dang tao don...</div>';
+
+  try{
+    const cartId = user.cart_id || (cartData?.id || null);
+    const r=await fetch(`${API}/orders/checkout/`,{
+      method:'POST',
+      headers:authH(),
+      body:JSON.stringify({
+        customer_id:user.service_user_id,
+        cart_id:cartId,
+        shipping_address:shippingAddress,
+        shipping_phone:shippingPhone,
+        shipping_address_id:shippingAddressId,
+        payment_method:payMethod,
+      })
+    });
+    const d=await r.json();
+    if(r.ok&&d.success){
+      const steps=d.saga_steps||[];
+      saga.innerHTML=steps.map(s=>`<div class="saga-step">${s.status==='ok'?'✓':'✗'} ${stepLabel(s.step)}</div>`).join('');
+      toastMsg(`Dat hang thanh cong. Don #${d.order?.id}`);
+      setTimeout(()=>{window.location.href='/?pane=orders';},1800);
+      return;
+    }
+    saga.innerHTML='<div class="saga-step">✗ Dat hang that bai</div>';
+    toastMsg(d.error||d.message||'Dat hang that bai');
+  }catch(e){
+    saga.innerHTML='<div class="saga-step">✗ Loi ket noi</div>';
+    toastMsg('Loi ket noi');
+  }finally{
+    btn.disabled=false;
+  }
+}
+</script>
+</body>
+</html>

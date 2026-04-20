@@ -12,6 +12,8 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=OrderStatus.choices, default=OrderStatus.PENDING)
     created_at = models.DateTimeField(auto_now_add=True)
     shipping_address = models.CharField(max_length=500, null=True, blank=True)
+    shipping_phone = models.CharField(max_length=20, null=True, blank=True)
+    shipping_address_id = models.IntegerField(null=True, blank=True)
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)

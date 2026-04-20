@@ -87,7 +87,6 @@ $services = @(
     "ship-service",
     "staff-service",
     "comment-rate-service",
-    "catalog-service",
     "manager-service",
     "recommender-ai-service",
     "api-gateway"
@@ -113,15 +112,17 @@ function Register-AuthUserIfMissing {
     param(
         [string]$Username,
         [string]$Email,
-        [string]$Password,
+        [SecureString]$PasswordSecure,
         [string]$Role,
         [string]$Department = ""
     )
 
+    $passwordPlain = [System.Net.NetworkCredential]::new("", $PasswordSecure).Password
+
     $payload = @{
         username = $Username
         email = $Email
-        password = $Password
+        password = $passwordPlain
         role = $Role
     }
     if ($Department) {
@@ -129,8 +130,8 @@ function Register-AuthUserIfMissing {
     }
 
     try {
-        $result = Invoke-RestMethod -Method POST -Uri "http://localhost:8012/api/auth/register/" -ContentType "application/json" -Body ($payload | ConvertTo-Json)
-        Write-Host "auth-service: created $Username/$Password ($Role)" -ForegroundColor Green
+        Invoke-RestMethod -Method POST -Uri "http://localhost:8012/api/auth/register/" -ContentType "application/json" -Body ($payload | ConvertTo-Json) *> $null
+        Write-Host "auth-service: created $Username ($Role)" -ForegroundColor Green
     } catch {
         # 409 on existing user is expected on reruns.
         $msg = $_.Exception.Message
@@ -142,9 +143,9 @@ function Register-AuthUserIfMissing {
     }
 }
 
-Register-AuthUserIfMissing -Username "admin" -Email "admin@bookstore.com" -Password "admin123" -Role "customer"
-Register-AuthUserIfMissing -Username "staffadmin" -Email "staffadmin@bookstore.com" -Password "admin123" -Role "staff" -Department "operations"
-Register-AuthUserIfMissing -Username "manager" -Email "manager@bookstore.com" -Password "admin123" -Role "manager" -Department "sales"
+Register-AuthUserIfMissing -Username "admin" -Email "admin@bookstore.com" -PasswordSecure (ConvertTo-SecureString "admin123" -AsPlainText -Force) -Role "customer"
+Register-AuthUserIfMissing -Username "staffadmin" -Email "staffadmin@bookstore.com" -PasswordSecure (ConvertTo-SecureString "admin123" -AsPlainText -Force) -Role "staff" -Department "operations"
+Register-AuthUserIfMissing -Username "manager" -Email "manager@bookstore.com" -PasswordSecure (ConvertTo-SecureString "admin123" -AsPlainText -Force) -Role "manager" -Department "sales"
 
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green

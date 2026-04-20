@@ -1,0 +1,16 @@
+{
+  "payments": [
+    {"id": 1, "order_id": 1, "amount": "718000.00", "status": "success", "payment_method": "credit_card", "transaction_id": "TXN-PAY-0001"},
+    {"id": 2, "order_id": 2, "amount": "26990000.00", "status": "success", "payment_method": "bank_transfer", "transaction_id": "TXN-PAY-0002"},
+    {"id": 3, "order_id": 3, "amount": "18990000.00", "status": "pending", "payment_method": "momo", "transaction_id": "TXN-PAY-0003"},
+    {"id": 4, "order_id": 4, "amount": "8990000.00", "status": "success", "payment_method": "credit_card", "transaction_id": "TXN-PAY-0004"},
+    {"id": 5, "order_id": 5, "amount": "15990000.00", "status": "failed", "payment_method": "cod", "transaction_id": "TXN-PAY-0005"},
+    {"id": 6, "order_id": 6, "amount": "2890000.00", "status": "success", "payment_method": "vnpay", "transaction_id": "TXN-PAY-0006"},
+    {"id": 7, "order_id": 7, "amount": "7890000.00", "status": "success", "payment_method": "zalopay", "transaction_id": "TXN-PAY-0007"},
+    {"id": 8, "order_id": 8, "amount": "55990000.00", "status": "pending", "payment_method": "credit_card", "transaction_id": "TXN-PAY-0008"},
+    {"id": 9, "order_id": 9, "amount": "13990000.00", "status": "success", "payment_method": "bank_transfer", "transaction_id": "TXN-PAY-0009"},
+    {"id": 10, "order_id": 10, "amount": "2690000.00", "status": "refunded", "payment_method": "credit_card", "transaction_id": "TXN-PAY-0010"},
+    {"id": 11, "order_id": 11, "amount": "2190000.00", "status": "pending", "payment_method": "cod", "transaction_id": "TXN-PAY-0011"},
+    {"id": 12, "order_id": 12, "amount": "3890000.00", "status": "success", "payment_method": "momo", "transaction_id": "TXN-PAY-0012"}
+  ]
+}

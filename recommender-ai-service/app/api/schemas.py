@@ -82,6 +82,6 @@ class KBReindexResponse(BaseModel):
 class TrackRequest(BaseModel):
     customer_id: int
     product_id: Optional[int] = None
-    interaction_type: str  # view | search | cart | purchase | rate
+    interaction_type: str  # view | search | cart | purchase | rate | click_detail_button | click_wishlist_button
     rating: Optional[int] = None
     query: Optional[str] = None  # for search interactions

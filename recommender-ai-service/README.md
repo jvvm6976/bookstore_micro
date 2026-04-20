@@ -8,31 +8,39 @@ FastAPI-based AI service cho hệ thống e-commerce MoonBooks.
 recommender-ai-service/
 ├── main.py                          # FastAPI entry point
 ├── app/
-│   ├── api/routes.py                # All API endpoints
-│   ├── orchestrator.py              # ChatOrchestrator (pipeline điều phối)
-│   ├── services/
-│   │   ├── intent_detector.py       # Phát hiện intent (regex + scoring)
-│   │   ├── entity_extractor.py      # Trích xuất entities (budget, category, order_id...)
-│   │   ├── behavior_analysis.py     # PyTorch MLP + rule-based fallback
-│   │   ├── recommendation.py        # Personalized + similar + popular
-│   │   ├── kb_ingestion.py          # Knowledge Base builder (seed + books + reviews)
-│   │   ├── rag_retrieval.py         # FAISS + TF-IDF + keyword fallback
-│   │   ├── order_support.py         # Order + shipment + payment lookup
-│   │   └── response_composer.py     # Per-intent response formatter
-│   ├── clients/
-│   │   ├── base.py                  # HTTP client với retry/timeout
-│   │   ├── catalog_client.py        # → book-service
-│   │   ├── order_client.py          # → order-service
-│   │   ├── comment_client.py        # → comment-rate-service
-│   │   ├── ship_client.py           # → ship-service
-│   │   ├── pay_client.py            # → pay-service
-│   │   └── customer_client.py       # → customer-service
+│   ├── api/routes.py                # API layer
+│   ├── orchestrator.py              # ChatOrchestrator
+│   ├── domain/                      # Entity + contract layer
+│   ├── application/                 # Hybrid recommendation use-cases
+│   ├── infrastructure/              # LSTM + Neo4j adapters
+│   ├── services/                    # Behavior, RAG, KB, support services
+│   ├── clients/                     # HTTP clients to microservices
 │   ├── models/schemas.py            # Pydantic schemas
 │   └── core/config.py               # Env config
-├── scripts/train_model.py           # Train BehaviorMLP với synthetic data
+├── scripts/train_model.py           # Train BehaviorMLP with synthetic data
 ├── data/seed_kb.json                # FAQ + policy seed data
 └── artifacts/                       # behavior_model.pt, kb_faiss.index
 ```
+
+## Hybrid Recommendation Flow
+
+1. Behavior-based ranking from interaction history.
+2. Popularity fallback from catalog and ratings.
+3. LSTM sequence scoring from recent user actions.
+4. Neo4j knowledge-graph scoring when graph data is available.
+5. RAG hinting for the explanation text of the top result.
+
+The API layer now calls the hybrid application service, while the chatbot/orchestrator shares the same recommendation core.
+
+## Neo4j
+
+The service can connect to Neo4j through:
+
+- `NEO4J_URI`
+- `NEO4J_USER`
+- `NEO4J_PASSWORD`
+
+If Neo4j is unavailable, the recommender falls back to local scoring.
 
 ## API Endpoints
 
@@ -58,7 +66,7 @@ Swagger UI: `http://localhost:8011/docs`
 | `payment_support` | "thanh toán", "payment" | KB + RAG |
 | `shipping_support` | "giao hàng", "ship" | KB + RAG |
 | `order_support` | "đơn hàng", "order" | order-service + ship-service + pay-service |
-| `general_search` | "tìm sách", "search" | catalog-service + RAG |
+| `general_search` | "tìm sách", "search" | product-service + RAG |
 | `faq` | "faq", "hỏi đáp" | KB + RAG |
 | `fallback` | không nhận ra | RAG fallback |
 
@@ -82,7 +90,7 @@ Train: `python scripts/train_model.py`
 
 ## RAG Pipeline
 
-1. KB ingestion: seed FAQ + books từ book-service + reviews từ comment-service
+1. KB ingestion: seed FAQ + products từ product-service + reviews từ comment-service
 2. TF-IDF vectorization → FAISS IndexFlatIP
 3. Query → vector → FAISS search → keyword fallback
 4. Top-k entries → ResponseComposer

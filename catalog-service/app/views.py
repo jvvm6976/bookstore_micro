@@ -22,7 +22,7 @@ class CatalogViewSet(viewsets.ViewSet):
     def list_all_books(self, request):
         """Get all books from Book Service"""
         try:
-            response = requests.get('http://book-service:8000/api/books/')
+            response = requests.get('http://product-service:8000/api/books/')
             if response.status_code == 200:
                 return Response(response.json(), status=status.HTTP_200_OK)
             else:
@@ -60,7 +60,7 @@ class CatalogViewSet(viewsets.ViewSet):
             if max_price:
                 params['max_price'] = max_price
 
-            response = requests.get('http://book-service:8000/api/books/search/', params=params)
+            response = requests.get('http://product-service:8000/api/books/search/', params=params)
             if response.status_code == 200:
                 return Response(response.json(), status=status.HTTP_200_OK)
             else:
@@ -76,7 +76,7 @@ class CatalogViewSet(viewsets.ViewSet):
             return Response({'error': 'category parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            response = requests.get(f'http://book-service:8000/api/books/by_category/?category={category}')
+            response = requests.get(f'http://product-service:8000/api/books/by_category/?category={category}')
             if response.status_code == 200:
                 books = _extract_results(response.json())
                 return Response({
@@ -93,7 +93,7 @@ class CatalogViewSet(viewsets.ViewSet):
     def featured_books(self, request):
         """Get featured books (top rated)"""
         try:
-            books_resp = requests.get('http://book-service:8000/api/books/')
+            books_resp = requests.get('http://product-service:8000/api/books/')
             if books_resp.status_code != 200:
                 return Response({'error': 'Failed to fetch books'}, status=books_resp.status_code)
 
@@ -137,7 +137,7 @@ class CatalogViewSet(viewsets.ViewSet):
             return Response({'error': 'book_id parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            response = requests.get(f'http://book-service:8000/api/books/{book_id}/')
+            response = requests.get(f'http://product-service:8000/api/books/{book_id}/')
             if response.status_code == 200:
                 book_data = response.json()
                 # Get reviews and ratings for this book
@@ -173,7 +173,7 @@ class CatalogViewSet(viewsets.ViewSet):
             return Response({'error': 'author is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            response = requests.get('http://book-service:8000/api/books/')
+            response = requests.get('http://product-service:8000/api/books/')
             if response.status_code == 200:
                 books = _extract_results(response.json())
                 filtered = [b for b in books if author.lower() in (b.get('author') or '').lower()]
@@ -191,7 +191,7 @@ class CatalogViewSet(viewsets.ViewSet):
             return Response({'error': 'book_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            book_response = requests.get(f'http://book-service:8000/api/books/{book_id}/')
+            book_response = requests.get(f'http://product-service:8000/api/books/{book_id}/')
             
             if book_response.status_code != 200:
                 return Response({'error': 'Book not found'}, status=status.HTTP_404_NOT_FOUND)

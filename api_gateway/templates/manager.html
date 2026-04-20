@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>bookstore – Cổng quản lý</title>
+<title>ShopSphere – Cổng quản lý</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -38,7 +38,7 @@ tr:hover td{background:#FFF3F5}
 </head>
 <body>
 <nav>
-  <a href="/" class="logo">📕 book<em>store</em></a>
+  <a href="/" class="logo">🛒 Shop<em>Sphere</em></a>
   <div class="nav-right">
     <span id="navName" style="font-size:.88rem;font-weight:600;color:var(--pd)"></span>
     <span class="role-badge">QUẢN LÝ</span>
@@ -52,7 +52,7 @@ tr:hover td{background:#FFF3F5}
     <div class="nav-item"        onclick="showPage('reports')"    id="nav-reports">📈 Báo cáo</div>
 
     <div class="nav-group">Sản phẩm</div>
-    <div class="nav-item"        onclick="showPage('books')"      id="nav-books">📚 Quản lý sách</div>
+    <div class="nav-item"        onclick="showPage('books')"      id="nav-books">🛍️ Quản lý sản phẩm</div>
     <div class="nav-item"        onclick="showPage('catalog')"    id="nav-catalog">🗂️ Danh mục & Tìm kiếm</div>
     <div class="nav-item"        onclick="showPage('inventory')"  id="nav-inventory">📦 Tồn kho</div>
 
@@ -73,7 +73,7 @@ tr:hover td{background:#FFF3F5}
     <div class="page active" id="page-dashboard">
       <div class="sec-hdr"><div class="sec-title">📊 Tổng quan hệ thống</div><button class="btn btn-ghost btn-sm" onclick="loadDashboard()">🔄 Làm mới</button></div>
       <div id="kpiPane" class="loading"><div class="spin"></div></div>
-      <div class="sec-title" style="font-size:1rem;margin:.85rem 0 .6rem">⚠️ Sách sắp hết hàng</div>
+      <div class="sec-title" style="font-size:1rem;margin:.85rem 0 .6rem">⚠️ Sản phẩm sắp hết hàng</div>
       <div class="card" style="padding:0;overflow:hidden"><div id="lowStockPane" class="loading" style="padding:1.5rem"><div class="spin"></div></div></div>
     </div>
 
@@ -86,8 +86,8 @@ tr:hover td{background:#FFF3F5}
     <!-- ── BOOKS ── -->
     <div class="page" id="page-books">
       <div class="sec-hdr">
-        <div class="sec-title">📚 Quản lý sách</div>
-        <button class="btn btn-p btn-sm" onclick="openBookModal()">+ Thêm sách</button>
+        <div class="sec-title">🛍️ Quản lý sản phẩm</div>
+        <button class="btn btn-p btn-sm" onclick="openBookModal()">+ Thêm sản phẩm</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <div id="booksPane" class="loading" style="padding:2rem"><div class="spin"></div></div>
@@ -97,10 +97,10 @@ tr:hover td{background:#FFF3F5}
     <!-- ── CATALOG ── -->
     <div class="page" id="page-catalog">
       <div class="sec-hdr">
-        <div class="sec-title">🗂️ Danh mục & Tìm kiếm sách</div>
+        <div class="sec-title">🗂️ Danh mục & Tìm kiếm sản phẩm</div>
         <div style="display:flex;gap:.5rem;align-items:center">
-          <button class="btn btn-p btn-sm" onclick="openBookModal()">+ Thêm sách</button>
-          <input type="text" id="catalogSearch" placeholder="Tìm theo tên, tác giả..." style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC;width:200px">
+          <button class="btn btn-p btn-sm" onclick="openBookModal()">+ Thêm sản phẩm</button>
+          <input type="text" id="catalogSearch" placeholder="Tìm theo tên, thương hiệu..." style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC;width:200px">
           <select id="catalogCat" style="padding:.35rem .65rem;border:1.5px solid var(--b);border-radius:var(--rs);font-size:.83rem;background:#F8FAFC">
             <option value="">Tất cả thể loại</option>
             <option value="programming">Lập trình</option>
@@ -215,11 +215,11 @@ tr:hover td{background:#FFF3F5}
 <!-- Modal: Add/Edit Book -->
 <div class="overlay" id="bookModal">
   <div class="modal">
-    <div class="modal-hdr"><span class="modal-title" id="bookModalTitle">📚 Thêm sách mới</span><button class="btn-x" onclick="closeModal('bookModal')">✕</button></div>
+    <div class="modal-hdr"><span class="modal-title" id="bookModalTitle">🛍️ Thêm sản phẩm mới</span><button class="btn-x" onclick="closeModal('bookModal')">✕</button></div>
     <input type="hidden" id="bookId">
     <div class="grid2">
-      <div class="form-group" style="grid-column:1/-1"><label>Tên sách</label><input type="text" id="bookTitle" placeholder="Tên sách..."></div>
-      <div class="form-group"><label>Tác giả</label><input type="text" id="bookAuthor" placeholder="Tác giả..."></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Tên sản phẩm</label><input type="text" id="bookTitle" placeholder="Tên sản phẩm..."></div>
+      <div class="form-group"><label>Thương hiệu</label><input type="text" id="bookAuthor" placeholder="Thương hiệu..."></div>
       <div class="form-group"><label>Thể loại</label>
         <select id="bookCat">
           <option value="programming">Lập trình</option>
@@ -234,7 +234,7 @@ tr:hover td{background:#FFF3F5}
       <div class="form-group" style="grid-column:1/-1"><label>Mô tả</label><textarea id="bookDesc" rows="2" placeholder="Mô tả ngắn..."></textarea></div>
       <div class="form-group" style="grid-column:1/-1"><label>URL ảnh bìa</label><input type="url" id="bookCover" placeholder="https://..."></div>
     </div>
-    <button class="btn btn-p" style="width:100%;padding:.75rem;margin-top:.5rem" onclick="saveBook()">💾 Lưu sách</button>
+    <button class="btn btn-p" style="width:100%;padding:.75rem;margin-top:.5rem" onclick="saveBook()">💾 Lưu sản phẩm</button>
   </div>
 </div>
 
@@ -243,7 +243,7 @@ tr:hover td{background:#FFF3F5}
   <div class="modal">
     <div class="modal-hdr"><span class="modal-title">📦 Cập nhật tồn kho</span><button class="btn-x" onclick="closeModal('stockModal')">✕</button></div>
     <input type="hidden" id="stockBookId">
-    <div class="form-group"><label>Tên sách</label><input type="text" id="stockBookTitle" readonly style="background:var(--bg)"></div>
+    <div class="form-group"><label>Tên sản phẩm</label><input type="text" id="stockBookTitle" readonly style="background:var(--bg)"></div>
     <div class="form-group"><label>Tồn kho hiện tại</label><input type="number" id="stockCurrent" readonly style="background:var(--bg)"></div>
     <div class="form-group"><label>Tồn kho mới</label><input type="number" id="stockNew" min="0"></div>
     <div class="form-group"><label>Lý do điều chỉnh</label><input type="text" id="stockReason" placeholder="Nhập hàng, kiểm kê..."></div>
@@ -379,13 +379,13 @@ async function loadDashboard() {
       <div class="kpi-grid">
         <div class="kpi"><div class="kpi-label">Tổng đơn hàng</div><div class="kpi-value">${d.total_orders||0}</div></div>
         <div class="kpi"><div class="kpi-label">Doanh thu</div><div class="kpi-value" style="font-size:1.2rem">${fmt(d.total_revenue||0)}</div></div>
-        <div class="kpi"><div class="kpi-label">Tổng sách</div><div class="kpi-value">${d.total_books||0}</div></div>
+        <div class="kpi"><div class="kpi-label">Tổng sản phẩm</div><div class="kpi-value">${d.total_books||0}</div></div>
         <div class="kpi"><div class="kpi-label">Khách hàng</div><div class="kpi-value">${d.total_customers||0}</div></div>
       </div>`;
     const low=d.low_stock_books||[];
-    if(!low.length) { document.getElementById('lowStockPane').innerHTML='<div class="empty">✅ Không có sách nào sắp hết hàng</div>'; return; }
+    if(!low.length) { document.getElementById('lowStockPane').innerHTML='<div class="empty">✅ Không có sản phẩm nào sắp hết hàng</div>'; return; }
     document.getElementById('lowStockPane').innerHTML=`<table>
-      <thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
+      <thead><tr><th>ID</th><th>Tên sản phẩm</th><th>Thương hiệu</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
       <tbody>${low.map(b=>`<tr>
         <td style="color:var(--tm)">#${b.id}</td>
         <td style="font-weight:600">${b.title}</td>
@@ -422,7 +422,7 @@ async function loadReports() {
       </div>
       <div class="card">
         <div style="font-weight:700;margin-bottom:.85rem">📦 Báo cáo tồn kho</div>
-        <div class="report-stat"><div class="report-stat-label">Tổng đầu sách</div><div class="report-stat-value">${inv.total_books||0}</div></div>
+        <div class="report-stat"><div class="report-stat-label">Tổng sản phẩm</div><div class="report-stat-value">${inv.total_books||0}</div></div>
         <div class="report-stat"><div class="report-stat-label">Còn hàng</div><div class="report-stat-value" style="color:#059669">${inv.in_stock||0}</div></div>
         <div class="report-stat"><div class="report-stat-label">Hết hàng</div><div class="report-stat-value" style="color:#DC2626">${inv.out_of_stock||0}</div></div>
         <div class="report-stat"><div class="report-stat-label">Giá trị tồn kho</div><div class="report-stat-value" style="font-size:1.1rem">${fmt(inv.total_inventory_value||0)}</div></div>
@@ -464,9 +464,9 @@ async function loadBooks() {
   el.innerHTML='<div class="loading" style="padding:2rem"><div class="spin"></div></div>';
   try {
     const books = await fetchAllBooks();
-    if(!books.length) { el.innerHTML='<div class="empty">Chưa có sách nào</div>'; return; }
+    if(!books.length) { el.innerHTML='<div class="empty">Chưa có sản phẩm nào</div>'; return; }
     el.innerHTML=`<table>
-      <thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Thể loại</th><th>Giá</th><th>Kho</th><th>Thao tác</th></tr></thead>
+      <thead><tr><th>ID</th><th>Tên sản phẩm</th><th>Thương hiệu</th><th>Thể loại</th><th>Giá</th><th>Kho</th><th>Thao tác</th></tr></thead>
       <tbody>${books.map(b=>`<tr>
         <td style="color:var(--tm)">#${b.id}</td>
         <td style="font-weight:600">${b.title}</td>
@@ -480,7 +480,7 @@ async function loadBooks() {
           <button class="btn btn-danger btn-sm" onclick="deleteBook(${b.id},'${b.title.replace(/'/g,"\\'")}')">🗑️</button>
         </td>
       </tr>`).join('')}</tbody></table>`;
-  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải sách</div>'; }
+  } catch(e) { el.innerHTML='<div class="empty">Lỗi tải sản phẩm</div>'; }
 }
 
 function openBookModal(id='',title='',author='',cat='programming',price='',stock='',desc='',cover='') {
@@ -492,7 +492,7 @@ function openBookModal(id='',title='',author='',cat='programming',price='',stock
   document.getElementById('bookStock').value=stock;
   document.getElementById('bookDesc').value=desc;
   document.getElementById('bookCover').value=cover;
-  document.getElementById('bookModalTitle').textContent=id?'✏️ Sửa sách':'📚 Thêm sách mới';
+  document.getElementById('bookModalTitle').textContent=id?'✏️ Sửa sản phẩm':'🛍️ Thêm sản phẩm mới';
   openModal('bookModal');
 }
 function editBook(id,title,author,cat,price,stock,desc,cover) { openBookModal(id,title,author,cat,price,stock,desc,cover); }
@@ -500,19 +500,19 @@ function editBook(id,title,author,cat,price,stock,desc,cover) { openBookModal(id
 async function saveBook() {
   const id=document.getElementById('bookId').value;
   const body={title:document.getElementById('bookTitle').value,author:document.getElementById('bookAuthor').value,category:document.getElementById('bookCat').value,price:document.getElementById('bookPrice').value,stock:document.getElementById('bookStock').value,description:document.getElementById('bookDesc').value,cover_image_url:document.getElementById('bookCover').value||null};
-  if(!body.title||!body.price) { toast('Nhập đầy đủ tên sách và giá','err'); return; }
+  if(!body.title||!body.price) { toast('Nhập đầy đủ tên sản phẩm và giá','err'); return; }
   try {
     const r=await api(id?'/books/'+id+'/':'/books/',{method:id?'PATCH':'POST',body:JSON.stringify(body)});
-    if(r.ok) { toast(id?'Đã cập nhật sách':'Đã thêm sách mới','ok'); closeModal('bookModal'); loadBooks(); }
-    else { toast('❌ Lưu sách thất bại','err'); }
+    if(r.ok) { toast(id?'Đã cập nhật sản phẩm':'Đã thêm sản phẩm mới','ok'); closeModal('bookModal'); loadBooks(); }
+    else { toast('❌ Lưu sản phẩm thất bại','err'); }
   } catch(e) { toast('Lỗi kết nối','err'); }
 }
 
 async function deleteBook(id, title) {
-  if(!confirm('Xóa sách "'+title+'"?')) return;
+  if(!confirm('Xóa sản phẩm "'+title+'"?')) return;
   try {
     const r=await api('/books/'+id+'/',{method:'DELETE'});
-    if(r.ok||r.status===204) { toast('Đã xóa sách','ok'); loadBooks(); }
+    if(r.ok||r.status===204) { toast('Đã xóa sản phẩm','ok'); loadBooks(); }
     else toast('Không thể xóa','err');
   } catch(e) { toast('Lỗi kết nối','err'); }
 }
@@ -547,7 +547,7 @@ async function loadInventoryLogs() {
     const d=await r.json(); const logs=d.logs||[];
     if(!logs.length) { el.innerHTML='<div class="empty">Chưa có lịch sử điều chỉnh kho</div>'; return; }
     el.innerHTML=`<table>
-      <thead><tr><th>Thời gian</th><th>Sách</th><th>Trước</th><th>Sau</th><th>Thay đổi</th><th>Lý do</th></tr></thead>
+      <thead><tr><th>Thời gian</th><th>Sản phẩm</th><th>Trước</th><th>Sau</th><th>Thay đổi</th><th>Lý do</th></tr></thead>
       <tbody>${logs.map(l=>`<tr>
         <td style="font-size:.8rem;color:var(--tm)">${fmtDate(l.created_at)}</td>
         <td style="font-weight:600">${l.book_title||'#'+l.book_id}</td>
@@ -611,7 +611,7 @@ async function viewOrder(orderId) {
         📍 ${order.shipping_address||'—'}
       </div>
       <div style="font-weight:700;margin-bottom:.5rem">Sản phẩm</div>
-      ${(order.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--b);font-size:.85rem"><span>📚 Sách #${i.book_id} × ${i.quantity}</span><span style="font-weight:700;color:var(--pd)">${fmt(i.price)}</span></div>`).join('')}
+      ${(order.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--b);font-size:.85rem"><span>🛍️ SP #${i.book_id} × ${i.quantity}</span><span style="font-weight:700;color:var(--pd)">${fmt(i.price)}</span></div>`).join('')}
       ${pay?`<div style="margin-top:.85rem;padding:.75rem;background:var(--bg);border-radius:var(--rs);border:1px solid var(--b)">
         <div style="font-weight:700;margin-bottom:.4rem">💳 Thanh toán #${pay.id}</div>
         <div style="font-size:.85rem;color:var(--tm);line-height:1.8">Phương thức: ${pay.payment_method||'—'} · ${statusBadge(pay.status)} · ${fmt(pay.amount)}</div>
@@ -919,7 +919,7 @@ async function viewOrder(orderId) {
         👤 KH #${order.customer_id} · 📅 ${fmtDate(order.created_at)}<br>📍 ${order.shipping_address||'—'}
       </div>
       <div style="font-weight:700;margin-bottom:.5rem">Sản phẩm</div>
-      ${(order.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--b);font-size:.85rem"><span>📚 Sách #${i.book_id} × ${i.quantity}</span><span style="font-weight:700;color:var(--pd)">${fmt(i.price)}</span></div>`).join('')}
+      ${(order.items||[]).map(i=>`<div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--b);font-size:.85rem"><span>🛍️ SP #${i.book_id} × ${i.quantity}</span><span style="font-weight:700;color:var(--pd)">${fmt(i.price)}</span></div>`).join('')}
       ${pay?`<div style="margin-top:.85rem;padding:.75rem;background:var(--bg);border-radius:var(--rs);border:1px solid var(--b)">
         <div style="font-weight:700;margin-bottom:.4rem">💳 Thanh toán #${pay.id}</div>
         <div style="font-size:.85rem;color:var(--tm)">Phương thức: <strong>${pay.payment_method||'—'}</strong> · ${statusBadge(pay.status)} · <strong>${fmt(pay.amount)}</strong></div>
@@ -1051,7 +1051,7 @@ async function searchCatalog() {
 
 function renderCatalogTable(books) {
   const el=document.getElementById('catalogPane');
-  if(!books.length) { el.innerHTML='<div class="empty">Không tìm thấy sách nào</div>'; return; }
+  if(!books.length) { el.innerHTML='<div class="empty">Không tìm thấy sản phẩm nào</div>'; return; }
   // Group by category
   const cats={};
   books.forEach(b=>{
@@ -1059,7 +1059,7 @@ function renderCatalogTable(books) {
     if(!cats[c])cats[c]=[];
     cats[c].push(b);
   });
-  const catNames={programming:'💻 Lập trình',science:'🔬 Khoa học',history:'📜 Lịch sử & Kỹ năng',fiction:'📖 Tiểu thuyết',math:'📐 Toán học',other:'📚 Khác'};
+  const catNames={programming:'💻 Lập trình',science:'🔬 Khoa học',history:'📜 Lịch sử & Kỹ năng',fiction:'📖 Tiểu thuyết',math:'📐 Toán học',other:'🛍️ Khác'};
   let html='';
   Object.entries(cats).forEach(([cat,catBooks])=>{
     html+=`<div style="padding:.75rem 1.25rem;background:var(--bg);border-bottom:2px solid var(--b);font-weight:700;font-size:.88rem;display:flex;justify-content:space-between">
@@ -1067,7 +1067,7 @@ function renderCatalogTable(books) {
       <span style="color:var(--tm);font-weight:400">${catBooks.length} cuốn · Tổng kho: ${catBooks.reduce((s,b)=>s+b.stock,0)}</span>
     </div>
     <table style="margin-bottom:0">
-      <thead><tr><th>ID</th><th>Tên sách</th><th>Tác giả</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
+      <thead><tr><th>ID</th><th>Tên sản phẩm</th><th>Thương hiệu</th><th>Giá</th><th>Tồn kho</th><th>Thao tác</th></tr></thead>
       <tbody>${catBooks.map(b=>`<tr>
         <td style="color:var(--tm)">#${b.id}</td>
         <td style="font-weight:600">${b.title}</td>
@@ -1085,3 +1085,4 @@ function renderCatalogTable(books) {
   el.innerHTML=html;
 }
 </script>
+

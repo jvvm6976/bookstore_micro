@@ -6,7 +6,13 @@ FastAPI handles HTTP; Django handles DB via ORM.
 from django.db import models
 
 INTERACTION_WEIGHTS = {
-    "view": 1, "search": 2, "cart": 4, "purchase": 8, "rate": 3,
+    "view": 1,
+    "search": 2,
+    "cart": 4,
+    "purchase": 8,
+    "rate": 3,
+    "click_detail_button": 2,
+    "click_wishlist_button": 3,
 }
 PURCHASE_THRESHOLD = 3
 

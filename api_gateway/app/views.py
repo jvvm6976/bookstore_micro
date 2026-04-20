@@ -27,15 +27,19 @@ SERVICE_MAP = {
     'customers':       'customer-service',
     'jobs':            'customer-service',
     'addresses':       'customer-service',
-    'books':           'book-service',
-    'publishers':      'book-service',
+    'books':           'product-service',
+    'publishers':      'product-service',
+    'products':        'product-service',
+    'product-types':   'product-service',
+    'categories':      'product-service',
+    'brands':          'product-service',
+    'health':          'product-service',
     'carts':           'cart-service',
     'orders':          'order-service',
     'payments':        'pay-service',
     'shipments':       'ship-service',
     'staff':           'staff-service',
     'comments':        'comment-rate-service',
-    'catalog':         'catalog-service',
     'manager':         'manager-service',
     'managers':        'manager-service',
     'recommendations': 'recommender-ai-service',
@@ -46,7 +50,11 @@ SERVICE_MAP = {
 PUBLIC_ROUTES = {
     'auth',
     'books',
-    'catalog',
+    'products',
+    'product-types',
+    'categories',
+    'brands',
+    'health',
     'comments',
     'recommendations',
     'ai',
@@ -115,7 +123,7 @@ def _validate_jwt(token: str):
 # ── Views ─────────────────────────────────────────────────────────────────────
 
 def index(request):
-    resp = render(request, 'home.html')
+    resp = render(request, 'product_home.html')
     resp['Cache-Control'] = 'no-store, no-cache, must-revalidate'
     return resp
 
@@ -131,6 +139,12 @@ def customer_login_page(request):
 
 def cart_page(request):
     resp = render(request, 'cart_page.html')
+    resp['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    return resp
+
+
+def checkout_page(request):
+    resp = render(request, 'checkout_page.html')
     resp['Cache-Control'] = 'no-store, no-cache, must-revalidate'
     return resp
 
@@ -160,6 +174,10 @@ def api_proxy(request, path):
 
     if not path:
         return JsonResponse({'error': 'Empty path'}, status=400)
+
+    # Legacy compatibility: keep old recommendation routes functional.
+    if path.startswith('recommendations/trending_books'):
+        path = path.replace('recommendations/trending_books', 'products', 1)
 
     parts = path.strip('/').split('/')
     service_alias = parts[0]
@@ -228,13 +246,12 @@ def api_proxy(request, path):
 HEALTH_SERVICES = {
     'auth-service':           'http://auth-service:8000/api/auth/health/',
     'customer-service':       'http://customer-service:8000/api/customers/',
-    'book-service':           'http://book-service:8000/api/books/',
+    'product-service':        'http://product-service:8000/api/health/',
     'cart-service':           'http://cart-service:8000/api/carts/',
     'order-service':          'http://order-service:8000/api/orders/',
     'pay-service':            'http://pay-service:8000/api/payments/',
     'ship-service':           'http://ship-service:8000/api/shipments/',
     'comment-rate-service':   'http://comment-rate-service:8000/api/comments/',
-    'catalog-service':        'http://catalog-service:8000/api/catalog/',
     'recommender-ai-service': 'http://recommender-ai-service:8000/health',
 }
 

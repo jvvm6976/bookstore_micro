@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>bookstore - Danh sách sách</title>
+<title>ShopSphere - Danh sách sản phẩm</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--p:#C2182B;--pd:#8E1120;--pl:#EF9A9A;--pll:#FFEBEE;--bg:#FFF5F5;--s:#fff;--t:#2C0D10;--tm:#7F3D43;--b:#F3CDD1;--r:14px;--rs:10px;--sh:0 10px 30px rgba(194,24,43,.15)}
@@ -26,12 +26,12 @@ main{max-width:1080px;margin:1.2rem auto;padding:0 1rem}
 </head>
 <body>
 <nav>
-  <a href="/" class="logo">bookstore</a>
+  <a href="/" class="logo">ShopSphere</a>
 </nav>
 <main>
   <section class="hero">
-    <h1>Danh sách sách</h1>
-    <p>Tất cả đầu sách hiện có trong hệ thống bookstore</p>
+    <h1>Danh sách sản phẩm</h1>
+    <p>Tất cả sản phẩm hiện có trong hệ thống ShopSphere</p>
   </section>
 
   {% if books %}
@@ -47,8 +47,9 @@ main{max-width:1080px;margin:1.2rem auto;padding:0 1rem}
     {% endfor %}
   </section>
   {% else %}
-  <div class="empty">Chưa có sách để hiển thị.</div>
+  <div class="empty">Chưa có sản phẩm để hiển thị.</div>
   {% endif %}
 </main>
 </body>
 </html>
+

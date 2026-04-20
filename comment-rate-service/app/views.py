@@ -1,47 +1,106 @@
+import os
 import requests
-from rest_framework import viewsets, status
+from django.db.models import Avg, Count
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Avg, Count
+
 from .models import Comment
-from .serializers import CommentSerializer, CommentCreateSerializer
+from .serializers import CommentCreateSerializer, CommentSerializer
+
+
+ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://order-service:8000')
+PAID_STATUSES = {'paid', 'shipped'}
 
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    
+
     def get_serializer_class(self):
         if self.action == 'create':
             return CommentCreateSerializer
         return CommentSerializer
 
+    def _get_paid_orders(self, customer_id):
+        url = f"{ORDER_SERVICE_URL}/api/orders/by_customer/"
+        resp = requests.get(url, params={'customer_id': customer_id}, timeout=8)
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        orders = data.get('orders', [])
+        return [o for o in orders if str(o.get('status', '')).lower() in PAID_STATUSES]
+
+    def _eligible_order_ids(self, customer_id, book_id):
+        orders = self._get_paid_orders(customer_id)
+        if orders is None:
+            return None
+        eligible = []
+        for order in orders:
+            oid = order.get('id')
+            for item in order.get('items', []) or []:
+                if int(item.get('book_id', 0) or 0) == int(book_id):
+                    eligible.append(int(oid))
+                    break
+        return eligible
+
     def create(self, request, *args, **kwargs):
-        """Create a comment/rating - verify customer purchased the book"""
+        """
+        Create review with strict policy:
+        - Must have purchased book
+        - One review per (customer, book, order)
+        - If order_id omitted, auto-pick an eligible not-yet-reviewed order
+        """
         serializer = CommentCreateSerializer(data=request.data)
         if serializer.is_valid():
             customer_id = serializer.validated_data['customer_id']
             book_id = serializer.validated_data['book_id']
-            
-            # Verify customer has purchased this book
+            requested_order_id = serializer.validated_data.get('order_id')
+
             try:
-                order_resp = requests.post(
-                    'http://order-service:8000/api/orders/verify_purchase/',
-                    data={'customer_id': customer_id, 'book_id': book_id}
-                )
-                if order_resp.status_code == 200:
-                    purchase_data = order_resp.json()
-                    if not purchase_data.get('purchased'):
-                        return Response(
-                            {'error': 'You must purchase this book before rating'},
-                            status=status.HTTP_403_FORBIDDEN
-                        )
+                eligible_order_ids = self._eligible_order_ids(customer_id, book_id)
             except requests.exceptions.RequestException:
-                # If order service is down, allow comment anyway
-                pass
-            
-            comment = serializer.save()
+                eligible_order_ids = None
+
+            if eligible_order_ids is None:
+                return Response(
+                    {'error': 'Cannot verify purchase at this time. Please try again.'},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+
+            if not eligible_order_ids:
+                return Response(
+                    {'error': 'Bạn phải mua sản phẩm trước khi đánh giá.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+            if requested_order_id is not None:
+                requested_order_id = int(requested_order_id)
+                if requested_order_id not in eligible_order_ids:
+                    return Response(
+                        {'error': 'Đơn hàng không hợp lệ cho sản phẩm này hoặc chưa thanh toán.'},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                order_id = requested_order_id
+            else:
+                reviewed_order_ids = set(
+                    Comment.objects.filter(customer_id=customer_id, book_id=book_id).values_list('order_id', flat=True)
+                )
+                order_id = next((oid for oid in eligible_order_ids if oid not in reviewed_order_ids), None)
+                if order_id is None:
+                    return Response(
+                        {'error': 'Bạn đã đánh giá sản phẩm này cho tất cả đơn mua hợp lệ.'},
+                        status=status.HTTP_409_CONFLICT,
+                    )
+
+            if Comment.objects.filter(customer_id=customer_id, book_id=book_id, order_id=order_id).exists():
+                return Response(
+                    {'error': 'Sản phẩm này đã được bạn đánh giá trong đơn hàng đã chọn.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+            comment = serializer.save(order_id=order_id)
             return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
-        
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
@@ -62,10 +121,36 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         return Response({
             'book_id': book_id,
-            'average_rating': stats['avg_rating'] or 0,
+            'average_rating': round(stats['avg_rating'] or 0, 2),
             'total_reviews': stats['total_reviews'] or 0,
             'comments': serializer.data
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Bulk rating summary for product cards: /comments/summary/?book_ids=1,2,3"""
+        raw = (request.query_params.get('book_ids') or '').strip()
+        if not raw:
+            return Response({'error': 'book_ids parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            ids = [int(x) for x in raw.split(',') if x.strip()]
+        except ValueError:
+            return Response({'error': 'book_ids must be comma separated integers'}, status=status.HTTP_400_BAD_REQUEST)
+        if not ids:
+            return Response({'summaries': {}}, status=status.HTTP_200_OK)
+
+        agg = (
+            Comment.objects.filter(book_id__in=ids)
+            .values('book_id')
+            .annotate(avg_rating=Avg('rating'), total_reviews=Count('id'))
+        )
+        summaries = {str(i): {'average_rating': 0, 'total_reviews': 0} for i in ids}
+        for row in agg:
+            summaries[str(row['book_id'])] = {
+                'average_rating': round(row['avg_rating'] or 0, 2),
+                'total_reviews': row['total_reviews'] or 0,
+            }
+        return Response({'summaries': summaries}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'])
     def by_customer(self, request):
@@ -145,49 +230,8 @@ class CommentViewSet(viewsets.ModelViewSet):
         comment = self.get_object()
         comment.helpful_count += 1
         comment.save()
-        
+
         return Response({
             'message': 'Comment marked as helpful',
             'comment': CommentSerializer(comment).data
-        }, status=status.HTTP_200_OK)
-        
-        comments = Comment.objects.filter(book_id=book_id).order_by('-created_at')
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def by_customer(self, request):
-        """Get all comments by a customer"""
-        customer_id = request.query_params.get('customer_id')
-        if not customer_id:
-            return Response({'error': 'customer_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        comments = Comment.objects.filter(customer_id=customer_id).order_by('-created_at')
-        serializer = CommentSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['patch'])
-    def increment_helpful(self, request, pk=None):
-        """Increment helpful count"""
-        comment = self.get_object()
-        comment.helpful_count += 1
-        comment.save()
-        return Response(CommentSerializer(comment).data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def get_average_rating(self, request):
-        """Get average rating for a book"""
-        book_id = request.query_params.get('book_id')
-        if not book_id:
-            return Response({'error': 'book_id is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        comments = Comment.objects.filter(book_id=book_id)
-        if not comments.exists():
-            return Response({'book_id': book_id, 'average_rating': 0, 'count': 0}, status=status.HTTP_200_OK)
-        
-        avg_rating = sum(c.rating for c in comments) / comments.count()
-        return Response({
-            'book_id': book_id,
-            'average_rating': round(avg_rating, 2),
-            'count': comments.count()
         }, status=status.HTTP_200_OK)
