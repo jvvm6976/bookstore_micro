@@ -16,10 +16,16 @@ class CatalogServiceClient(ServiceClient):
         return self.get(f"/api/books/{product_id}/")
 
     def search_products(self, query: str, category: str | None = None,
+                        product_type: str | None = None,
+                        brand: str | None = None,
                         min_price: float | None = None, max_price: float | None = None) -> list[dict]:
         params: dict = {"search": query}
         if category:
             params["category"] = category
+        if product_type:
+            params["type"] = product_type
+        if brand:
+            params["brand"] = brand
         if min_price is not None:
             params["min_price"] = min_price
         if max_price is not None:
@@ -27,8 +33,31 @@ class CatalogServiceClient(ServiceClient):
         data = self.get("/api/books/", params=params)
         return _extract_list(data)
 
-    def get_by_category(self, category: str) -> list[dict]:
-        data = self.get("/api/books/", params={"category": category})
+    def get_by_category(self, category: str, product_type: str | None = None, brand: str | None = None) -> list[dict]:
+        params: dict = {"category": category}
+        if product_type:
+            params["type"] = product_type
+        if brand:
+            params["brand"] = brand
+        data = self.get("/api/books/", params=params)
+        return _extract_list(data)
+
+    def get_by_type(self, product_type: str, category: str | None = None, brand: str | None = None) -> list[dict]:
+        params: dict = {"type": product_type}
+        if category:
+            params["category"] = category
+        if brand:
+            params["brand"] = brand
+        data = self.get("/api/books/", params=params)
+        return _extract_list(data)
+
+    def get_by_brand(self, brand: str, category: str | None = None, product_type: str | None = None) -> list[dict]:
+        params: dict = {"brand": brand}
+        if category:
+            params["category"] = category
+        if product_type:
+            params["type"] = product_type
+        data = self.get("/api/books/", params=params)
         return _extract_list(data)
 
 

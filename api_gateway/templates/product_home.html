@@ -38,10 +38,26 @@ nav{position:sticky;top:0;z-index:20;background:var(--s);border-bottom:2px solid
 .btn{border:none;border-radius:999px;padding:.5rem .9rem;font-weight:700;font-size:.82rem;cursor:pointer}
 .btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pd)}
 .btn-o{background:#fff;border:1.5px solid var(--b);color:var(--tm)}
-.hero{max-width:1220px;margin:1rem auto;padding:1.25rem;border-radius:var(--r);background:linear-gradient(120deg,#9f1022,#c2182b 58%,#8e1120);color:#fff;box-shadow:var(--sh)}
-.hero h1{font-size:1.5rem;line-height:1.25;text-transform:uppercase}
-.hero p{margin-top:.45rem;opacity:.92}
-.hero-stat{display:flex;gap:1.2rem;margin-top:.95rem;font-size:.85rem;opacity:.95}
+.hero{max-width:1220px;margin:1rem auto;padding:1.1rem;border-radius:var(--r);background:linear-gradient(120deg,#9f1022,#c2182b 58%,#8e1120);color:#fff;box-shadow:var(--sh);display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr);gap:1rem;align-items:stretch}
+.hero-copy{min-width:0}
+.hero h1{font-size:1.35rem;line-height:1.25;text-transform:uppercase}
+.hero p{margin-top:.45rem;opacity:.92;max-width:38ch;line-height:1.55}
+.hero-stat{display:flex;gap:1.2rem;flex-wrap:wrap;margin-top:.95rem;font-size:.85rem;opacity:.95}
+.hero-recs{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:.85rem .9rem;backdrop-filter:blur(4px);display:flex;flex-direction:column;min-width:0}
+.hero-recs-head{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.6rem}
+.hero-recs-title{font-size:.9rem;font-weight:800;letter-spacing:.02em}
+.hero-recs-sub{font-size:.74rem;opacity:.9;white-space:nowrap}
+.hero-recs-list{display:grid;grid-template-columns:1fr;gap:.65rem;max-height:330px;overflow:auto;padding-right:.15rem}
+.hero-rec-item{background:#fff;color:var(--t);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:.6rem;box-shadow:0 8px 20px rgba(0,0,0,.08);display:grid;grid-template-columns:72px minmax(0,1fr);gap:.7rem;align-items:start;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s}
+.hero-rec-item:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(0,0,0,.12);border-color:var(--p)}
+.hero-rec-cover{width:72px;height:96px;border-radius:12px;overflow:hidden;background:linear-gradient(145deg,#ffe8eb,#ffd5da);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hero-rec-cover img{width:100%;height:100%;object-fit:cover}
+.hero-rec-body{min-width:0}
+.hero-rec-name{font-size:.9rem;font-weight:800;line-height:1.35}
+.hero-rec-meta{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-top:.32rem;font-size:.76rem;color:var(--tm)}
+.hero-rec-reason{margin-top:.35rem;font-size:.76rem;line-height:1.45;color:var(--pd)}
+.hero-rec-price{font-weight:800;color:var(--pd)}
+.hero-rec-empty{background:rgba(255,255,255,.92);color:var(--t);border-radius:12px;padding:.7rem;font-size:.8rem;line-height:1.5}
 .main{max-width:1220px;margin:0 auto;padding:0 1rem 1rem}
 .panel{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:.85rem;box-shadow:var(--sh);margin-bottom:1rem}
 .filters{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:.6rem}
@@ -107,7 +123,7 @@ nav{position:sticky;top:0;z-index:20;background:var(--s);border-bottom:2px solid
 #chatBox.open{display:flex}
 .chat-head{background:var(--p);color:#fff;padding:.65rem .8rem;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.82rem}
 .chat-messages{flex:1;overflow:auto;padding:.7rem;background:#fff7f8;display:flex;flex-direction:column;gap:.45rem}
-.chat-msg{padding:.45rem .62rem;border-radius:10px;font-size:.78rem;line-height:1.5;max-width:86%}
+.chat-msg{padding:.45rem .62rem;border-radius:10px;font-size:.78rem;line-height:1.5;max-width:86%;white-space:pre-wrap}
 .chat-msg.user{align-self:flex-end;background:var(--p);color:#fff}
 .chat-msg.bot{align-self:flex-start;background:#fff;border:1px solid var(--b);color:var(--t)}
 .chat-input{display:flex;gap:.45rem;padding:.6rem;border-top:1px solid var(--b)}
@@ -126,6 +142,7 @@ nav{position:sticky;top:0;z-index:20;background:var(--s);border-bottom:2px solid
 .profile-grid .full{grid-column:1 / -1}
 @media(max-width:760px){.detail-grid{grid-template-columns:1fr}.detail-cover{min-height:220px}}
 @media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.hero h1{font-size:1.2rem}}
+@media(max-width:760px){.hero{grid-template-columns:1fr}.hero-recs-list{max-height:220px}}
 @media(max-width:640px){nav{grid-template-columns:1fr;position:static}.hero-stat{flex-wrap:wrap}.filters{grid-template-columns:1fr}}
 </style>
 </head>
@@ -143,14 +160,25 @@ nav{position:sticky;top:0;z-index:20;background:var(--s);border-bottom:2px solid
 </nav>
 
 <section class="hero">
-  <h1>Hệ thống ecommerce đã đổi sang Product Service theo DDD</h1>
-  <p>Bộ lọc động theo loại sản phẩm, danh mục, thương hiệu và khoảng giá. Trải nghiệm mua sắm linh hoạt, dễ tùy chỉnh.</p>
-  <div class="hero-stat">
-    <span id="statProducts">Sản phẩm: --</span>
-    <span id="statTypes">Loại: --</span>
-    <span id="statCategories">Danh mục: --</span>
-    <span id="statBrands">Thương hiệu: --</span>
+  <div class="hero-copy">
+    <h1>Sản phẩm gợi ý cho bạn</h1>
+    <p>Các sản phẩm bên dưới được lấy từ AI gợi ý theo hành vi và mức độ quan tâm hiện tại của bạn.</p>
+    <div class="hero-stat">
+      <span id="statProducts">Sản phẩm: --</span>
+      <span id="statTypes">Loại: --</span>
+      <span id="statCategories">Danh mục: --</span>
+      <span id="statBrands">Thương hiệu: --</span>
+    </div>
   </div>
+  <aside class="hero-recs">
+    <div class="hero-recs-head">
+      <div class="hero-recs-title">Gợi ý từ AI</div>
+      <div class="hero-recs-sub" id="heroRecCount">Đang tải...</div>
+    </div>
+    <div id="heroRecList" class="hero-recs-list">
+      <div class="hero-rec-empty">Đang tải gợi ý cá nhân hóa...</div>
+    </div>
+  </aside>
 </section>
 
 <main class="main">
@@ -354,6 +382,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   await Promise.all([loadTypes(),loadCategories(),loadBrands()]);
   await loadTypeFacetMaps();
   await loadBehaviorProfile();
+  await loadHeroRecommendations();
   await loadProducts();
   document.getElementById('typeFilter').addEventListener('change',()=>{
     refreshCategoryOptions();
@@ -446,6 +475,85 @@ async function loadBehaviorProfile(){
     behaviorProfile=await r.json();
   }catch(e){
     behaviorProfile=null;
+  }
+}
+
+function normalizeHeroRecommendation(raw){
+  return {
+    id: raw.product_id || raw.id,
+    title: raw.title || raw.name || 'Sản phẩm',
+    price: Number(raw.price || 0),
+    category: raw.category || '',
+    reason: String(raw.reason || 'Phù hợp với nhu cầu gần đây của bạn').trim(),
+    cover_image_url: raw.cover_image_url || raw.image_url || '',
+  };
+}
+
+async function enrichHeroRecommendation(item){
+  if(!item?.id)return item;
+  if(item.cover_image_url)return item;
+  try{
+    const r=await fetch(`${API}/products/${item.id}/`);
+    if(!r.ok)return item;
+    const p=await r.json();
+    return {
+      ...item,
+      title: p.name || item.title,
+      price: Number(p.price ?? item.price ?? 0),
+      category: p.category_detail?.name || p.category || item.category,
+      cover_image_url: p.cover_image_url || item.cover_image_url || '',
+    };
+  }catch(e){
+    return item;
+  }
+}
+
+function renderHeroRecommendations(items, message=''){
+  const listEl=document.getElementById('heroRecList');
+  const countEl=document.getElementById('heroRecCount');
+  if(!listEl||!countEl)return;
+
+  const recs=Array.isArray(items)?items.slice(0,5):[];
+  countEl.textContent=recs.length ? `${recs.length} sản phẩm` : 'Chưa có gợi ý';
+
+  if(!recs.length){
+    listEl.innerHTML=`<div class="hero-rec-empty">${message||'Đăng nhập để xem gợi ý cá nhân hóa.'}</div>`;
+    return;
+  }
+
+  listEl.innerHTML=recs.map((it,idx)=>`
+    <div class="hero-rec-item" onclick="openProductDetailFromButton(${it.id})" style="cursor:pointer">
+      <div class="hero-rec-cover">
+        ${it.cover_image_url ? `<img src="${it.cover_image_url}" alt="${escHtml(it.title||'Sản phẩm')}" onerror="this.style.display='none'">` : '<span style="font-size:1.7rem">🛍️</span>'}
+      </div>
+      <div class="hero-rec-body">
+        <div class="hero-rec-name">${idx+1}. ${it.title}</div>
+        <div class="hero-rec-meta">
+          <span>${it.category||'Sản phẩm gợi ý'}</span>
+          <strong class="hero-rec-price">${Number(it.price||0).toLocaleString('vi-VN')}₫</strong>
+        </div>
+        <div class="hero-rec-reason">${it.reason||'Phù hợp với nhu cầu gần đây của bạn'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function loadHeroRecommendations(){
+  if(!user?.service_user_id){
+    renderHeroRecommendations([], 'Đăng nhập để xem 3-5 sản phẩm gợi ý từ AI.');
+    return;
+  }
+  try{
+    const r=await fetch(`${API}/v1/recommend/${user.service_user_id}?limit=5`);
+    if(!r.ok){
+      renderHeroRecommendations([], 'Tạm thời chưa lấy được gợi ý từ AI.');
+      return;
+    }
+    const data=await r.json();
+    const recs=await Promise.all((data.recommendations||[]).map(async raw=>enrichHeroRecommendation(normalizeHeroRecommendation(raw))));
+    renderHeroRecommendations(recs);
+  }catch(e){
+    renderHeroRecommendations([], 'Không thể tải gợi ý lúc này.');
   }
 }
 
@@ -1075,6 +1183,36 @@ function appendChat(text, who='bot'){
   return el;
 }
 
+function formatChatAnswer(raw){
+  let text=String(raw||'').trim();
+  if(!text)return '';
+
+  // Remove noisy preface fragments to keep response concise.
+  text=text.replace(/\s*\|\s*hồ sơ:[^\n]*/gi,'');
+  text=text.replace(/\s*\|\s*lý do:[^\n]*/gi,'');
+  text=text.replace(/\s*Từ khóa:[^\n]*/gi,'');
+
+  // Normalize spacing first.
+  text=text.replace(/\s{2,}/g,' ').trim();
+
+  // Force airy product layout.
+  text=text.replace(/(Sản phẩm\s*\d+)\s*-\s*/gi,'\n\n$1\n- ');
+  text=text.replace(/(Sản phẩm\s*\d+)/gi,'\n\n$1');
+  text=text.replace(/\s+(Tác giả:)/gi,'\n$1');
+  text=text.replace(/\s+(Danh mục:)/gi,'\n$1');
+  text=text.replace(/\s+(Giá:)/gi,'\n$1');
+  text=text.replace(/\s+(Đánh giá:)/gi,'\n$1');
+  text=text.replace(/\s+(Gợi ý:)/gi,'\n$1');
+
+  // Keep short header and a clean closing line.
+  text=text.replace(/Gợi ý sản phẩm cho bạn/gi,'Gợi ý sản phẩm cho bạn\n');
+  text=text.replace(/Bạn muốn mình lọc thêm theo giá, thương hiệu hay tồn kho\?/gi,'\nBạn muốn lọc thêm theo giá, thương hiệu hay tồn kho?');
+
+  // Cleanup excessive blank lines.
+  text=text.replace(/\n{3,}/g,'\n\n').trim();
+  return text;
+}
+
 async function sendChatbotMessage(){
   const input=document.getElementById('chatInput');
   const msg=(input.value||'').trim();
@@ -1093,7 +1231,7 @@ async function sendChatbotMessage(){
       localStorage.setItem(`cb_chat_session_${user?.service_user_id||'guest'}`,chatSessionId);
     }
     typing.remove();
-    appendChat(d.answer||d.response||'Toi da nhan duoc yeu cau.','bot');
+    appendChat(formatChatAnswer(d.answer||d.response||'Toi da nhan duoc yeu cau.'),'bot');
   }catch(e){
     typing.remove();
     appendChat('Khong ket noi duoc chatbot luc nay.','bot');

@@ -59,6 +59,18 @@ main{flex:1;padding:1.5rem 2rem;max-width:1100px;margin:0 auto;width:100%}
 .btn-checkout{width:100%;padding:.9rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;margin-top:.5rem;letter-spacing:.02em}
 .btn-checkout:hover{background:var(--pd);transform:translateY(-1px);box-shadow:0 4px 12px rgba(194,24,43,.3)}
 .btn-checkout:disabled{opacity:.6;cursor:not-allowed;transform:none;box-shadow:none}
+.suggest-box{background:var(--s);border-radius:var(--r);box-shadow:var(--sh);padding:1rem;margin-top:1rem;border:1px solid var(--b)}
+.suggest-title{font-weight:800;font-size:.88rem;color:var(--pd);margin-bottom:.65rem;text-transform:uppercase;letter-spacing:.04em}
+.suggest-list{display:flex;flex-direction:column;gap:.6rem}
+.suggest-item{padding:.6rem;border:1px solid var(--b);border-radius:var(--rs);background:#FFF7F8;cursor:pointer;transition:all .2s;display:grid;grid-template-columns:56px minmax(0,1fr);gap:.65rem;align-items:start}
+.suggest-item:hover{border-color:var(--p);background:var(--pll);transform:translateY(-1px)}
+.suggest-cover{width:56px;height:74px;border-radius:10px;overflow:hidden;background:linear-gradient(145deg,#ffe8eb,#ffd5da);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.suggest-cover img{width:100%;height:100%;object-fit:cover}
+.suggest-body{min-width:0}
+.suggest-name{font-size:.84rem;font-weight:700;line-height:1.35;margin-bottom:.2rem}
+.suggest-meta{display:flex;justify-content:space-between;gap:.5rem;font-size:.76rem;color:var(--tm);flex-wrap:wrap}
+.suggest-price{font-weight:800;color:var(--pd)}
+.suggest-reason{font-size:.74rem;color:var(--pd);margin-top:.22rem;line-height:1.45}
 /* Saga */
 .saga-box{background:var(--bg);border-radius:var(--rs);padding:.9rem;margin-top:.85rem;border:1px solid var(--b)}
 .saga-title{font-weight:700;font-size:.85rem;margin-bottom:.5rem;color:var(--tm)}
@@ -88,15 +100,23 @@ main{flex:1;padding:1.5rem 2rem;max-width:1100px;margin:0 auto;width:100%}
         <div id="cartItemsPane"><div class="loading"><div class="spin"></div></div></div>
       </div>
     </div>
-    <div class="summary-box">
-      <div class="summary-title">📋 Tóm tắt đơn hàng</div>
-      <div class="summary-row"><span>Số lượng sản phẩm</span><span id="sumQty">0</span></div>
-      <div class="summary-row"><span>Tạm tính</span><span id="sumSubtotal">0₫</span></div>
-      <div class="summary-row"><span>Phí vận chuyển</span><span style="color:#059669;font-weight:600">Miễn phí</span></div>
-      <div class="summary-total"><span>Tổng cộng</span><span id="sumTotal">0₫</span></div>
-      <div style="margin-top:1.25rem">
-        <button class="btn-checkout" id="checkoutBtn" onclick="goCheckout()">➡️ Mua hàng</button>
-        <div id="checkoutMsg" style="font-size:.82rem;color:var(--tm);margin-top:.5rem;text-align:center"></div>
+    <div>
+      <div class="summary-box">
+        <div class="summary-title">📋 Tóm tắt đơn hàng</div>
+        <div class="summary-row"><span>Số lượng sản phẩm</span><span id="sumQty">0</span></div>
+        <div class="summary-row"><span>Tạm tính</span><span id="sumSubtotal">0₫</span></div>
+        <div class="summary-row"><span>Phí vận chuyển</span><span style="color:#059669;font-weight:600">Miễn phí</span></div>
+        <div class="summary-total"><span>Tổng cộng</span><span id="sumTotal">0₫</span></div>
+        <div style="margin-top:1.25rem">
+          <button class="btn-checkout" id="checkoutBtn" onclick="goCheckout()">➡️ Mua hàng</button>
+          <div id="checkoutMsg" style="font-size:.82rem;color:var(--tm);margin-top:.5rem;text-align:center"></div>
+        </div>
+      </div>
+      <div class="suggest-box">
+        <div class="suggest-title">Danh sách gợi ý</div>
+        <div class="suggest-list" id="cartSuggestList">
+          <div class="empty-state" style="padding:.55rem">Đang tải gợi ý cho giỏ hàng...</div>
+        </div>
       </div>
     </div>
   </div>
@@ -125,6 +145,123 @@ function authH() {
   const h={'Content-Type':'application/json'};
   if(user?.access_token) h['Authorization']='Bearer '+user.access_token;
   return h;
+}
+
+function escHtml(value){
+  return String(value||'')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
+}
+
+function sanitizeReason(value){
+  const text=String(value||'').trim();
+  if(!text)return 'Phù hợp với lịch sử và giỏ hàng hiện tại';
+  const first=text.split('|')[0].split(';')[0].trim();
+  const lower=first.toLowerCase();
+  if(lower.includes('thể loại')) return first.replace('behavior:','').replace('graph:','').trim() || 'Phù hợp với lịch sử và giỏ hàng hiện tại';
+  if(lower.includes('cùng brand')||lower.includes('thương hiệu')) return 'Cùng thương hiệu bạn thường quan tâm';
+  if(lower.includes('cùng loại sản phẩm')) return 'Cùng loại sản phẩm bạn đang xem gần đây';
+  if(lower.includes('phổ biến')||lower.includes('bán chạy')) return 'Được nhiều khách hàng quan tâm gần đây';
+  if(lower.includes('lstm')||lower.includes('graph')||lower.includes('behavior')||lower.includes('rag')) return 'Phù hợp với hành vi mua sắm gần đây của bạn';
+  return first.replace('behavior:','').replace('graph:','').replace('lstm:','').replace('RAG:','').trim() || 'Phù hợp với lịch sử và giỏ hàng hiện tại';
+}
+
+function renderCartSuggestions(items){
+  const box=document.getElementById('cartSuggestList');
+  if(!box)return;
+  if(!items||!items.length){
+    box.innerHTML='<div class="empty-state" style="padding:.55rem">Chưa có gợi ý phù hợp cho giỏ hàng.</div>';
+    return;
+  }
+  box.innerHTML=items.slice(0,6).map(it=>`
+    <div class="suggest-item" onclick="goProduct(${it.id})">
+      <div class="suggest-cover">
+        ${it.cover_image_url ? `<img src="${it.cover_image_url}" alt="${escHtml(it.title||'Sản phẩm')}" onerror="this.style.display='none'">` : '<span style="font-size:1.5rem">🛍️</span>'}
+      </div>
+      <div class="suggest-body">
+        <div class="suggest-name">${escHtml(it.title||'Sản phẩm')}</div>
+        <div class="suggest-meta">
+          <span>${escHtml(it.category||'Gợi ý cá nhân hóa')}</span>
+          <strong class="suggest-price">${fmt(it.price||0)}</strong>
+        </div>
+        <div class="suggest-reason">${escHtml(sanitizeReason(it.reason))}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function enrichCartRecommendation(raw){
+  const item={
+    id: raw.product_id || raw.id,
+    title: raw.title || raw.name || 'Sản phẩm',
+    category: raw.category || '',
+    price: Number(raw.price || 0),
+    reason: raw.reason || 'Phù hợp với giỏ hàng hiện tại',
+    cover_image_url: raw.cover_image_url || '',
+  };
+  if(!item.id || item.cover_image_url)return item;
+  try{
+    const r=await fetch(`${API}/books/${item.id}/`,{headers:authH()});
+    if(!r.ok)return item;
+    const b=await r.json();
+    return {
+      ...item,
+      title: b.title || b.name || item.title,
+      category: b.category_detail?.name || b.type_detail?.name || item.category,
+      price: Number(b.price ?? item.price ?? 0),
+      cover_image_url: b.cover_image_url || item.cover_image_url || '',
+    };
+  }catch(_){
+    return item;
+  }
+}
+
+async function refreshCartSuggestions(){
+  const listEl=document.getElementById('cartSuggestList');
+  if(!listEl)return;
+  if(!user?.service_user_id){
+    renderCartSuggestions([]);
+    return;
+  }
+
+  let recs=[];
+  try{
+    const personalized=await fetch('/api/v1/recommend/'+user.service_user_id+'?limit=8');
+    if(personalized.ok){
+      const data=await personalized.json();
+      recs=await Promise.all((data.recommendations||[]).map(enrichCartRecommendation));
+    }
+  }catch(_){ recs=[]; }
+
+  const cartBookIds = new Set((cartData?.items||[]).map(i=>Number(i.book_id)));
+  recs = recs.filter(r=>r.id && !cartBookIds.has(Number(r.id)));
+
+  if(!recs.length && cartData?.items?.length){
+    const seed=Number(cartData.items[0].book_id||0);
+    if(seed){
+      try{
+        const similar=await fetch('/api/v1/recommend/similar/'+seed+'?limit=6');
+        if(similar.ok){
+          const d=await similar.json();
+          recs=(await Promise.all((d.similar||[]).map(async r=>{
+            const item=await enrichCartRecommendation(r);
+            item.reason=item.reason||'tương tự sản phẩm trong giỏ';
+            return item;
+          }))).filter(r=>r.id && !cartBookIds.has(Number(r.id)));
+        }
+      }catch(_){ recs=[]; }
+    }
+  }
+
+  renderCartSuggestions(recs);
+}
+
+function goProduct(bookId){
+  if(!bookId)return;
+  window.location.href='/?pane=home&book_id='+bookId;
 }
 function toggleDropdown(e){e.stopPropagation();document.getElementById('profileDropdown')?.classList.toggle('open');}
 function closeDropdown(){document.getElementById('profileDropdown')?.classList.remove('open');}
@@ -164,6 +301,7 @@ async function loadCart() {
     document.getElementById('cartItemsPane').innerHTML='<div class="empty-cart"><div class="empty-icon">🛒</div><div style="font-weight:600;margin-bottom:.5rem">Giỏ hàng trống</div><a href="/" class="btn btn-p btn-sm" style="display:inline-block;margin-top:.5rem">Khám phá sản phẩm ngay</a></div>';
     document.getElementById('itemCount').textContent='0 sản phẩm';
     updateSummary([]);
+    refreshCartSuggestions();
     return;
   }
   try {
@@ -171,8 +309,10 @@ async function loadCart() {
     if (!r.ok) throw new Error();
     cartData = await r.json();
     renderCart();
+    refreshCartSuggestions();
   } catch(e) {
     document.getElementById('cartItemsPane').innerHTML='<div class="empty-cart"><div class="empty-icon">⚠️</div>Không thể tải giỏ hàng</div>';
+    renderCartSuggestions([]);
   }
 }
 
@@ -185,6 +325,7 @@ function renderCart() {
   if (!items.length) {
     pane.innerHTML='<div class="empty-cart"><div class="empty-icon">🛒</div><div style="font-weight:600;font-size:1rem;margin-bottom:.5rem">Giỏ hàng trống</div><p style="font-size:.88rem;margin-bottom:1rem">Hãy thêm sản phẩm vào giỏ để tiếp tục</p><a href="/" class="btn btn-p btn-sm" style="display:inline-block">Khám phá sản phẩm ngay</a></div>';
     updateSummary([]);
+    refreshCartSuggestions();
     return;
   }
   pane.innerHTML = items.map(item=>`
@@ -260,7 +401,7 @@ async function updateQty(bookId, newQty) {
   if (!cartId) return;
   try {
     const r = await fetch(`${API}/carts/${cartId}/update_item_quantity/`,{method:'POST',headers:authH(),body:JSON.stringify({book_id:bookId,quantity:newQty})});
-    if (r.ok) { cartData=await r.json(); if(newQty>0)trackBehavior(bookId,'cart'); renderCart(); toast(newQty===0?'Đã xóa sản phẩm':'Đã cập nhật số lượng','ok'); }
+    if (r.ok) { cartData=await r.json(); if(newQty>0)trackBehavior(bookId,'cart'); renderCart(); refreshCartSuggestions(); toast(newQty===0?'Đã xóa sản phẩm':'Đã cập nhật số lượng','ok'); }
     else { toast('Không thể cập nhật số lượng','err'); }
   } catch(e) { toast('Lỗi kết nối','err'); }
 }

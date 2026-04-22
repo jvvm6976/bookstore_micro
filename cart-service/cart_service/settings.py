@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'cart_service.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', os.getenv('DB_NAME', 'bookstore_cart')),
+        'NAME': os.getenv('POSTGRES_DB', os.getenv('DB_NAME', 'ecommerce_cart')),
         'USER': os.getenv('POSTGRES_USER', os.getenv('DB_USER', 'postgres')),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', os.getenv('DB_PASSWORD', 'root')),
         'HOST': os.getenv('DB_HOST', 'db-postgres'),

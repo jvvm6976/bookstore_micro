@@ -50,6 +50,12 @@ WEIGHTS = {
     "rate": 3,
     "click_detail_button": 2,
     "click_wishlist_button": 3,
+    "click": 2,
+    "add_to_cart": 4,
+    "remove_from_cart": 1,
+    "add_to_wishlist": 3,
+    "remove_from_wishlist": 1,
+    "checkout": 6,
 }
 
 

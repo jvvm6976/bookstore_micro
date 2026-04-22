@@ -56,7 +56,7 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': os.environ.get('DB_ENGINE', 'django.db.backends.postgresql'),
-        'NAME': os.environ.get('DB_NAME', 'bookstore_product'),
+        'NAME': os.environ.get('DB_NAME', 'ecommerce_product'),
         'USER': os.environ.get('DB_USER', 'postgres'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'root'),
         'HOST': os.environ.get('DB_HOST', 'db-postgres'),

@@ -26,8 +26,5 @@ if [ $migrate_ok -ne 1 ]; then
     exit 1
 fi
 
-echo "Seeding product catalog..."
-python manage.py seed_products
-
 echo "Starting product-service..."
 python manage.py runserver 0.0.0.0:8000

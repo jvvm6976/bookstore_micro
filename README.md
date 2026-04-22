@@ -1,6 +1,6 @@
-# 📚 Bookstore Microservices
+# 🛒 Ecommerce Microservices
 
-A complete e-commerce platform for bookstores built with Django microservices architecture.
+A complete e-commerce platform built with Django microservices architecture.
 
 ## Tech Stack
 - **Backend:** Python 3.10, Django 5.2, Django REST Framework
@@ -11,8 +11,8 @@ A complete e-commerce platform for bookstores built with Django microservices ar
 ## Services
 - **API Gateway** - Main entry point
 - **Customer Service** - User management
-- **Book Service** - Catalog management
-- **Catalog Service** - Book browsing & search
+- **Book Service** - Book data management
+- **Product Service** - Catalog management, browsing, and search
 - **Cart Service** - Shopping cart
 - **Order Service** - Order management
 - **Payment Service** - Payment processing
@@ -25,14 +25,14 @@ A complete e-commerce platform for bookstores built with Django microservices ar
 ## Quick Start
 
 ### Prerequisites
-- Docker 20.10+
+- **Product Service** - Catalog management, browsing, and search
 - Docker Compose 2.0+
 - 4GB RAM, 20GB disk
 
 ### Setup
 ```bash
 # Navigate to project directory
-cd d:\bookstore-micro05
+cd d:\ecommerce-micro05
 
 # Start all services
 docker-compose up -d
@@ -110,7 +110,7 @@ docker-compose logs customer-service
 | 6 | Shipping | 8006 | MySQL | Logistics & tracking |
 | 7 | Staff | 8007 | MySQL | Employee management |
 | 8 | Comment-Rate | 8008 | Postgres | Reviews, ratings, feedback |
-| 9 | Catalog | 8009 | SQLite | Read-only discovery/search |
+| 9 | Product | 8009 | SQLite | Read-only discovery/search |
 | 10 | Manager | 8010 | MySQL | Admin dashboard, reports |
 | 11 | Recommender | 8011 | Postgres | Recommendations engine |
 | 12 | API Gateway | 8000 | None | Request routing |
@@ -122,7 +122,7 @@ MySQL (port 3307)          PostgreSQL (port 5432)
 ├── orders                 ├── carts  
 ├── payments               ├── comments
 ├── shipments              ├── recommendations
-├── staff                  └── bookstore_db
+├── staff                  └── ecommerce_db
 └── manager               
 ```
 
@@ -292,7 +292,7 @@ PATCH /api/shipments/{id}/update_status/
 POST /api/staff/
 {
   "username": "alice",
-  "email": "alice@bookstore.com",
+  "email": "alice@ecommerce.com",
   "password": "staff123!",
   "role": "editor",  # admin, editor, viewer
   "department": "Content"
@@ -348,29 +348,25 @@ POST /api/comments/{id}/helpful/
 DELETE /api/comments/{id}/
 ```
 
-### **Catalog Service (Port 8009)**
+### **Product Service (Port 8009)**
 ```bash
-# List all books with reviews enriched
-GET /api/catalog/list_all_books/
+# List products
+GET /api/products/
 
-# Search by category
-GET /api/catalog/search_by_category/?category=programming
+# Search by keyword
+GET /api/products/?search=programming
 
-# Search by author
-GET /api/catalog/search_by_author/?author=Sam%20Newman
+# Filter by category / type / brand
+GET /api/products/?category=electronics&type=laptop&brand=apple
 
-# Get book detail (with reviews)
-GET /api/catalog/book_detail/?book_id=5
-Response: {
-  "id": 5,
-  "title": "Clean Code",
-  "author": "Robert Martin",
-  "price": 45.99,
-  "average_rating": 4.7,
-  "total_reviews": 89,
-  "category": "programming",
-  "in_stock": true
-}
+# Browse by category
+GET /api/products/by_category/?category=electronics
+
+# Browse by type
+GET /api/products/by_type/?type=mobile
+
+# Browse by brand
+GET /api/products/by_brand/?brand=samsung
 ```
 
 ### **Manager Service (Port 8010)**
@@ -441,9 +437,9 @@ curl -X POST http://localhost:8000/api/proxy/customers/ \
 }'
 # Result: customer_id=1, cart_id=1
 
-# 2️⃣ BROWSE BOOKS
-curl http://localhost:8000/api/proxy/catalog/search_by_category/?category=programming
-# Result: [book1, book2, book3, ...]
+# 2️⃣ BROWSE PRODUCTS
+curl http://localhost:8000/api/proxy/products/?search=programming
+# Result: [product1, product2, product3, ...]
 
 # 3️⃣ ADD TO CART
 curl -X POST http://localhost:8000/api/proxy/carts/1/add_item/ \
@@ -500,7 +496,7 @@ mysql -h localhost -P 3307 -u root -p
 # Password: root
 
 # Sample queries
-USE bookstore_db;
+USE ecommerce_db;
 SELECT * FROM customers;
 SELECT * FROM orders;
 ```
@@ -508,7 +504,7 @@ SELECT * FROM orders;
 ### **Access PostgreSQL**
 ```bash
 # Via command line  
-psql -h localhost -U postgres -d bookstore_db
+psql -h localhost -U postgres -d ecommerce_db
 # Password: root
 
 # Sample queries
@@ -604,7 +600,7 @@ python -c "import requests; print(requests.get('http://localhost:8000/api/proxy/
 ## 📁 Project Structure
 
 ```
-bookstore-micro05/
+ecommerce-micro05/
 ├── docker-compose.yml          # Service orchestration
 ├── QUICK_START.md              # 5-minute setup guide
 ├── ARCHITECTURE.md             # Detailed architecture
@@ -672,9 +668,6 @@ bookstore-micro05/
 ├── comment-rate-service/       # Service 8: Reviews/ratings
 │   └── ... (similar structure)
 │
-├── catalog-service/            # Service 9: Discovery
-│   └── ... (similar structure)
-│
 ├── manager-service/            # Service 10: Dashboard
 │   └── ... (similar structure)
 │
@@ -703,7 +696,7 @@ done
 ### **Postman Collection**
 Create requests in Postman for each endpoint:
 1. Open Postman
-2. Create new Collection "Bookstore"
+2. Create new Collection "Ecommerce"
 3. Add requests for each endpoint
 4. Use variables: {{base_url}} = http://localhost:8000/api/proxy
 
@@ -732,7 +725,7 @@ docker-compose ps
 
 # Check network
 docker network ls
-docker network inspect bookstore-micro05_bookstore-network
+docker network inspect ecommerce-micro05_ecommerce-network
 
 # Inspect service DNS
 docker-compose exec customer-service ping book-service

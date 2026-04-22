@@ -149,10 +149,17 @@ def get_personalized(
     budget_min: float | None = None,
     budget_max: float | None = None,
     category: str | None = None,
+    brand: str | None = None,
+    product_type: str | None = None,
     customer_ratings: dict[int, int] | None = None,
 ) -> list[dict[str, Any]]:
     interactions = interactions or _load_interactions(customer_id)
     customer_ratings = customer_ratings or _load_customer_ratings(customer_id)
+    interaction_events = sum(
+        sum(book_counts.values())
+        for book_counts in interactions.values()
+        if isinstance(book_counts, dict)
+    )
 
     base_personalized = base_recommendation.get_personalized(
         customer_id=customer_id,
@@ -161,6 +168,8 @@ def get_personalized(
         budget_min=budget_min,
         budget_max=budget_max,
         category=category,
+        brand=brand,
+        product_type=product_type,
         customer_ratings=customer_ratings,
     )
 
@@ -173,6 +182,8 @@ def get_personalized(
 
     all_books = catalog_client.get_all_products(limit=500)
     catalog_index = _catalog_lookup(all_books)
+    neo4j_store.ensure_train_graph()
+    neo4j_store.sync_customer_behavior(customer_id=customer_id, interactions=interactions)
     neo4j_store.sync_catalog(all_books)
 
     graph_scores = neo4j_store.score_candidates(
@@ -194,11 +205,21 @@ def get_personalized(
         if top_category:
             rag_entries = rag_service.retrieve(f"{top_category} product recommendation", top_k=1)
 
+    # Personalization-first weighting:
+    # richer per-customer behavior history => stronger LSTM and graph influence,
+    # weaker popularity fallback.
+    if interaction_events >= 20:
+        weights = {"behavior": 0.52, "popularity": 0.08, "graph": 0.20, "lstm": 0.40}
+    elif interaction_events >= 8:
+        weights = {"behavior": 0.54, "popularity": 0.12, "graph": 0.21, "lstm": 0.33}
+    else:
+        weights = {"behavior": 0.56, "popularity": 0.16, "graph": 0.22, "lstm": 0.24}
+
     merged = _merge_sources([
-        ("behavior", 0.55, base_personalized),
-        ("popularity", 0.18, base_popular),
-        ("graph", 0.22, _score_map_to_items(graph_scores, catalog_index)),
-        ("lstm", 0.25, _score_map_to_items(lstm_scores, catalog_index)),
+        ("behavior", weights["behavior"], base_personalized),
+        ("popularity", weights["popularity"], base_popular),
+        ("graph", weights["graph"], _score_map_to_items(graph_scores, catalog_index)),
+        ("lstm", weights["lstm"], _score_map_to_items(lstm_scores, catalog_index)),
     ], limit)
 
     if rag_entries and merged:

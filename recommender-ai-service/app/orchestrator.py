@@ -22,6 +22,7 @@ from .services.behavior_analysis import behavior_service
 from .services.order_support    import order_support_service
 from .services.response_composer import compose
 from .clients.order_client import order_client
+from .infrastructure.lstm_model import ACTION_TO_ID
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ logger = logging.getLogger(__name__)
 _sessions: dict[str, list[dict]] = {}
 _session_recommendations: dict[str, list[dict]] = {}
 MAX_HISTORY = 6
+MAX_RECOMMENDATIONS = 5
 
 
 def _get_history(session_id: str) -> list[dict]:
@@ -48,7 +50,7 @@ def _save_recommendations(session_id: str, recommendations: list[dict]) -> None:
     if not recommendations:
         return
     normalized: list[dict] = []
-    for r in recommendations[:8]:
+    for r in recommendations[:MAX_RECOMMENDATIONS]:
         normalized.append({
             "product_id": r.get("product_id") or r.get("id"),
             "title": r.get("title", ""),
@@ -65,6 +67,46 @@ def _save_recommendations(session_id: str, recommendations: list[dict]) -> None:
 
 def _get_recent_recommendations(session_id: str) -> list[dict]:
     return _session_recommendations.get(session_id, [])
+
+
+def _normalize_behavior_action(action: str) -> str:
+    alias_map = {
+        "cart": "add_to_cart",
+        "click_detail_button": "click",
+        "click_wishlist_button": "add_to_wishlist",
+    }
+    return alias_map.get(action, action)
+
+
+def _resolve_dynamic_limit(
+    interactions: dict[str, dict[int, int]] | None,
+    behavior_profile: dict[str, Any] | None,
+    requested_limit: int | None = None,
+) -> int:
+    """Dynamic rec count from user behavior richness (10 action types), capped at 5."""
+    cap = MAX_RECOMMENDATIONS if requested_limit is None else max(1, min(MAX_RECOMMENDATIONS, int(requested_limit)))
+
+    interactions = interactions or {}
+    active_types = 0
+    for action, book_counts in interactions.items():
+        normalized = _normalize_behavior_action(str(action))
+        if normalized not in ACTION_TO_ID:
+            continue
+        total = 0
+        if isinstance(book_counts, dict):
+            total = int(sum(int(v or 0) for v in book_counts.values()))
+        if total > 0:
+            active_types += 1
+
+    action_space = max(len(ACTION_TO_ID), 1)
+    richness = float(active_types) / float(action_space)
+    engagement = float((behavior_profile or {}).get("engagement_score", 0.0) or 0.0)
+    propensity = float((behavior_profile or {}).get("purchase_propensity_score", 0.0) or 0.0)
+
+    composite = (0.6 * richness) + (0.25 * engagement) + (0.15 * propensity)
+    dynamic_limit = 2 + int(round(composite * 3.0))
+    dynamic_limit = max(2, min(MAX_RECOMMENDATIONS, dynamic_limit))
+    return min(dynamic_limit, cap)
 
 
 def _infer_book_title_from_history(session_id: str, current_message: str) -> str | None:
@@ -238,6 +280,21 @@ def _get_bestseller_from_interactions(limit: int = 8) -> list[dict]:
         return []
 
 
+def _filter_by_brand_and_type(items: list[dict[str, Any]], brand: str | None = None, product_type: str | None = None) -> list[dict[str, Any]]:
+    if not brand and not product_type:
+        return items
+    filtered: list[dict[str, Any]] = []
+    for item in items:
+        item_brand = str(item.get("brand") or item.get("brand_detail", {}).get("slug") if isinstance(item.get("brand_detail"), dict) else item.get("brand") or "")
+        item_type = str(item.get("product_type") or item.get("type_detail", {}).get("slug") if isinstance(item.get("type_detail"), dict) else item.get("product_type") or "")
+        if brand and item_brand != brand:
+            continue
+        if product_type and item_type != product_type:
+            continue
+        filtered.append(item)
+    return filtered
+
+
 class ChatOrchestrator:
     def process(
         self,
@@ -315,8 +372,27 @@ class ChatOrchestrator:
 
         # 3. Dispatch to services
         data: dict[str, Any] = {}
+        data["history"] = _get_history(session_id)
         recommendations: list[dict] = []
         sources: list[dict] = []
+        behavior_profile: dict[str, Any] | None = None
+        user_interactions: dict[str, dict[int, int]] = {}
+        rec_limit = MAX_RECOMMENDATIONS
+
+        if customer_id:
+            try:
+                user_interactions = _get_interactions(customer_id)
+                behavior_profile = behavior_service.analyze(
+                    customer_id,
+                    {k: sum(v.values()) for k, v in user_interactions.items()},
+                )
+                data["behavior_profile"] = behavior_profile
+                rec_limit = _resolve_dynamic_limit(user_interactions, behavior_profile)
+            except Exception as exc:
+                logger.debug("Could not load behavior profile for C%s: %s", customer_id, exc)
+
+        if not customer_id:
+            rec_limit = 3
 
         if intent in ("faq", "return_policy", "payment_support", "shipping_support"):
             # RAG retrieval from KB
@@ -333,7 +409,7 @@ class ChatOrchestrator:
 
         elif intent == "product_advice":
             # Behavior + Recommendation + RAG context
-            interactions = _get_interactions(customer_id) if customer_id else {}
+            interactions = user_interactions if customer_id else {}
             customer_ratings = _get_customer_ratings(customer_id) if customer_id else {}
             flat_interactions = {
                 itype: {bid: cnt for bid, cnt in book_counts.items()}
@@ -348,6 +424,8 @@ class ChatOrchestrator:
                 direct_books = catalog_client.search_products(
                     query=direct_title,
                     category=entities.get("category"),
+                    product_type=entities.get("product_type"),
+                    brand=entities.get("brand"),
                     min_price=entities.get("budget_min"),
                     max_price=entities.get("budget_max"),
                 )
@@ -361,7 +439,7 @@ class ChatOrchestrator:
                     pids = [b.get("id") for b in direct_books if b.get("id")]
                     ratings = cc.get_reviews_for_products(pids) if pids else {}
                     matched_recs = []
-                    for b in direct_books[:3]:
+                    for b in direct_books[:max(1, min(3, rec_limit))]:
                         bid = b.get("id")
                         rm = ratings.get(bid, {})
                         matched_recs.append({
@@ -378,44 +456,58 @@ class ChatOrchestrator:
                     # Add similar books around the top match to keep recommendation behavior.
                     top_match_id = matched_recs[0].get("product_id") if matched_recs else None
                     if top_match_id:
-                        similar = rec_svc.get_similar(int(top_match_id), limit=3, customer_ratings=customer_ratings)
-                        recommendations = matched_recs + similar
+                        similar_limit = max(0, rec_limit - len(matched_recs))
+                        similar = rec_svc.get_similar(
+                            int(top_match_id),
+                            limit=max(1, similar_limit) if similar_limit > 0 else 1,
+                            customer_ratings=customer_ratings,
+                        )
+                        recommendations = (matched_recs + similar)[:rec_limit]
                     else:
-                        recommendations = matched_recs
+                        recommendations = matched_recs[:rec_limit]
 
                     data["recommendations"] = recommendations
                 else:
                     data["not_found_title"] = direct_title
 
-            recs = rec_svc.get_personalized(
-                customer_id=customer_id or 0,
-                interactions=flat_interactions,
-                customer_ratings=customer_ratings,
-                budget_min=entities.get("budget_min"),
-                budget_max=entities.get("budget_max"),
-                category=entities.get("category"),
-            )
-
-            # If category-constrained results are too generic, relax category to expose
-            # stronger customer-specific ranking signals.
-            if recs and all(float(r.get("score", 0) or 0) <= 0 for r in recs):
-                relaxed = rec_svc.get_personalized(
-                    customer_id=customer_id or 0,
+            if customer_id:
+                recs = rec_svc.get_personalized(
+                    customer_id=customer_id,
                     interactions=flat_interactions,
+                    limit=rec_limit,
                     customer_ratings=customer_ratings,
                     budget_min=entities.get("budget_min"),
                     budget_max=entities.get("budget_max"),
-                    category=None,
+                    category=entities.get("category"),
+                    brand=entities.get("brand"),
+                    product_type=entities.get("product_type"),
                 )
-                if relaxed:
-                    recs = relaxed
+
+                # If category-constrained results are too generic, relax category to expose
+                # stronger customer-specific ranking signals.
+                if recs and all(float(r.get("score", 0) or 0) <= 0 for r in recs):
+                    relaxed = rec_svc.get_personalized(
+                        customer_id=customer_id,
+                        interactions=flat_interactions,
+                        limit=rec_limit,
+                        customer_ratings=customer_ratings,
+                        budget_min=entities.get("budget_min"),
+                        budget_max=entities.get("budget_max"),
+                        category=None,
+                        brand=entities.get("brand"),
+                        product_type=entities.get("product_type"),
+                    )
+                    if relaxed:
+                        recs = relaxed
+            else:
+                recs = rec_svc.get_popular(limit=rec_limit)
 
             # If no personalized recs, fall back to popular
             if not recs:
-                recs = rec_svc.get_popular(limit=5)
+                recs = rec_svc.get_popular(limit=rec_limit)
             if not recommendations:
-                recommendations = recs
-                data["recommendations"] = recs
+                recommendations = recs[:rec_limit]
+                data["recommendations"] = recommendations
 
             # RAG context for additional context
             rag_entries = rag_retrieve(message, top_k=2, category="book")
@@ -453,15 +545,15 @@ class ChatOrchestrator:
             )
 
             if entities.get("ask_bestseller"):
-                recommendations = _get_bestseller_from_interactions(limit=8)
+                recommendations = _get_bestseller_from_interactions(limit=rec_limit)
                 if not recommendations:
-                    recommendations = rec_svc.get_popular(limit=8)
+                    recommendations = rec_svc.get_popular(limit=rec_limit)
                 if not recommendations:
                     # Last-resort fallback if no rating + no interaction signal.
                     all_books = catalog_client.get_all_products(limit=300)
                     all_books = [b for b in all_books if (b.get("id") and int(b.get("stock", 0) or 0) > 0)]
                     all_books.sort(key=lambda b: int(b.get("stock", 0) or 0), reverse=True)
-                    for b in all_books[:8]:
+                    for b in all_books[:rec_limit]:
                         recommendations.append({
                             "product_id": b.get("id"),
                             "title": b.get("title", ""),
@@ -481,7 +573,7 @@ class ChatOrchestrator:
                 all_books = [b for b in all_books if (b.get("id") and int(b.get("stock", 0) or 0) > 0)]
                 all_books.sort(key=lambda b: int(b.get("id", 0) or 0), reverse=True)
                 recommendations = []
-                for b in all_books[:8]:
+                for b in all_books[:rec_limit]:
                     recommendations.append({
                         "product_id": b.get("id"),
                         "title": b.get("title", ""),
@@ -510,7 +602,7 @@ class ChatOrchestrator:
                     ]
                     books.sort(key=lambda b: float(b.get("price", 0) or 0))
                     recommendations = []
-                    for b in books[:8]:
+                    for b in books[:rec_limit]:
                         recommendations.append({
                             "product_id": b.get("id"),
                             "title": b.get("title", ""),
@@ -526,6 +618,13 @@ class ChatOrchestrator:
                 data["recommendations"] = recommendations
                 data["sources"] = []
 
+            if recommendations:
+                recommendations = _filter_by_brand_and_type(
+                    recommendations,
+                    brand=entities.get("brand"),
+                    product_type=entities.get("product_type"),
+                ) or recommendations
+
             elif entities.get("ask_next_book"):
                 base_id = None
                 if recent_recs:
@@ -535,7 +634,7 @@ class ChatOrchestrator:
                     if found:
                         base_id = found[0].get("id")
                 if base_id:
-                    recommendations = rec_svc.get_similar(int(base_id), limit=8, customer_ratings=customer_ratings)
+                    recommendations = rec_svc.get_similar(int(base_id), limit=rec_limit, customer_ratings=customer_ratings)
                 data["recommendations"] = recommendations
                 data["sources"] = []
 
@@ -567,7 +666,7 @@ class ChatOrchestrator:
                 data["sources"] = []
 
             elif is_followup and recent_recs and not has_explicit_filter:
-                recommendations = recent_recs[:8]
+                recommendations = recent_recs[:rec_limit]
                 data["recommendations"] = recommendations
                 data["sources"] = []
             else:
@@ -578,6 +677,8 @@ class ChatOrchestrator:
                         for b in catalog_client.search_products(
                             query=str(t),
                             category=category,
+                            product_type=entities.get("product_type"),
+                            brand=entities.get("brand"),
                             min_price=entities.get("budget_min"),
                             max_price=entities.get("budget_max"),
                         ):
@@ -589,6 +690,8 @@ class ChatOrchestrator:
                     books = catalog_client.search_products(
                         query=str(entities.get("book_title")),
                         category=category,
+                        product_type=entities.get("product_type"),
+                        brand=entities.get("brand"),
                         min_price=entities.get("budget_min"),
                         max_price=entities.get("budget_max"),
                     )
@@ -612,15 +715,73 @@ class ChatOrchestrator:
                     books = catalog_client.search_products(
                         query=query,
                         category=category,
+                        product_type=entities.get("product_type"),
+                        brand=entities.get("brand"),
                         min_price=entities.get("budget_min"),
                         max_price=entities.get("budget_max"),
                     )
+
+                # Fallback for short keyword queries (e.g., "laptop"):
+                # if full-text search is empty, broaden by category then local keyword match.
+                if not books and category:
+                    books = catalog_client.get_by_category(category, product_type=entities.get("product_type"), brand=entities.get("brand"))
+
+                if not books and entities.get("product_type"):
+                    books = catalog_client.get_by_type(
+                        str(entities.get("product_type")),
+                        category=category,
+                        brand=entities.get("brand"),
+                    )
+
+                if not books and entities.get("brand"):
+                    books = catalog_client.get_by_brand(
+                        str(entities.get("brand")),
+                        category=category,
+                        product_type=entities.get("product_type"),
+                    )
+
+                if not books and query:
+                    q = str(query).strip().lower()
+                    all_books = catalog_client.get_all_products(limit=500)
+                    books = [
+                        b for b in all_books
+                        if q in str(b.get("title", "")).lower()
+                        or q in str(b.get("author", "")).lower()
+                        or q in str(b.get("category", "")).lower()
+                        or q in str(b.get("product_type", "")).lower()
+                        or q in str(b.get("brand", "")).lower()
+                    ]
+
+                if not books and query:
+                    q = str(query).strip().lower()
+                    if q in {
+                        "laptop", "notebook", "macbook", "ultrabook", "gaming laptop",
+                        "keyboard", "mouse", "headphone", "airpods", "monitor",
+                        "router", "wifi", "phone", "tablet", "camera", "speaker",
+                    }:
+                        all_books = catalog_client.get_all_products(limit=120)
+                        books = [b for b in all_books if int(b.get("stock", 0) or 0) > 0]
+                        books.sort(key=lambda x: int(x.get("stock", 0) or 0), reverse=True)
+
+                # Re-apply numeric/category filters for fallback lists.
+                if books:
+                    filtered_books = []
+                    min_price = entities.get("budget_min")
+                    max_price = entities.get("budget_max")
+                    for b in books:
+                        price = float(b.get("price", 0) or 0)
+                        if min_price is not None and price < float(min_price or 0):
+                            continue
+                        if max_price is not None and price > float(max_price or 0):
+                            continue
+                        filtered_books.append(b)
+                    books = filtered_books
                 # Format as recommendations
                 from .clients.comment_client import comment_client as cc
                 product_ids = [b["id"] for b in books if b.get("id")]
                 ratings = cc.get_reviews_for_products(product_ids) if product_ids else {}
                 recs = []
-                for b in books[:8]:
+                for b in books[:rec_limit]:
                     bid = b.get("id")
                     rm  = ratings.get(bid, {})
                     recs.append({
@@ -688,7 +849,7 @@ class ChatOrchestrator:
             "meta": {
                 "entities":    entities,
                 "customer_id": customer_id,
-                "behavior_profile": (behavior_service.analyze(customer_id, {k: sum(v.values()) for k, v in _get_interactions(customer_id).items()}) if customer_id else None),
+                "behavior_profile": behavior_profile,
             },
         }
 

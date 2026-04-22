@@ -18,31 +18,41 @@ logger = logging.getLogger(__name__)
 # Each entry: (intent, [(pattern, weight)])
 # Higher weight = stronger signal
 _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
+    ("greeting", [
+        (r"\b(xin chào|xin chao|chào|chao|hello|hi|hey|alo|chào shop|chao shop|shop ơi|shop oi)\b", 3.5),
+    ]),
     ("return_policy", [
         (r"\b(đổi trả|doi tra|hoàn tiền|hoan tien|refund|return|trả hàng|tra hang|đổi hàng|doi hang)\b", 3.0),
+        (r"\b(hàng lỗi|hang loi|lỗi|loi)\b", 2.4),
         (r"\b(chính sách|chinh sach|policy|điều kiện|dieu kien)\b", 1.0),
     ]),
     ("payment_support", [
         (r"\b(thanh toán|thanh toan|payment|pay|trả tiền|tra tien|phương thức|phuong thuc)\b", 3.0),
-        (r"\b(thẻ tín dụng|the tin dung|visa|mastercard|cod|chuyển khoản|chuyen khoan|momo|vnpay)\b", 2.5),
+        (r"\b(thẻ tín dụng|the tin dung|visa|mastercard|cod|chuyển khoản|chuyen khoan|momo|vnpay|ví điện tử|vi dien tu|e-wallet|ewallet|zalopay)\b", 2.8),
+        (r"\b(hỗ trợ|ho tro)\b", 0.8),
         (r"\b(hóa đơn|hoa don|invoice|biên lai|bien lai)\b", 1.5),
     ]),
     ("shipping_support", [
         (r"\b(giao hàng|giao hang|vận chuyển|van chuyen|shipping|delivery|ship)\b", 3.0),
+        (r"\b(giao nhanh|giao hỏa tốc|giao hoa toc|nhận hàng|nhan hang)\b", 2.8),
         (r"\b(thời gian|thoi gian|bao lâu|bao lau|khi nào|khi nao|phí ship|phi ship)\b", 1.5),
         (r"\b(địa chỉ|dia chi|address|nơi nhận|noi nhan)\b", 1.0),
     ]),
     ("order_support", [
-        (r"\b(đơn hàng|don hang|order|đặt hàng|dat hang|mã đơn|ma don|order_id|#\d+)\b", 3.0),
+        (r"(?:\b(đơn hàng|don hang|order|đặt hàng|dat hang|mã đơn|ma don|order_id|đơn\s*mã|don\s*ma|mã\s*\d+|ma\s*\d+|đơn\s*#?\d+|don\s*#?\d+)\b|#\d+)", 3.2),
         (r"\b(theo dõi|theo doi|tracking|trạng thái|trang thai|status|kiểm tra|kiem tra)\b", 2.0),
         (r"\b(hủy đơn|huy don|cancel|chưa nhận|chua nhan|thất lạc|that lac)\b", 2.5),
     ]),
     ("product_advice", [
         (r"\b(gợi ý|goi y|recommend|đề xuất|de xuat|tư vấn|tu van|nên mua|nen mua|mua gì|mua gi)\b", 3.0),
         (r"\b(muốn mua|muon mua|cần mua|can mua)\b", 1.8),
+        (r"\b(laptop|notebook|macbook|ultrabook|gaming\s*laptop|bàn phím|ban phim|keyboard|chuột|chuot|mouse|tai nghe|headphone|monitor|màn hình|man hinh|router|wifi|điện thoại|dien thoai|phone|mobile|tablet|airpods|camera|loa|speaker|smartwatch|printer|storage|webcam|console|smart\s*home)\b", 1.8),
+        (r"\b(apple|samsung|sony|logitech|asus|lenovo|jbl|canon|tp-link|western\s*digital|wd|microsoft|hp|xiaomi)\b", 1.4),
+        (r"\b(danh mục|danh muc|category|thương hiệu|thuong hieu|brand|loại sản phẩm|loai san pham|product type)\b", 1.9),
+        (r"\b(gợi ý sản phẩm|goi y san pham|đề xuất sản phẩm|de xuat san pham|sản phẩm phù hợp|san pham phu hop)\b", 2.8),
         (r"\b(đọc cuốn nào tiếp|doc cuon nao tiep|mua cuốn nào tiếp|mua cuon nao tiep|next book|đọc tiếp|doc tiep)\b", 2.8),
         (r"\b(giá tốt nhất|gia tot nhat|rẻ nhất|re nhat|cheapest|best price)\b", 3.0),
-        (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|compare)\b", 2.8),
+        (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|so sánh|so sanh|compare)\b", 2.8),
         (r"\b(còn hàng không|con hang khong|hết hàng|het hang|in stock|available)\b", 2.5),
         (r"\b(bán chạy|ban chay|best\s*seller|popular|sách mới|sach moi|mới nhất|moi nhat|new books|new arrivals)\b", 2.5),
         (r"\b(cùng tác giả|cung tac gia|same author|của tác giả|cua tac gia)\b", 2.3),
@@ -56,9 +66,13 @@ _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
     ("general_search", [
         (r"\b(tìm|tim|search|tìm kiếm|tim kiem|có sách|co sach|sách về|sach ve|sách của|sach cua)\b", 2.5),
         (r"\b(cuốn|cuon|quyển|quyen|book|title)\b", 1.8),
+        (r"\b(laptop|notebook|macbook|ultrabook|gaming\s*laptop|bàn phím|ban phim|keyboard|chuột|chuot|mouse|tai nghe|headphone|monitor|màn hình|man hinh|router|wifi|điện thoại|dien thoai|phone|mobile|tablet|airpods|camera|loa|speaker|smartwatch|printer|storage|webcam|console|smart\s*home)\b", 2.6),
+        (r"\b(apple|samsung|sony|logitech|asus|lenovo|jbl|canon|tp-link|western\s*digital|wd|microsoft|hp|xiaomi)\b", 1.6),
+        (r"\b(sản phẩm|san pham|product|hàng|hang|mặt hàng|mat hang|danh mục|danh muc|category|thương hiệu|thuong hieu|brand|loại sản phẩm|loai san pham)\b", 2.0),
         (r"\b(muốn mua cuốn|muon mua cuon|muốn mua sách|muon mua sach)\b", 3.0),
         (r"\b(giá tốt nhất|gia tot nhat|rẻ nhất|re nhat|cheapest|best price)\b", 2.8),
-        (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|compare)\b", 2.8),
+        (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|so sánh|so sanh|compare)\b", 3.0),
+        (r"\b(còn hàng|con hang|hết hàng|het hang|giá bao nhiêu|gia bao nhieu|bao nhiêu tiền|bao nhieu tien)\b", 3.2),
         (r"\b(còn hàng không|con hang khong|hết hàng|het hang|in stock|available)\b", 2.3),
         (r"\b(sách\s+giá\s+(trên|tren|dưới|duoi)|trên\s*\d+\s*(k|nghìn|nghin|đồng|dong|vnd)?|dưới\s*\d+\s*(k|nghìn|nghin|đồng|dong|vnd)?|từ\s*\d+\s*(k|nghìn|nghin)?\s*(đến|den|-)\s*\d+)\b", 3.0),
         (r"\b(sách|sach)\s*(trên|tren|dưới|duoi)\s*\d+\b", 3.1),
@@ -67,10 +81,12 @@ _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
         (r"\b(cùng tác giả|cung tac gia|same author|của tác giả|cua tac gia)\b", 2.2),
         (r"\b(tác giả|tac gia|author|thể loại|the loai|category|chủ đề|chu de|topic)\b", 1.5),
     ]),
+    ("faq_account", [
+        (r"\b(đăng ký|dang ky|register|tài khoản|tai khoan|account|mật khẩu|mat khau|password|quên mật khẩu|quen mat khau|đổi email|doi email|profile|hồ sơ|ho so)\b", 3.0),
+    ]),
     ("faq", [
         (r"\b(faq|hỏi đáp|hoi dap|câu hỏi|cau hoi|thắc mắc|thac mac|giải đáp|giai dap)\b", 3.0),
-        (r"\b(đăng ký|dang ky|register|tài khoản|tai khoan|account|mật khẩu|mat khau|password)\b", 2.0),
-        (r"\b(giới thiệu|gioi thieu|about|cloudbooks|moonbooks|nhà sách|nha sach)\b", 1.5),
+        (r"\b(giới thiệu|gioi thieu|about|cửa hàng|cua hang|ecommerce)\b", 1.5),
     ]),
 ]
 
@@ -81,6 +97,7 @@ QUICK_ACTION_MAP: dict[str, str] = {
     "order_support":   "order_support",
     "payment_support": "payment_support",
     "shipping":        "shipping_support",
+    "faq_account":     "faq_account",
     "faq":             "faq",
     "search":          "general_search",
 }

@@ -1,6 +1,6 @@
 # AI Assistant Service
 
-FastAPI-based AI service cho hệ thống e-commerce MoonBooks.
+FastAPI-based AI service cho hệ thống e-commerce Ecommerce.
 
 ## Kiến trúc
 

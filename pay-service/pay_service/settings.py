@@ -92,7 +92,7 @@ pymysql.install_as_MySQLdb()
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('MYSQL_DATABASE', os.getenv('DB_NAME', 'bookstore_pay')),
+        'NAME': os.getenv('MYSQL_DATABASE', os.getenv('DB_NAME', 'ecommerce_pay')),
         'USER': os.getenv('MYSQL_USER', os.getenv('DB_USER', 'root')),
         'PASSWORD': os.getenv('MYSQL_PASSWORD', os.getenv('DB_PASSWORD', 'root')),
         'HOST': os.getenv('DB_HOST', 'db-mysql'),

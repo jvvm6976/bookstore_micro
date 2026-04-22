@@ -59,12 +59,18 @@ def _make_entry(
     keywords: list[str],
     metadata: dict | None = None,
 ) -> dict[str, Any]:
+    normalized_keywords: list[str] = []
+    for k in keywords:
+        if k is None:
+            continue
+        normalized_keywords.append(str(k).lower())
+
     return {
         "id":       entry_id,
         "category": category,
         "title":    title,
         "content":  _normalize(content),
-        "keywords": [k.lower() for k in keywords],
+        "keywords": normalized_keywords,
         "metadata": metadata or {},
     }
 

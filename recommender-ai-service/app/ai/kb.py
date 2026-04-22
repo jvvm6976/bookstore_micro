@@ -20,22 +20,22 @@ DEFAULT_KB = [
         'category': 'faq',
         'title': 'Làm thế nào để đặt hàng?',
         'content': (
-            'Để đặt hàng tại CloudBooks: '
+            'Để đặt hàng tại Ecommerce: '
             '1. Đăng nhập tài khoản. '
-            '2. Tìm sách bạn muốn mua. '
+            '2. Tìm sản phẩm bạn muốn mua. '
             '3. Nhấn "Thêm vào giỏ hàng". '
             '4. Vào giỏ hàng, nhập địa chỉ giao hàng. '
             '5. Chọn phương thức thanh toán và nhấn "Đặt hàng".'
         ),
-        'keywords': ['đặt hàng', 'mua sách', 'giỏ hàng', 'checkout', 'order', 'dat hang', 'mua sach'],
+        'keywords': ['đặt hàng', 'mua sản phẩm', 'giỏ hàng', 'checkout', 'order', 'dat hang', 'mua san pham'],
     },
     {
         'category': 'faq',
         'title': 'Chính sách đổi trả hàng',
         'content': (
-            'CloudBooks chấp nhận đổi trả trong vòng 7 ngày kể từ ngày nhận hàng. '
-            'Điều kiện: sách còn nguyên vẹn, chưa qua sử dụng, còn đầy đủ bao bì. '
-            'Liên hệ support@cloudbooks.vn để được hỗ trợ.'
+            'Ecommerce chấp nhận đổi trả trong vòng 7 ngày kể từ ngày nhận hàng. '
+            'Điều kiện: sản phẩm còn nguyên vẹn, chưa qua sử dụng, còn đầy đủ bao bì. '
+            'Liên hệ support@ecommerce.vn để được hỗ trợ.'
         ),
         'keywords': ['đổi trả', 'hoàn tiền', 'refund', 'return', 'chính sách', 'doi tra', 'hoan tien', 'chinh sach'],
     },
@@ -43,7 +43,7 @@ DEFAULT_KB = [
         'category': 'policy',
         'title': 'Phương thức thanh toán',
         'content': (
-            'CloudBooks hỗ trợ các phương thức thanh toán: '
+            'Ecommerce hỗ trợ các phương thức thanh toán: '
             '1. Thẻ tín dụng/ghi nợ (Visa, Mastercard). '
             '2. COD - Thanh toán khi nhận hàng. '
             '3. Chuyển khoản ngân hàng. '
@@ -76,7 +76,7 @@ DEFAULT_KB = [
         'category': 'faq',
         'title': 'Làm thế nào để đăng ký tài khoản?',
         'content': (
-            'Để đăng ký tài khoản CloudBooks: '
+            'Để đăng ký tài khoản Ecommerce: '
             '1. Nhấn nút "Đăng ký" ở góc trên bên phải. '
             '2. Điền tên đăng nhập, email và mật khẩu (tối thiểu 6 ký tự). '
             '3. Nhấn "Tạo tài khoản". '
@@ -86,13 +86,13 @@ DEFAULT_KB = [
     },
     {
         'category': 'general',
-        'title': 'Giới thiệu CloudBooks',
+        'title': 'Giới thiệu Ecommerce',
         'content': (
-            'CloudBooks là nhà sách trực tuyến hàng đầu, cung cấp hàng nghìn đầu sách '
-            'thuộc các thể loại: lập trình, khoa học, lịch sử, tiểu thuyết, toán học. '
+            'Ecommerce là nền tảng thương mại điện tử, cung cấp đa dạng sản phẩm '
+            'từ sách, thiết bị công nghệ đến phụ kiện theo nhiều danh mục. '
             'Chúng tôi cam kết mang đến trải nghiệm mua sắm tốt nhất với giá cả hợp lý.'
         ),
-        'keywords': ['cloudbooks', 'giới thiệu', 'about', 'nhà sách', 'bookstore'],
+        'keywords': ['ecommerce', 'giới thiệu', 'about', 'cửa hàng'],
     },
     {
         'category': 'faq',

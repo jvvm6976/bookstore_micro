@@ -18,9 +18,73 @@ from ..application.hybrid_recommender import hybrid_recommendation_service as re
 from ..services.behavior_analysis import behavior_service
 from ..services.kb_ingestion     import kb_service
 from ..services.rag_retrieval    import rag_service
+from ..infrastructure.lstm_model import ACTION_TO_ID
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _public_reason(raw_reason: str) -> str:
+    text = str(raw_reason or "").strip()
+    if not text:
+        return "Phù hợp với nhu cầu gần đây của bạn"
+
+    first = text.split("|")[0].split(";")[0].strip()
+    lower = first.lower()
+
+    if "thể loại" in lower:
+        cleaned = first.replace("behavior:", "").replace("graph:", "").strip()
+        return cleaned or "Phù hợp với nhu cầu gần đây của bạn"
+    if "cùng brand" in lower or "thương hiệu" in lower:
+        return "Cùng thương hiệu bạn thường quan tâm"
+    if "cùng loại sản phẩm" in lower:
+        return "Cùng loại sản phẩm bạn đang xem gần đây"
+    if "phổ biến" in lower or "bán chạy" in lower:
+        return "Được nhiều khách hàng quan tâm gần đây"
+    if "lstm" in lower or "graph" in lower or "behavior" in lower or "rag" in lower:
+        return "Phù hợp với hành vi mua sắm gần đây của bạn"
+
+    cleaned = first
+    for token in ("behavior:", "graph:", "lstm:", "popularity:", "RAG:"):
+        cleaned = cleaned.replace(token, "")
+    cleaned = cleaned.strip()
+    return cleaned or "Phù hợp với nhu cầu gần đây của bạn"
+
+
+def _normalize_behavior_action(action: str) -> str:
+    alias_map = {
+        "cart": "add_to_cart",
+        "click_detail_button": "click",
+        "click_wishlist_button": "add_to_wishlist",
+    }
+    return alias_map.get(action, action)
+
+
+def _resolve_dynamic_limit(
+    interactions: dict,
+    behavior_profile: dict | None,
+    requested_limit: int,
+) -> int:
+    """Dynamic recommendation size from 10 action types; hard cap at 5."""
+    cap = max(1, min(5, int(requested_limit)))
+
+    active_types = 0
+    for action, book_counts in (interactions or {}).items():
+        normalized = _normalize_behavior_action(str(action))
+        if normalized not in ACTION_TO_ID:
+            continue
+        total = int(sum(int(v or 0) for v in (book_counts or {}).values())) if isinstance(book_counts, dict) else 0
+        if total > 0:
+            active_types += 1
+
+    richness = float(active_types) / float(max(len(ACTION_TO_ID), 1))
+    engagement = float((behavior_profile or {}).get("engagement_score", 0.0) or 0.0)
+    propensity = float((behavior_profile or {}).get("purchase_propensity_score", 0.0) or 0.0)
+
+    composite = (0.6 * richness) + (0.25 * engagement) + (0.15 * propensity)
+    dynamic_limit = 2 + int(round(composite * 3.0))
+    dynamic_limit = max(2, min(5, dynamic_limit))
+    return min(cap, dynamic_limit)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────
@@ -29,7 +93,7 @@ router = APIRouter()
 def health():
     stats = kb_service.get_stats()
     return {
-        "service": "moonbooks-ai-assistant",
+        "service": "ecommerce-ai-assistant",
         "status":  "healthy",
         "modules": ["intent_detector", "entity_extractor", "behavior_analysis",
                     "recommendation", "kb_ingestion", "rag_retrieval",
@@ -54,6 +118,14 @@ def chat(req: ChatRequest):
             session_id=req.session_id,
             quick_action=req.quick_action,
         )
+
+        # Hide internal model/debug reason strings from client payload.
+        recs = result.get("recommendations") or []
+        if isinstance(recs, list):
+            for r in recs:
+                if isinstance(r, dict):
+                    r["reason"] = _public_reason(str(r.get("reason", "") or ""))
+
         return ChatResponse(**result)
     except Exception as exc:
         logger.exception("Chat error: %s", exc)
@@ -65,7 +137,7 @@ def chat(req: ChatRequest):
 @router.get("/api/v1/recommend/{customer_id}", response_model=RecommendationResponse, tags=["recommend"])
 def recommend(
     customer_id: int,
-    limit:       int   = Query(8, ge=1, le=20),
+    limit:       int   = Query(5, ge=1, le=20),
     category:    Optional[str]  = None,
     budget_max:  Optional[float] = None,
 ):
@@ -82,17 +154,35 @@ def recommend(
         except Exception:
             pass
 
+        behavior_profile = None
+        try:
+            interactions_totals = {
+                itype: sum(book_counts.values())
+                for itype, book_counts in interactions.items()
+                if isinstance(book_counts, dict)
+            }
+            behavior_profile = behavior_service.analyze(customer_id, interactions_totals)
+        except Exception:
+            behavior_profile = None
+
+        final_limit = _resolve_dynamic_limit(interactions, behavior_profile, limit)
+
         recs = rec_svc.get_personalized(
             customer_id=customer_id,
             interactions=interactions,
-            limit=limit,
+            limit=final_limit,
             category=category,
             budget_max=budget_max,
         )
         if not recs:
-            recs = rec_svc.get_popular(limit=limit)
+            recs = rec_svc.get_popular(limit=final_limit)
 
-        items = [RecommendationItem(**r) for r in recs]
+        items = []
+        for r in recs:
+            if isinstance(r, dict):
+                r = dict(r)
+                r["reason"] = _public_reason(str(r.get("reason", "") or ""))
+            items.append(RecommendationItem(**r))
         return RecommendationResponse(
             customer_id=customer_id,
             recommendations=items,

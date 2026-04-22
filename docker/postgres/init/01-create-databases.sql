@@ -1,6 +1,6 @@
-CREATE DATABASE bookstore_book;
-CREATE DATABASE bookstore_product;
-CREATE DATABASE bookstore_cart;
-CREATE DATABASE bookstore_comment;
-CREATE DATABASE bookstore_recommender;
-CREATE DATABASE bookstore_catalog;
+CREATE DATABASE ecommerce_book;
+CREATE DATABASE ecommerce_product;
+CREATE DATABASE ecommerce_cart;
+CREATE DATABASE ecommerce_comment;
+CREATE DATABASE ecommerce_recommender;
+CREATE DATABASE ecommerce_catalog;

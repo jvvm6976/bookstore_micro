@@ -1,4 +1,4 @@
-"""MoonBooks AI Assistant Service FastAPI entry point."""
+"""Ecommerce AI Assistant Service FastAPI entry point."""
 
 import logging
 import os
@@ -21,9 +21,9 @@ from app.api.routes_lazy import get_router
 router = get_router()
 
 app = FastAPI(
-    title="MoonBooks AI Assistant Service",
+    title="Ecommerce AI Assistant Service",
     description=(
-        "AI-powered assistant for MoonBooks e-commerce platform.\n\n"
+        "AI-powered assistant for Ecommerce platform.\n\n"
         "RAG-based chatbot, KB management, and recommendation endpoints."
     ),
     docs_url="/docs",

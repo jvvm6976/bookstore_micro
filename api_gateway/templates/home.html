@@ -107,6 +107,16 @@ nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;gri
 
 /* ── BOOKS GRID ── */
 .books-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:1rem}
+.suggest-panel{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1rem;box-shadow:var(--sh)}
+.suggest-title{font-size:.9rem;font-weight:800;color:var(--pd);margin-bottom:.65rem;text-transform:uppercase;letter-spacing:.04em}
+.suggest-list{display:flex;flex-direction:column;gap:.55rem}
+.suggest-item{padding:.55rem .65rem;border:1px solid var(--b);border-radius:var(--rs);background:#FFF7F8;cursor:pointer;transition:all .2s}
+.suggest-item:hover{border-color:var(--p);background:var(--pll);transform:translateY(-1px)}
+.suggest-item-title{font-size:.84rem;font-weight:700;line-height:1.35;margin-bottom:.2rem;color:var(--t)}
+.suggest-item-meta{font-size:.76rem;color:var(--tm);display:flex;justify-content:space-between;gap:.5rem}
+.suggest-item-reason{font-size:.74rem;color:var(--pd);margin-top:.2rem;line-height:1.4}
+.search-layout{display:grid;grid-template-columns:1fr 300px;gap:1rem;align-items:start}
+.search-layout .suggest-panel{position:sticky;top:5.5rem}
 .book-card{background:var(--s);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);transition:all .25s;display:flex;flex-direction:column;border:1.5px solid transparent;cursor:pointer;position:relative}
 .book-card:hover{transform:translateY(-4px);box-shadow:var(--shl);border-color:var(--pl)}
 .book-badge{position:absolute;top:.5rem;left:.5rem;z-index:2;padding:.18rem .5rem;border-radius:6px;font-size:.65rem;font-weight:700;color:#fff}
@@ -185,7 +195,7 @@ footer{background:var(--pdd);color:#fff;padding:2rem 2rem 1rem;margin-top:auto}
 .footer-bottom{border-top:1px solid rgba(255,255,255,.15);padding-top:1rem;display:flex;justify-content:space-between;align-items:center;font-size:.78rem;opacity:.65;flex-wrap:wrap;gap:.5rem}
 @media(max-width:1024px){.cat-grid{grid-template-columns:repeat(3,1fr)}.promo-grid{grid-template-columns:1fr 1fr}.hero-inner{grid-template-columns:1fr}.hero-visual{min-height:280px}.hero-main-image{height:280px}.hero-books{position:static;margin-top:.9rem;justify-content:flex-start}.footer-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:980px){.nav{display:flex;flex-wrap:wrap}.nav-search{max-width:100%;order:3;flex:0 0 100%}}
-@media(max-width:768px){.main-wrap{padding:1rem}.nav{padding:.65rem 1rem;display:flex;flex-wrap:wrap}.nav-search{max-width:100%;order:3;flex:0 0 100%}.books-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.hero{padding:2rem 1rem 1.5rem}.hero-title{font-size:1.5rem}.hero-main-image{height:220px}.promo-grid{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(3,1fr)}.detail-grid{grid-template-columns:1fr}.detail-cover{height:200px}.footer-grid{grid-template-columns:1fr}}
+@media(max-width:768px){.main-wrap{padding:1rem}.nav{padding:.65rem 1rem;display:flex;flex-wrap:wrap}.nav-search{max-width:100%;order:3;flex:0 0 100%}.books-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.hero{padding:2rem 1rem 1.5rem}.hero-title{font-size:1.5rem}.hero-main-image{height:220px}.promo-grid{grid-template-columns:1fr}.cat-grid{grid-template-columns:repeat(3,1fr)}.detail-grid{grid-template-columns:1fr}.detail-cover{height:200px}.footer-grid{grid-template-columns:1fr}.search-layout{grid-template-columns:1fr}}
 
 /* Red-white redesign override */
 :root{
@@ -359,7 +369,15 @@ footer{background:#7A0F1C}
       <div><div class="section-title" id="searchTitle">Kết quả tìm kiếm</div><div style="font-size:.8rem;color:var(--tm);margin-top:.2rem" id="searchMeta"></div></div>
       <button class="btn btn-ghost btn-sm" onclick="backHome()">← Về trang chủ</button>
     </div>
-    <div class="books-grid" id="searchGrid"><div class="empty-state"><div class="empty-icon">🔍</div>Nhập từ khóa để tìm sản phẩm</div></div>
+    <div class="search-layout">
+      <div class="books-grid" id="searchGrid"><div class="empty-state"><div class="empty-icon">🔍</div>Nhập từ khóa để tìm sản phẩm</div></div>
+      <aside class="suggest-panel">
+        <div class="suggest-title">Danh sách gợi ý</div>
+        <div id="searchSuggestList" class="suggest-list">
+          <div class="empty-state" style="padding:.9rem .5rem">Đăng nhập để xem gợi ý cá nhân hóa</div>
+        </div>
+      </aside>
+    </div>
   </div>
 </div>
 
@@ -499,6 +517,7 @@ footer{background:#7A0F1C}
 <script>
 let user=null, currentBookId=null, reviewRating=5;
 let allBooks=[], currentPage=1, totalPages=1, currentCat='';
+let pendingOpenBookId=null;
 const PAGE_SIZE=12;
 const API='/api';
 const EMOJI={programming:'💻',science:'🔬',history:'📜',fiction:'📖',math:'📐'};
@@ -509,6 +528,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(user?.role==='staff'||user?.role==='admin'){window.location.href='/staff/';return;}
   if(user?.role==='manager'){window.location.href='/manager/';return;}
   updateNav();
+  const openBook = new URLSearchParams(window.location.search).get('book_id');
+  if(openBook && /^\d+$/.test(openBook)) pendingOpenBookId = Number(openBook);
   loadBooks(1);
   const pane=new URLSearchParams(window.location.search).get('pane');
   if(pane&&['home','search','orders','ratings','profile'].includes(pane))showPane(pane);
@@ -645,6 +666,11 @@ async function loadBooks(page=1){
     // Hero preview
     renderHeroPreview(allBooks.slice(0,4));
     sortAndRender();
+    if(pendingOpenBookId){
+      const openId = pendingOpenBookId;
+      pendingOpenBookId = null;
+      setTimeout(()=>openDetail(openId), 120);
+    }
   }catch(e){
     grid.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>Không thể tải sản phẩm. Kiểm tra kết nối.</div>';
     document.getElementById('booksMeta').textContent='Lỗi kết nối';
@@ -725,6 +751,67 @@ function renderPagination(total){
   el.innerHTML=html;
 }
 
+function normalizeSuggestion(raw){
+  const sanitizeReason=(value)=>{
+    const text=String(value||'').trim();
+    if(!text)return 'Phù hợp với nhu cầu gần đây của bạn';
+    const first=text.split('|')[0].split(';')[0].trim();
+    const lower=first.toLowerCase();
+    if(lower.includes('thể loại')) return first.replace('behavior:','').replace('graph:','').trim() || 'Phù hợp với nhu cầu gần đây của bạn';
+    if(lower.includes('cùng brand')||lower.includes('thương hiệu')) return 'Cùng thương hiệu bạn thường quan tâm';
+    if(lower.includes('cùng loại sản phẩm')) return 'Cùng loại sản phẩm bạn đang xem gần đây';
+    if(lower.includes('phổ biến')||lower.includes('bán chạy')) return 'Được nhiều khách hàng quan tâm gần đây';
+    if(lower.includes('lstm')||lower.includes('graph')||lower.includes('behavior')||lower.includes('rag')) return 'Phù hợp với hành vi mua sắm gần đây của bạn';
+    return first.replace('behavior:','').replace('graph:','').replace('lstm:','').replace('RAG:','').trim() || 'Phù hợp với nhu cầu gần đây của bạn';
+  };
+
+  return {
+    id: raw.product_id || raw.id,
+    title: raw.title || raw.name || 'Sản phẩm',
+    price: Number(raw.price || 0),
+    reason: sanitizeReason(raw.reason),
+    score: Number(raw.score || 0),
+    category: raw.category || ''
+  };
+}
+
+function renderSuggestList(containerId, items, emptyText){
+  const box=document.getElementById(containerId);
+  if(!box)return;
+  if(!items||!items.length){
+    box.innerHTML=`<div class="empty-state" style="padding:.7rem .4rem">${emptyText}</div>`;
+    return;
+  }
+  box.innerHTML=items.slice(0,6).map(it=>`
+    <div class="suggest-item" onclick="openDetail(${it.id})">
+      <div class="suggest-item-title">${it.title}</div>
+      <div class="suggest-item-meta">
+        <span>${it.category||'Sản phẩm gợi ý'}</span>
+        <strong>${Number(it.price).toLocaleString('vi-VN')}₫</strong>
+      </div>
+      <div class="suggest-item-reason">${it.reason}</div>
+    </div>
+  `).join('');
+}
+
+async function fetchUnifiedSuggestions(context){
+  if(!user?.service_user_id)return [];
+  try{
+    const r=await fetch('/api/v1/recommend/'+user.service_user_id+'?limit=8');
+    if(!r.ok)return [];
+    const d=await r.json();
+    let recs=(d.recommendations||[]).map(normalizeSuggestion);
+    if(context?.query){
+      const q=context.query.toLowerCase();
+      const filtered=recs.filter(x=>String(x.title).toLowerCase().includes(q)||String(x.category).toLowerCase().includes(q));
+      if(filtered.length)recs=filtered;
+    }
+    return recs;
+  }catch(_){
+    return [];
+  }
+}
+
 async function doSearch(){
   const q=document.getElementById('navSearch').value.trim();
   const cat=document.getElementById('searchCatFilter').value;
@@ -744,6 +831,13 @@ async function doSearch(){
       trackBehavior(0, 'search', {query: q});
     }
     renderBooks(books,grid);
+    const suggestions=await fetchUnifiedSuggestions({type:'search',query:q,category:cat});
+    if(suggestions.length){
+      renderSuggestList('searchSuggestList',suggestions,'Chưa có gợi ý phù hợp.');
+    }else{
+      const fallback=(books||[]).slice(0,6).map(b=>normalizeSuggestion({...b,reason:'gợi ý theo kết quả tìm kiếm'}));
+      renderSuggestList('searchSuggestList',fallback,'Chưa có gợi ý phù hợp.');
+    }
   }catch(e){grid.innerHTML='<div class="empty-state"><div class="empty-icon">⚠️</div>Lỗi tìm kiếm</div>';}
 }
 
@@ -1127,6 +1221,9 @@ async function deleteAddr(id){
 .chat-quick{display:flex;flex-wrap:wrap;gap:.3rem;padding:.4rem .6rem;border-top:1px solid var(--b)}
 .qbtn{background:var(--bg);border:1px solid var(--b);border-radius:20px;padding:.22rem .65rem;font-size:.75rem;cursor:pointer;color:var(--pd);font-weight:600}
 .qbtn:hover{background:var(--pll)}
+.chat-suggest-wrap{padding:.45rem .6rem;border-top:1px solid var(--b);background:#FFF7F8}
+.chat-suggest-wrap .suggest-title{font-size:.78rem;margin-bottom:.45rem}
+.chat-suggest-wrap .suggest-list{max-height:140px;overflow:auto}
 </style>
 
 <button id="chatBtn" onclick="toggleChat()" title="AI Assistant">🤖</button>
@@ -1139,11 +1236,17 @@ async function deleteAddr(id){
   <div id="chatMsgs">
     <div class="msg bot">Xin chào! 👋 Tôi là AI Assistant của ShopSphere. Tôi có thể giúp bạn gợi ý sản phẩm, tìm kiếm, tra cứu đơn hàng và giải đáp thắc mắc!</div>
   </div>
+  <div class="chat-suggest-wrap">
+    <div class="suggest-title">Danh sách gợi ý</div>
+    <div class="suggest-list" id="chatSuggestList">
+      <div class="empty-state" style="padding:.55rem">Chưa có gợi ý. Hãy hỏi AI để nhận đề xuất.</div>
+    </div>
+  </div>
   <div class="chat-quick" id="quickBtns">
     <button class="qbtn" onclick="sendQuick('Gợi ý sản phẩm cho tôi', 'recommend')">💡 Gợi ý sản phẩm</button>
-    <button class="qbtn" onclick="sendQuick('Chinh sach doi tra', 'return_policy')">🔄 Đổi trả</button>
-    <button class="qbtn" onclick="sendQuick('Don hang cua toi', 'order_support')">📦 Đơn hàng</button>
-    <button class="qbtn" onclick="sendQuick('Phuong thuc thanh toan', 'payment_support')">💳 Thanh toán</button>
+    <button class="qbtn" onclick="sendQuick('Chính sách đổi trả', 'return_policy')">🔄 Đổi trả</button>
+    <button class="qbtn" onclick="sendQuick('Đơn hàng của tôi', 'order_support')">📦 Đơn hàng</button>
+    <button class="qbtn" onclick="sendQuick('Phương thức thanh toán', 'payment_support')">💳 Thanh toán</button>
   </div>
   <div class="chat-inp">
     <input type="text" id="chatInput" placeholder="Nhập câu hỏi..." onkeydown="if(event.key==='Enter')sendChat()">
@@ -1160,6 +1263,7 @@ function toggleChat() {
   box.classList.toggle('open');
   if (box.classList.contains('open')) {
     document.getElementById('chatInput').focus();
+    refreshChatSuggestList();
   }
 }
 
@@ -1208,6 +1312,15 @@ async function sendChat(quickAction) {
           }));
 
       if (bookCandidates.length) {
+        const normalized = bookCandidates.map(b => normalizeSuggestion({
+          id: b.id || b.product_id,
+          title: b.title,
+          price: b.price,
+          reason: 'gợi ý từ hội thoại AI',
+          category: b.category || ''
+        }));
+        renderSuggestList('chatSuggestList', normalized, 'Chưa có gợi ý từ cuộc trò chuyện.');
+
         const booksHtml = bookCandidates.slice(0, 3).map(b =>
           `<div style="background:var(--pll);border-radius:8px;padding:.4rem .6rem;margin-top:.3rem;font-size:.78rem;cursor:pointer" onclick="openDetail(${b.id})">
             🛍️ <strong>${b.title}</strong><br>
@@ -1218,6 +1331,8 @@ async function sendChat(quickAction) {
         el.className = 'msg bot';
         el.innerHTML = booksHtml;
         document.getElementById('chatMsgs').appendChild(el);
+      } else {
+        await refreshChatSuggestList();
       }
     } else {
       appendMsg('Xin lỗi, có lỗi xảy ra. Thử lại nhé!', 'bot');
@@ -1239,6 +1354,11 @@ function appendMsg(text, cls) {
   msgs.appendChild(el);
   msgs.scrollTop = msgs.scrollHeight;
   return el;
+}
+
+async function refreshChatSuggestList(){
+  const suggestions = await fetchUnifiedSuggestions({type:'chat'});
+  renderSuggestList('chatSuggestList', suggestions, 'Đăng nhập để xem gợi ý cá nhân hóa.');
 }
 </script>
 </body>

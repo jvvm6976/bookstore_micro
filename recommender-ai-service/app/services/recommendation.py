@@ -23,7 +23,21 @@ from .behavior_analysis import behavior_service
 
 logger = logging.getLogger(__name__)
 
-WEIGHTS = {"view": 1, "search": 2, "cart": 4, "purchase": 8, "rate": 3}
+WEIGHTS = {
+    "view": 1,
+    "search": 2,
+    "cart": 4,
+    "purchase": 8,
+    "rate": 3,
+    "click_detail_button": 2,
+    "click_wishlist_button": 3,
+    "click": 2,
+    "add_to_cart": 4,
+    "remove_from_cart": 1,
+    "add_to_wishlist": 3,
+    "remove_from_wishlist": 1,
+    "checkout": 6,
+}
 
 
 def _book_category_key(book: dict) -> str | None:
@@ -74,6 +88,8 @@ def get_personalized(
     budget_min: float | None = None,
     budget_max: float | None = None,
     category: str | None = None,
+    brand: str | None = None,
+    product_type: str | None = None,
     customer_ratings: dict[int, int] | None = None,  # {book_id: rating_value}
 ) -> list[dict[str, Any]]:
     """
@@ -131,6 +147,7 @@ def get_personalized(
 
     top_cats    = {c for c, _ in sorted(cat_affinity.items(), key=lambda x: x[1], reverse=True)[:3]}
     top_authors = {a for a, _ in sorted(author_affinity.items(), key=lambda x: x[1], reverse=True)[:3]}
+    profile_pref_cats = set(profile_pref_cats)
     if not top_cats and profile_pref_cats:
         top_cats = set(list(profile_pref_cats)[:3])
 
@@ -171,6 +188,10 @@ def get_personalized(
             continue
         if category and book_category != category:
             continue
+        if product_type and str(book.get("product_type") or book.get("type_detail", {}).get("slug") if isinstance(book.get("type_detail"), dict) else book.get("product_type") or "") != product_type:
+            continue
+        if brand and str(book.get("brand") or book.get("brand_detail", {}).get("slug") if isinstance(book.get("brand_detail"), dict) else book.get("brand") or "") != brand:
+            continue
 
         score   = 0.0
         reasons = []
@@ -190,11 +211,20 @@ def get_personalized(
 
         # Category match
         if book_category in top_cats:
-            score += 2.0
+            score += 3.0
             reasons.append(f"thể loại {book_category} bạn yêu thích")
         elif book_category in profile_pref_cats:
-            score += 1.2
+            score += 2.2
             reasons.append(f"phù hợp hồ sơ sở thích thể loại của bạn")
+
+        book_type = str(book.get("product_type") or book.get("type_detail", {}).get("slug") if isinstance(book.get("type_detail"), dict) else book.get("product_type") or "")
+        book_brand = str(book.get("brand") or book.get("brand_detail", {}).get("slug") if isinstance(book.get("brand_detail"), dict) else book.get("brand") or "")
+        if product_type and book_type == product_type:
+            score += 2.4
+            reasons.append(f"đúng loại sản phẩm {product_type}")
+        if brand and book_brand == brand:
+            score += 2.4
+            reasons.append(f"cùng thương hiệu {brand}")
 
         # Author match
         if book.get("author") in top_authors:
@@ -209,8 +239,11 @@ def get_personalized(
             reasons.append(f"đánh giá cao ({rm['avg']:.1f}★/{rm['count']} lượt)")
 
         # Calibrate score by per-customer behavior profile.
-        score *= (1.0 + max(0.0, min(propensity, 1.0)) * 0.25)
+        score *= (1.0 + max(0.0, min(propensity, 1.0)) * 0.35)
         score *= segment_boost.get(segment, 1.0)
+
+        if profile_pref_cats and book_category in profile_pref_cats:
+            score += 1.0
 
         if score > 0 or not reasons:
             candidates.append({

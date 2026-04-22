@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://guest:guest@rabbitmq:5672/')
 
-EXCHANGE = 'bookstore'
+EXCHANGE = 'ecommerce'
 ROUTING_KEYS = {
     'order.created':   'order.created',
     'order.paid':      'order.paid',
