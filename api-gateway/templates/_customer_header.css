@@ -1,0 +1,36 @@
+.shell-nav{
+  --brand:#c2182b;
+  --brand-dark:#8f1120;
+  --ink:#1f2937;
+  --muted:#667085;
+  --line:#e6e8ef;
+  --line-strong:#d7dbe7;
+  position:sticky;
+  top:0;
+  z-index:1000;
+  background:rgba(255,255,255,.96);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+}
+.shell-nav *{box-sizing:border-box}
+.nav-inner{max-width:1240px;margin:0 auto;padding:.78rem 1rem;display:grid;grid-template-columns:auto minmax(260px,1fr) auto;gap:1rem;align-items:center}
+.brand{display:flex;align-items:center;gap:.55rem;font-size:1.1rem;font-weight:800;color:var(--ink);letter-spacing:0;text-decoration:none}
+.brand-mark{width:34px;height:34px;border-radius:8px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800}
+.brand em{color:var(--brand);font-style:normal}
+.nav-search{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:8px;background:#fff;overflow:hidden;min-width:0}
+.nav-search input{width:100%;border:0;outline:0;padding:.62rem .8rem;background:transparent;color:var(--ink)}
+.nav-search button{border:0;border-left:1px solid var(--line);background:var(--brand);color:#fff;min-width:46px;padding:.62rem .85rem;font-weight:800;cursor:pointer}
+.nav-links{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;justify-content:flex-end}
+.nav-link,.nav-action{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:.52rem .76rem;font-weight:700;font-size:.86rem;line-height:1.2;display:inline-flex;align-items:center;gap:.38rem;transition:background .16s,border-color .16s,color .16s,transform .16s;text-decoration:none;white-space:nowrap;cursor:pointer}
+.nav-action{font-family:inherit}
+.nav-link:hover,.nav-action:hover{border-color:var(--brand);color:var(--brand)}
+.nav-link.active{border-color:rgba(194,24,43,.35);background:#fff1f2;color:var(--brand)}
+.nav-action.subtle{background:#f8fafc}
+[data-auth-only]{display:none}
+@media(max-width:960px){
+  .nav-inner{grid-template-columns:1fr}
+  .nav-links{justify-content:flex-start}
+}
+@media(max-width:620px){
+  .nav-link,.nav-action{padding:.46rem .58rem;font-size:.78rem}
+}

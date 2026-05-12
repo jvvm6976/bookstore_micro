@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catalog sản phẩm - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" with active_nav="products" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Catalog</div>
+      <h1 class="page-title" id="pageTitle">Tất cả sản phẩm</h1>
+      <p class="page-subtitle" id="pageSubtitle">Lọc theo ngành hàng, danh mục, khoảng giá và tình trạng tồn kho.</p>
+    </div>
+    <div class="toolbar">
+      <span class="pill teal" id="resultCount">0 sản phẩm</span>
+      <button class="btn" onclick="resetFilters()">Đặt lại</button>
+    </div>
+  </section>
+
+  <section class="panel pad">
+    <div class="toolbar">
+      <div class="field" style="min-width:180px">
+        <label>Ngành hàng</label>
+        <select id="domainFilter" onchange="renderCatalog()">
+          <option value="">Tất cả</option>
+        </select>
+      </div>
+      <div class="field" style="min-width:180px">
+        <label>Danh mục</label>
+        <select id="categoryFilter" onchange="renderCatalog()">
+          <option value="">Tất cả</option>
+        </select>
+      </div>
+      <div class="field" style="min-width:145px">
+        <label>Giá từ</label>
+        <input id="minPrice" type="number" min="0" placeholder="0" oninput="renderCatalog()">
+      </div>
+      <div class="field" style="min-width:145px">
+        <label>Giá đến</label>
+        <input id="maxPrice" type="number" min="0" placeholder="5000" oninput="renderCatalog()">
+      </div>
+      <div class="field" style="min-width:180px">
+        <label>Sắp xếp</label>
+        <select id="sortBy" onchange="renderCatalog()">
+          <option value="newest">Mới nhất</option>
+          <option value="price_asc">Giá tăng dần</option>
+          <option value="price_desc">Giá giảm dần</option>
+          <option value="stock_desc">Tồn kho nhiều</option>
+          <option value="name_asc">Tên A-Z</option>
+        </select>
+      </div>
+      <label class="pill" style="align-self:end;cursor:pointer">
+        <input id="stockOnly" type="checkbox" onchange="renderCatalog()" style="accent-color:var(--brand)"> Còn hàng
+      </label>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Danh sách sản phẩm</h2>
+      <div class="segmented">
+        <button id="viewGridBtn" class="active" onclick="setView('grid')">Lưới</button>
+        <button id="viewCompactBtn" onclick="setView('compact')">Gọn</button>
+      </div>
+    </div>
+    <div id="productsGrid" class="product-grid"></div>
+  </section>
+</main>
+
+<div class="footer-note">Các sản phẩm được lấy trực tiếp từ product-service qua API gateway.</div>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const params = new URLSearchParams(window.location.search);
+let query = params.get('q') || '';
+let initialDomain = params.get('domain') || '';
+let products = [];
+let categories = [];
+let domains = [];
+let viewMode = 'grid';
+
+function applySearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  const url = new URL(window.location.href);
+  if(q) url.searchParams.set('q', q); else url.searchParams.delete('q');
+  window.history.replaceState({}, '', url);
+  query = q;
+  renderCatalog();
+}
+
+function setView(mode){
+  viewMode = mode;
+  document.getElementById('viewGridBtn').classList.toggle('active', mode === 'grid');
+  document.getElementById('viewCompactBtn').classList.toggle('active', mode === 'compact');
+  renderCatalog();
+}
+
+function resetFilters(){
+  document.getElementById('globalSearch').value = '';
+  document.getElementById('domainFilter').value = '';
+  document.getElementById('categoryFilter').value = '';
+  document.getElementById('minPrice').value = '';
+  document.getElementById('maxPrice').value = '';
+  document.getElementById('stockOnly').checked = false;
+  document.getElementById('sortBy').value = 'newest';
+  query = '';
+  window.history.replaceState({}, '', '/products/');
+  renderCatalog();
+}
+
+function populateFilters(){
+  const domainSelect = document.getElementById('domainFilter');
+  const categorySelect = document.getElementById('categoryFilter');
+  const domainNames = [...new Set(products.map(p => p.domain_name).filter(Boolean))];
+  const categoryNames = [...new Set(products.map(p => p.category_name).filter(Boolean))];
+  domainSelect.innerHTML = '<option value="">Tất cả</option>' + domainNames.map(x => `<option value="${ShopUI.escapeHtml(x)}">${ShopUI.escapeHtml(x)}</option>`).join('');
+  categorySelect.innerHTML = '<option value="">Tất cả</option>' + categoryNames.map(x => `<option value="${ShopUI.escapeHtml(x)}">${ShopUI.escapeHtml(x)}</option>`).join('');
+  if(initialDomain && domainNames.includes(initialDomain)){
+    domainSelect.value = initialDomain;
+    initialDomain = '';
+  }
+}
+
+function renderCompact(items){
+  return `
+    <div class="panel" style="grid-column:1/-1;overflow:hidden">
+      ${items.map(p => `
+        <div class="cart-row">
+          <a class="product-media" href="/products/${p.id}/" style="border-radius:8px;aspect-ratio:1/1">
+            <img src="${ShopUI.imageFor(p)}" alt="${ShopUI.escapeHtml(p.name)}" loading="lazy">
+          </a>
+          <div>
+            <a href="/products/${p.id}/" class="product-title">${ShopUI.escapeHtml(p.name)}</a>
+            <div class="product-desc">${ShopUI.escapeHtml(p.description || '')}</div>
+            <div class="product-meta">
+              <span class="pill teal">${ShopUI.escapeHtml(p.domain_name || 'Shop')}</span>
+              <span class="pill">${ShopUI.escapeHtml(p.category_name || 'Danh mục')}</span>
+              <span class="pill amber">${p.stock ?? 0} còn</span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="price">${ShopUI.money(p.price)}</div>
+            <button class="btn primary small" style="margin-top:.55rem" onclick="ShopUI.addToCart(${Number(p.id)})">Thêm</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderCatalog(){
+  const domain = document.getElementById('domainFilter').value;
+  const category = document.getElementById('categoryFilter').value;
+  const min = Number(document.getElementById('minPrice').value || 0);
+  const maxRaw = document.getElementById('maxPrice').value;
+  const max = maxRaw ? Number(maxRaw) : null;
+  const stockOnly = document.getElementById('stockOnly').checked;
+  const sortBy = document.getElementById('sortBy').value;
+  const q = (query || document.getElementById('globalSearch').value || '').trim().toLowerCase();
+
+  let items = [...products];
+  if(q){
+    items = items.filter(p => `${p.name} ${p.description} ${p.category_name} ${p.domain_name} ${p.sku}`.toLowerCase().includes(q));
+  }
+  if(domain) items = items.filter(p => p.domain_name === domain);
+  if(category) items = items.filter(p => p.category_name === category);
+  if(min) items = items.filter(p => Number(p.price || 0) >= min);
+  if(max !== null) items = items.filter(p => Number(p.price || 0) <= max);
+  if(stockOnly) items = items.filter(p => Number(p.stock || 0) > 0);
+
+  if(sortBy === 'price_asc') items.sort((a,b) => Number(a.price||0) - Number(b.price||0));
+  if(sortBy === 'price_desc') items.sort((a,b) => Number(b.price||0) - Number(a.price||0));
+  if(sortBy === 'stock_desc') items.sort((a,b) => Number(b.stock||0) - Number(a.stock||0));
+  if(sortBy === 'name_asc') items.sort((a,b) => String(a.name).localeCompare(String(b.name), 'vi'));
+  if(sortBy === 'newest') items.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+  document.getElementById('pageTitle').textContent = q ? `Kết quả cho "${q}"` : 'Tất cả sản phẩm';
+  document.getElementById('resultCount').textContent = `${items.length} sản phẩm`;
+  const grid = document.getElementById('productsGrid');
+  if(!items.length){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tìm thấy sản phẩm</strong>Hãy nới rộng bộ lọc hoặc dùng từ khóa khác.</div>';
+    return;
+  }
+  grid.innerHTML = viewMode === 'compact'
+    ? renderCompact(items)
+    : items.map(p => ShopUI.productCard(p)).join('');
+}
+
+async function loadCatalog(){
+  const grid = document.getElementById('productsGrid');
+  document.getElementById('globalSearch').value = query;
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Dữ liệu đang được lấy từ product-service.</div>';
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`);
+    products = ShopUI.safeList(data).map(ShopUI.normalizeProduct);
+    populateFilters();
+    renderCatalog();
+  }catch(_){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được catalog</strong>Kiểm tra lại product-service hoặc gateway.</div>';
+  }
+}
+
+loadCatalog();
+</script>
+</body>
+</html>
+

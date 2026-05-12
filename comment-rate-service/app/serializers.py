@@ -1,31 +1,16 @@
 from rest_framework import serializers
-from .models import Comment
+from .models import Review, ReviewReply
 
-class CommentSerializer(serializers.ModelSerializer):
+class ReviewReplySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Comment
-        fields = [
-            'id',
-            'customer_id',
-            'book_id',
-            'order_id',
-            'content',
-            'rating',
-            'created_at',
-            'updated_at',
-            'helpful_count',
-        ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'helpful_count']
+        model = ReviewReply
+        fields = '__all__'
+        read_only_fields = ['review']
 
-class CommentCreateSerializer(serializers.ModelSerializer):
-    order_id = serializers.IntegerField(required=False, allow_null=True)
+class ReviewSerializer(serializers.ModelSerializer):
+    replies = ReviewReplySerializer(many=True, read_only=True)
 
     class Meta:
-        model = Comment
-        fields = ['customer_id', 'book_id', 'order_id', 'content', 'rating']
-        validators = []
-    
-    def validate_rating(self, value):
-        if value < 1 or value > 5:
-            raise serializers.ValidationError("Rating must be between 1 and 5")
-        return value
+        model = Review
+        fields = ['id', 'user_id', 'product_id', 'order_id', 'rating', 'comment', 'status', 'created_at', 'updated_at', 'replies']
+        read_only_fields = ['status', 'user_id']

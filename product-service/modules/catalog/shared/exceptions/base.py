@@ -1,2 +1,0 @@
-class CatalogError(Exception):
-    pass

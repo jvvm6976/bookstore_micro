@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff Workspace - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Support workspace</div>
+      <h1 class="page-title">Staff Workspace</h1>
+      <p class="page-subtitle">Giao diện tác nghiệp cho nhân viên hỗ trợ khách hàng: kiểm tra đơn, vận chuyển, đánh giá và yêu cầu đổi trả.</p>
+    </div>
+    <span class="pill teal">Support UI</span>
+  </section>
+
+  <section class="quick-grid">
+    <a class="quick-card" href="/orders/"><span class="quick-icon">O</span><span><span class="quick-title">Tra đơn</span><span class="quick-meta">Danh sách và chi tiết đơn hàng</span></span></a>
+    <a class="quick-card" href="/returns/"><span class="quick-icon">R</span><span><span class="quick-title">Đổi trả</span><span class="quick-meta">Quy trình hoàn tiền</span></span></a>
+    <a class="quick-card" href="/reviews/"><span class="quick-icon">V</span><span><span class="quick-title">Review</span><span class="quick-meta">Phản hồi sản phẩm</span></span></a>
+    <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">AI hỗ trợ</span><span class="quick-meta">Tư vấn câu trả lời</span></span></a>
+  </section>
+
+  <section class="section panel pad">
+    <div class="section-head">
+      <h2 class="section-title">Checklist tác nghiệp</h2>
+      <a class="btn small" href="/notifications/">Mở thông báo</a>
+    </div>
+    <div class="spec-grid">
+      <div class="spec"><span>1. Xác minh</span><strong>Kiểm tra user và mã đơn</strong></div>
+      <div class="spec"><span>2. Trạng thái</span><strong>Đối chiếu order/payment/shipping</strong></div>
+      <div class="spec"><span>3. Phản hồi</span><strong>Ghi chú cho khách hàng</strong></div>
+      <div class="spec"><span>4. Theo dõi</span><strong>Kiểm tra lại sau khi cập nhật</strong></div>
+    </div>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/orders/';
+}
+</script>
+</body>
+</html>

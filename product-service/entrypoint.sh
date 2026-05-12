@@ -6,7 +6,7 @@ migrate_ok=0
 migrate_output=""
 for i in {1..30}; do
     set +e
-    migrate_output=$(python manage.py migrate --noinput 2>&1)
+    migrate_output=$(python manage.py makemigrations app; python manage.py migrate --noinput 2>&1)
     rc=$?
     set -e
 
@@ -25,6 +25,10 @@ if [ $migrate_ok -ne 1 ]; then
     echo "$migrate_output"
     exit 1
 fi
+
+echo "Seeding data..."
+python manage.py seed_domains
+python manage.py seed_products
 
 echo "Starting product-service..."
 python manage.py runserver 0.0.0.0:8000

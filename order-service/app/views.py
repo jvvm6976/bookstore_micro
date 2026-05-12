@@ -1,188 +1,351 @@
-import logging
-import requests
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
-from .models import Order, OrderItem, OrderStatus
-from .serializers import OrderSerializer, OrderItemSerializer
-from .saga import OrderSaga
-from .events import publish_order_created, publish_order_paid, publish_order_canceled
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from django.db import transaction
+from .models import Order, OrderItem, OrderAddress, OrderStatusHistory
+from .serializers import OrderSerializer, OrderItemSerializer, OrderAddressSerializer, OrderStatusHistorySerializer
+from .rabbitmq_client import publish_event
+import requests
+import logging
 
 logger = logging.getLogger(__name__)
-CART_SVC = 'http://cart-service:8000'
-PRODUCT_SVC = 'http://product-service:8000'
 
+PRODUCT_SERVICE_URL = 'http://product-service:8000'
+USER_SERVICE_URL = 'http://user-service:8000'
+CART_SERVICE_URL = 'http://cart-service:8000'
+PAYMENT_SERVICE_URL = 'http://payment-service:8000'
+SHIPPING_SERVICE_URL = 'http://shipping-service:8000'
+NOTIFICATION_SERVICE_URL = 'http://notification-service:8000'
 
-class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all().order_by('-created_at')
-    serializer_class = OrderSerializer
-
-    @action(detail=False, methods=['post'])
-    def checkout(self, request):
-        """Saga-orchestrated checkout."""
-        customer_id     = request.data.get('customer_id')
-        cart_id         = request.data.get('cart_id')
-        shipping_address = request.data.get('shipping_address', '')
-        shipping_phone  = request.data.get('shipping_phone', '')
-        shipping_address_id = request.data.get('shipping_address_id')
-        payment_method  = request.data.get('payment_method', 'credit_card')
-
-        if not customer_id or not cart_id:
-            return Response({'error': 'customer_id and cart_id are required'}, status=400)
-
-        # 1. Fetch cart
+class OrderCheckoutView(generics.CreateAPIView):
+    """
+    Checkout - Create order from cart
+    POST /orders/checkout/
+    
+    Workflow:
+    1. Get cart from Cart Service
+    2. Get default address from User Service
+    3. Lock prices from Product Service
+    4. Check stock and reduce stock (atomic)
+    5. Create Order, OrderItems, OrderAddress, OrderStatusHistory
+    6. Clear cart
+    7. Create Payment record
+    8. Send notification
+    9. Rollback on error (compensating transaction)
+    """
+    permission_classes = (IsAuthenticated,)
+    
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        # 1. Get user_id from token
+        user_id = request.user.id
+        
+        # 2. Get Cart
         try:
-            cart_resp = requests.get(f'{CART_SVC}/api/carts/{cart_id}/', timeout=10)
+            cart_resp = requests.get(f"{CART_SERVICE_URL}/internal/carts/{user_id}/", timeout=5)
             if cart_resp.status_code != 200:
-                return Response({'error': 'Cart not found'}, status=404)
+                raise ValidationError({'error': 'Cart not found or empty'})
             cart_data = cart_resp.json()
-        except requests.RequestException as e:
-            return Response({'error': f'Cart service unavailable: {e}'}, status=503)
+            cart_items = cart_data.get('items', [])
+            if not cart_items:
+                raise ValidationError({'error': 'Cart is empty'})
+        except Exception as e:
+            raise ValidationError({'error': f'Error calling cart service: {str(e)}'})
 
-        items = cart_data.get('items', [])
-        if not items:
-            return Response({'error': 'Cart is empty'}, status=400)
+        # 3. Get Default Address
+        try:
+            addr_resp = requests.get(f"{USER_SERVICE_URL}/internal/users/{user_id}/default-address/", timeout=5)
+            if addr_resp.status_code != 200:
+                raise ValidationError({'error': 'Default address not found'})
+            address_data = addr_resp.json()
+        except Exception as e:
+            raise ValidationError({'error': f'Error calling user service: {str(e)}'})
 
-        # Check stock again at checkout boundary.
-        for item in items:
-            book_id = item.get('book_id')
-            quantity = int(item.get('quantity', 0) or 0)
-            try:
-                book_resp = requests.get(f'{PRODUCT_SVC}/api/books/{book_id}/', timeout=8)
-                if book_resp.status_code != 200:
-                    return Response({'error': f'Book {book_id} not found'}, status=404)
-                stock = int(book_resp.json().get('stock', 0) or 0)
-                if stock < quantity:
-                    return Response({'error': f'Not enough stock for book {book_id}'}, status=400)
-            except requests.RequestException as e:
-                return Response({'error': f'Product service unavailable: {e}'}, status=503)
-
-        # 2. Create order (PENDING)
-        total = sum(float(i.get('price_at_add', 0)) * i.get('quantity', 1) for i in items)
-        order = Order.objects.create(
-            customer_id=customer_id,
-            total_amount=total,
-            shipping_address=shipping_address,
-            shipping_phone=shipping_phone,
-            shipping_address_id=shipping_address_id,
-            status=OrderStatus.PENDING,
-        )
-        for i in items:
-            OrderItem.objects.create(
-                order=order,
-                book_id=i['book_id'],
-                quantity=i['quantity'],
-                price=i.get('price_at_add', 0),
+        total_price = 0
+        reduced_stocks = []  # Track items to rollback if needed
+        
+        try:
+            # 4. Create Order
+            order = Order.objects.create(
+                user_id=user_id,
+                total_price=0,  # will update later
+                current_status='pending'
             )
 
-        saga_items = [{'book_id': i['book_id'], 'quantity': i['quantity'], 'price': i.get('price_at_add', 0)} for i in items]
+            # 5. Lock Price & Check Stock from Product Service
+            for item in cart_items:
+                product_id = item['product_id']
+                quantity = item['quantity']
+                
+                # Validate quantity
+                if quantity <= 0:
+                    raise ValidationError({'error': f'Invalid quantity for product {product_id}'})
+                
+                # Check stock first
+                stock_resp = requests.get(f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/stock/", timeout=5)
+                if stock_resp.status_code == 200:
+                    stock = stock_resp.json().get('stock', 0)
+                    if stock < quantity:
+                        raise ValidationError({'error': f'Product {product_id} has insufficient stock ({stock} < {quantity})'})
+                else:
+                    raise ValidationError({'error': f'Product {product_id} stock check failed'})
 
-        # Publish event: order created
-        publish_order_created(order, saga_items)
+                # Get price
+                prod_resp = requests.get(f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/price/", timeout=5)
+                if prod_resp.status_code == 200:
+                    unit_price = prod_resp.json().get('unit_price')
+                else:
+                    raise ValidationError({'error': f'Product {product_id} not found'})
+                    
+                # Reduce Stock (atomic)
+                reduce_resp = requests.post(
+                    f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/reduce-stock/",
+                    json={"quantity": quantity},
+                    timeout=5
+                )
+                if reduce_resp.status_code != 200:
+                    raise ValidationError({'error': f'Failed to reduce stock for Product {product_id}'})
+                
+                # Add to tracking list for rollback
+                reduced_stocks.append({'product_id': product_id, 'quantity': quantity})
 
-        # 3. Run saga
-        saga = OrderSaga(
-            order=order,
-            items=saga_items,
-            cart_id=cart_id,
-            payment_method=payment_method,
-            shipping_address=shipping_address,
-        )
-        result = saga.execute()
+                total_price += float(unit_price) * quantity
+                OrderItem.objects.create(
+                    order=order,
+                    product_id=product_id,
+                    quantity=quantity,
+                    unit_price=unit_price
+                )
 
-        order.refresh_from_db()
-        if result['success']:
-            publish_order_paid(order)
-        else:
-            publish_order_canceled(order)
-        http_status = status.HTTP_201_CREATED if result['success'] else status.HTTP_402_PAYMENT_REQUIRED
-        return Response({
-            'success': result['success'],
-            'message': 'Order placed successfully' if result['success'] else result.get('error', 'Checkout failed'),
-            'order': OrderSerializer(order).data,
-            'saga_steps': result.get('steps', []),
-        }, status=http_status)
+            order.total_price = total_price
+            order.save()
 
-    @action(detail=False, methods=['get'])
-    def by_customer(self, request):
-        customer_id = request.query_params.get('customer_id')
-        if not customer_id:
-            return Response({'error': 'customer_id required'}, status=400)
-        orders = Order.objects.filter(customer_id=customer_id).order_by('-created_at')
-        return Response({'customer_id': customer_id, 'count': orders.count(), 'orders': OrderSerializer(orders, many=True).data})
+            # 6. Save Snapshot Address
+            OrderAddress.objects.create(
+                order=order,
+                receiver_name=address_data.get('receiver_name'),
+                full_address=f"{address_data.get('street')}, {address_data.get('city')}",
+                phone=address_data.get('phone')
+            )
+
+            # 7. Add Status History
+            OrderStatusHistory.objects.create(
+                order=order,
+                status='pending'
+            )
+
+            # 8. Clear cart
+            try:
+                requests.delete(f"{CART_SERVICE_URL}/internal/carts/{user_id}/clear/", timeout=5)
+            except Exception as e:
+                logger.warning(f"Warning: Failed to clear cart for user {user_id}: {str(e)}")
+
+            # 9. Create Shipment
+            try:
+                requests.post(
+                    f"{SHIPPING_SERVICE_URL}/internal/shipments/",
+                    json={
+                        'order_id': order.id,
+                        'receiver_name': address_data.get('receiver_name'),
+                        'phone': address_data.get('phone'),
+                        'full_address': f"{address_data.get('street')}, {address_data.get('city')}"
+                    },
+                    timeout=5
+                )
+            except Exception as e:
+                logger.warning(f"Warning: Failed to create shipment for order {order.id}: {str(e)}")
+
+            # 10. Publish Event
+            publish_event('order_created', {
+                'order_id': order.id,
+                'user_id': user_id,
+                'amount': float(total_price)
+            })
+
+            try:
+                requests.post(
+                    f"{NOTIFICATION_SERVICE_URL}/internal/notifications/",
+                    json={
+                        'user_id': user_id,
+                        'title': 'Order created',
+                        'content': f'Order #{order.id} has been created successfully',
+                        'type': 'order',
+                        'status': 'unread'
+                    },
+                    timeout=5
+                )
+            except Exception as e:
+                logger.warning(f"Warning: Failed to send order notification: {str(e)}")
+
+            serializer = OrderSerializer(order)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except ValidationError as ve:
+            # Rollback all reduced stocks
+            for reduced_item in reduced_stocks:
+                try:
+                    requests.post(
+                        f"{PRODUCT_SERVICE_URL}/internal/products/{reduced_item['product_id']}/increase-stock/",
+                        json={"quantity": reduced_item['quantity']},
+                        timeout=5
+                    )
+                except Exception as rollback_e:
+                    logger.error(f"Critical Error: Failed to rollback stock for {reduced_item['product_id']} - {str(rollback_e)}")
+            
+            transaction.set_rollback(True)
+            raise ve
+        except Exception as e:
+            # Rollback all reduced stocks
+            for reduced_item in reduced_stocks:
+                try:
+                    requests.post(
+                        f"{PRODUCT_SERVICE_URL}/internal/products/{reduced_item['product_id']}/increase-stock/",
+                        json={"quantity": reduced_item['quantity']},
+                        timeout=5
+                    )
+                except Exception as rollback_e:
+                    logger.error(f"Critical Error: Failed to rollback stock for {reduced_item['product_id']} - {str(rollback_e)}")
+            
+            transaction.set_rollback(True)
+            return Response(
+                {'error': f'Checkout failed, transaction rolled back. Details: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class OrderViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Order Management
+    GET /orders/ - List user's orders
+    GET /orders/{id}/ - Get order detail
+    GET /orders/{id}/history/ - Get order status history
+    PUT /orders/{id}/cancel/ - Cancel order
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = OrderSerializer
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        return Order.objects.filter(user_id=user_id).order_by('-created_at')
 
     @action(detail=True, methods=['get'])
-    def order_details(self, request, pk=None):
+    def history(self, request, pk=None):
+        """Get order status history"""
         order = self.get_object()
-        return Response({'order': OrderSerializer(order).data})
+        histories = OrderStatusHistory.objects.filter(order=order).order_by('-updated_at')
+        serializer = OrderStatusHistorySerializer(histories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'])
-    def verify_purchase(self, request):
-        customer_id = request.data.get('customer_id')
-        book_id     = request.data.get('book_id')
-        if not customer_id or not book_id:
-            return Response({'error': 'customer_id and book_id required'}, status=400)
-        items = OrderItem.objects.filter(
-            order__customer_id=customer_id,
-            order__status=OrderStatus.PAID,
-            book_id=book_id,
-        )
-        return Response({'customer_id': customer_id, 'book_id': book_id, 'purchased': items.exists()})
-
-    @action(detail=True, methods=['post'])
-    def cancel_order(self, request, pk=None):
+    @action(detail=True, methods=['put'])
+    @transaction.atomic
+    def cancel(self, request, pk=None):
+        """
+        Cancel order
+        Only allow cancel if status is pending or paid
+        """
         order = self.get_object()
+        
+        # Validate order status
+        if order.current_status not in ['pending', 'paid']:
+            raise ValidationError({
+                'error': f'Order cannot be cancelled in {order.current_status} status'
+            })
+        
+        old_status = order.current_status
 
-        role = (
-            request.headers.get('X-User-Role')
-            or request.META.get('HTTP_X_USER_ROLE')
-            or ''
-        ).strip().lower()
-        service_user_id = (
-            request.headers.get('X-Service-User-Id')
-            or request.META.get('HTTP_X_SERVICE_USER_ID')
-        )
-        try:
-            service_user_id = int(service_user_id) if service_user_id is not None else None
-        except (TypeError, ValueError):
-            service_user_id = None
-
-        if order.status in (OrderStatus.CANCELED, OrderStatus.SHIPPED):
-            return Response({'error': f'Cannot cancel order in status: {order.status}'}, status=400)
-
-        # Customer can only cancel their own order and only while pending.
-        if role == 'customer':
-            if service_user_id != order.customer_id:
-                return Response({'error': 'You can only cancel your own orders'}, status=403)
-            if order.status != OrderStatus.PENDING:
-                return Response({'error': 'Only pending orders can be canceled by customer'}, status=400)
-
-        # Staff/manager/admin are allowed to cancel pending/paid orders.
-        # If already paid, trigger refund best-effort.
-        if order.status == OrderStatus.PAID:
-            try:
-                pay_lookup = requests.get(
-                    'http://pay-service:8000/api/payments/by_order/',
-                    params={'order_id': order.id},
-                    timeout=8,
-                )
-                if pay_lookup.status_code == 200:
-                    payment = pay_lookup.json()
-                    payment_id = payment.get('id')
-                    if payment_id:
-                        requests.post(
-                            f'http://pay-service:8000/api/payments/{payment_id}/refund/',
-                            json={},
-                            timeout=8,
-                        )
-            except requests.RequestException:
-                logger.warning('Refund request failed for order %s', order.id)
-
-        order.status = OrderStatus.CANCELED
+        # Change status
+        order.current_status = 'cancelled'
         order.save()
-        return Response({'message': 'Order canceled', 'order': OrderSerializer(order).data})
 
-    # ── health ────────────────────────────────────────────────────────────────
-    @action(detail=False, methods=['get'])
-    def health(self, request):
-        return Response({'service': 'order-service', 'status': 'healthy'})
+        # Add to history
+        OrderStatusHistory.objects.create(
+            order=order,
+            status='cancelled'
+        )
+
+        # Rollback stock if order was paid
+        if old_status == 'paid':
+            for item in order.items.all():
+                try:
+                    requests.post(
+                        f"{PRODUCT_SERVICE_URL}/internal/products/{item.product_id}/increase-stock/",
+                        json={"quantity": item.quantity},
+                        timeout=5
+                    )
+                except Exception as e:
+                    logger.error(f"Error rolling back stock for product {item.product_id}: {str(e)}")
+
+        return Response({'message': 'Order cancelled successfully'}, status=status.HTTP_200_OK)
+
+
+# Internal APIs
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def internal_order_status_update(request, order_id):
+    """
+    Internal API - Update order status
+    PUT /internal/orders/{order_id}/status/
+    
+    Request: {status}
+    Response: {id, user_id, current_status}
+    """
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    new_status = request.data.get('status')
+    if not new_status:
+        return Response({'error': 'status is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Update order status
+    order.current_status = new_status
+    order.save()
+    
+    # Add to history
+    OrderStatusHistory.objects.create(
+        order=order,
+        status=new_status
+    )
+    
+    serializer = OrderSerializer(order)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def internal_order_detail(request, order_id):
+    """
+    Internal API - Get order detail
+    GET /internal/orders/{order_id}/
+    
+    Response: {id, user_id, current_status, total_price}
+    """
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = OrderSerializer(order)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def internal_orders_by_customer(request):
+    """
+    Internal API - Get orders by customer/user ID
+    GET /internal/orders/by_customer/?customer_id=1
+    """
+    customer_id = request.query_params.get('customer_id') or request.query_params.get('user_id')
+    if not customer_id:
+        return Response({'error': 'customer_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    orders = Order.objects.filter(user_id=customer_id).order_by('-created_at')
+    serializer = OrderSerializer(orders, many=True)
+    return Response({'orders': serializer.data}, status=status.HTTP_200_OK)

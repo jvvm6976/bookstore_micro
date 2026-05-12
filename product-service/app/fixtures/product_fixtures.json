@@ -1,0 +1,60 @@
+{
+  "categories": [
+    {"id": 1, "name": "Sách Giáo Trình", "description": "Sách học thuật, giáo trình đại học và chuyên ngành"},
+    {"id": 2, "name": "Tiểu Thuyết", "description": "Sách văn học, tiểu thuyết trong và ngoài nước"},
+    {"id": 3, "name": "Điện Thoại", "description": "Điện thoại thông minh các hãng"},
+    {"id": 4, "name": "Laptop", "description": "Máy tính xách tay văn phòng và gaming"},
+    {"id": 5, "name": "Đồ Gia Dụng", "description": "Tủ lạnh, điều hòa và thiết bị gia dụng"},
+    {"id": 6, "name": "Áo", "description": "Áo thun, áo sơ mi, áo khoác"},
+    {"id": 7, "name": "Quần", "description": "Quần jeans, quần tây, quần short"},
+    {"id": 8, "name": "Giày", "description": "Giày thể thao, giày da, dép"}
+  ],
+  "products": [
+    {"id": 1,  "name": "Clean Code - Robert C. Martin",          "sku": "BOOK-001", "price": "359000",    "stock": 50,  "status": "active", "category_id": 1, "image_url": "/static/images/products/product_1.jpg",  "description": "Hướng dẫn viết code sạch, dễ bảo trì theo chuẩn của Robert C. Martin."},
+    {"id": 2,  "name": "Design Patterns - Gang of Four",         "sku": "BOOK-002", "price": "420000",    "stock": 35,  "status": "active", "category_id": 1, "image_url": "/static/images/products/product_2.jpg",  "description": "23 mẫu thiết kế phần mềm kinh điển từ Gang of Four."},
+    {"id": 3,  "name": "The Pragmatic Programmer",               "sku": "BOOK-003", "price": "385000",    "stock": 40,  "status": "active", "category_id": 1, "image_url": "/static/images/products/product_3.jpg",  "description": "Cẩm nang thực hành lập trình chuyên nghiệp."},
+    {"id": 4,  "name": "Refactoring - Martin Fowler",            "sku": "BOOK-004", "price": "395000",    "stock": 30,  "status": "active", "category_id": 1, "image_url": "/static/images/products/product_4.jpg",  "description": "Kỹ thuật tái cấu trúc code hiệu quả."},
+    {"id": 5,  "name": "Nhà Giả Kim - Paulo Coelho",             "sku": "BOOK-005", "price": "89000",     "stock": 100, "status": "active", "category_id": 2, "image_url": "/static/images/products/product_5.jpg",  "description": "Tiểu thuyết triết học nổi tiếng thế giới của Paulo Coelho."},
+    {"id": 6,  "name": "Đắc Nhân Tâm - Dale Carnegie",          "sku": "BOOK-006", "price": "79000",     "stock": 120, "status": "active", "category_id": 2, "image_url": "/static/images/products/product_6.jpg",  "description": "Nghệ thuật thu phục lòng người, sách bán chạy nhất mọi thời đại."},
+    {"id": 7,  "name": "Sapiens - Yuval Noah Harari",            "sku": "BOOK-007", "price": "199000",    "stock": 60,  "status": "active", "category_id": 2, "image_url": "/static/images/products/product_7.jpg",  "description": "Lịch sử loài người từ thời tiền sử đến hiện đại."},
+    {"id": 8,  "name": "Atomic Habits - James Clear",            "sku": "BOOK-008", "price": "169000",    "stock": 80,  "status": "active", "category_id": 2, "image_url": "/static/images/products/product_8.jpg",  "description": "Thay đổi tí hon, kết quả bất ngờ - xây dựng thói quen tốt."},
+    {"id": 9,  "name": "iPhone 15 Pro Max 256GB",                "sku": "ELEC-001", "price": "34990000",  "stock": 20,  "status": "active", "category_id": 3, "image_url": "/static/images/products/product_9.jpg",  "description": "iPhone 15 Pro Max chip A17 Pro, camera 48MP, màn hình 6.7 inch Super Retina XDR."},
+    {"id": 10, "name": "Samsung Galaxy S24 Ultra 512GB",         "sku": "ELEC-002", "price": "31990000",  "stock": 15,  "status": "active", "category_id": 3, "image_url": "/static/images/products/product_10.jpg", "description": "Galaxy S24 Ultra với bút S Pen, camera 200MP, chip Snapdragon 8 Gen 3."},
+    {"id": 11, "name": "MacBook Pro M3 14 inch",                 "sku": "ELEC-003", "price": "52990000",  "stock": 10,  "status": "active", "category_id": 4, "image_url": "/static/images/products/product_11.jpg", "description": "MacBook Pro chip M3, màn hình Liquid Retina XDR, pin 18 giờ."},
+    {"id": 12, "name": "Dell XPS 15 Intel Core i9",              "sku": "ELEC-004", "price": "45990000",  "stock": 8,   "status": "active", "category_id": 4, "image_url": "/static/images/products/product_12.jpg", "description": "Dell XPS 15 OLED 4K, Core i9-13900H, RAM 32GB, SSD 1TB."},
+    {"id": 13, "name": "Tủ Lạnh Samsung Inverter 382L",          "sku": "ELEC-005", "price": "12990000",  "stock": 12,  "status": "active", "category_id": 5, "image_url": "/static/images/products/product_13.jpg", "description": "Tủ lạnh Samsung 2 cánh, công nghệ Inverter tiết kiệm điện, ngăn đông mềm."},
+    {"id": 14, "name": "Điều Hòa Daikin Inverter 1.5HP",        "sku": "ELEC-006", "price": "13490000",  "stock": 18,  "status": "active", "category_id": 5, "image_url": "/static/images/products/product_14.jpg", "description": "Điều hòa Daikin Inverter 12000BTU, tiết kiệm điện 60%, lọc không khí PM2.5."},
+    {"id": 15, "name": "Áo Thun Nam Uniqlo DRY-EX",             "sku": "FASH-001", "price": "299000",    "stock": 200, "status": "active", "category_id": 6, "image_url": "/static/images/products/product_15.jpg", "description": "Áo thun nam chất liệu DRY-EX thoáng mát, thấm hút mồ hôi tốt."},
+    {"id": 16, "name": "Áo Sơ Mi Nam Oxford Slim Fit",          "sku": "FASH-002", "price": "459000",    "stock": 150, "status": "active", "category_id": 6, "image_url": "/static/images/products/product_16.jpg", "description": "Áo sơ mi nam vải Oxford cao cấp, form slim fit lịch lãm."},
+    {"id": 17, "name": "Quần Jeans Nam Levi's 511",              "sku": "FASH-003", "price": "1290000",   "stock": 80,  "status": "active", "category_id": 7, "image_url": "/static/images/products/product_17.jpg", "description": "Quần jeans Levi's 511 slim fit, chất liệu denim co giãn thoải mái."},
+    {"id": 18, "name": "Quần Tây Nam Công Sở",                  "sku": "FASH-004", "price": "590000",    "stock": 100, "status": "active", "category_id": 7, "image_url": "/static/images/products/product_18.jpg", "description": "Quần tây nam vải cao cấp, form regular fit phù hợp môi trường công sở."},
+    {"id": 19, "name": "Giày Thể Thao Nike Air Max 270",        "sku": "FASH-005", "price": "3290000",   "stock": 60,  "status": "active", "category_id": 8, "image_url": "/static/images/products/product_19.jpg", "description": "Giày Nike Air Max 270 đệm khí lớn, êm ái, phù hợp chạy bộ và thời trang."},
+    {"id": 20, "name": "Giày Da Nam Clarks Desert Boot",        "sku": "FASH-006", "price": "2890000",   "stock": 45,  "status": "active", "category_id": 8, "image_url": "/static/images/products/product_20.jpg", "description": "Giày da Clarks Desert Boot cổ điển, chất liệu da bò thật bền đẹp."}
+  ],
+  "books": [
+    {"product_id": 1, "author": "Robert C. Martin",   "publisher": "Prentice Hall",      "isbn": "978-0132350884"},
+    {"product_id": 2, "author": "Gang of Four",        "publisher": "Addison-Wesley",     "isbn": "978-0201633610"},
+    {"product_id": 3, "author": "David Thomas",        "publisher": "Addison-Wesley",     "isbn": "978-0135957059"},
+    {"product_id": 4, "author": "Martin Fowler",       "publisher": "Addison-Wesley",     "isbn": "978-0201485677"},
+    {"product_id": 5, "author": "Paulo Coelho",        "publisher": "NXB Hội Nhà Văn",   "isbn": "978-6041040700"},
+    {"product_id": 6, "author": "Dale Carnegie",       "publisher": "NXB Tổng Hợp HCM",  "isbn": "978-6041040717"},
+    {"product_id": 7, "author": "Yuval Noah Harari",   "publisher": "NXB Thế Giới",      "isbn": "978-6041040724"},
+    {"product_id": 8, "author": "James Clear",         "publisher": "NXB Lao Động",      "isbn": "978-6041040731"}
+  ],
+  "electronics": [
+    {"product_id": 9,  "brand": "Apple",   "warranty_months": 12},
+    {"product_id": 10, "brand": "Samsung", "warranty_months": 12},
+    {"product_id": 11, "brand": "Apple",   "warranty_months": 12},
+    {"product_id": 12, "brand": "Dell",    "warranty_months": 24},
+    {"product_id": 13, "brand": "Samsung", "warranty_months": 24},
+    {"product_id": 14, "brand": "Daikin",  "warranty_months": 36}
+  ],
+  "fashion": [
+    {"product_id": 15, "size": "M",  "color": "Trắng"},
+    {"product_id": 16, "size": "L",  "color": "Xanh nhạt"},
+    {"product_id": 17, "size": "32", "color": "Xanh đậm"},
+    {"product_id": 18, "size": "32", "color": "Đen"},
+    {"product_id": 19, "size": "42", "color": "Đen/Trắng"},
+    {"product_id": 20, "size": "42", "color": "Nâu"}
+  ]
+}

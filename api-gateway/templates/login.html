@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng nhập - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" %}
+<main class="auth-page">
+  <section class="auth-visual">
+    <div class="auth-copy">
+      <div class="eyebrow" style="color:#fff">Tài khoản khách hàng</div>
+      <h1>Đăng nhập để tiếp tục mua sắm, theo dõi đơn và nhận gợi ý AI.</h1>
+      <p>Một tài khoản dùng cho giỏ hàng, wishlist, đơn hàng, thanh toán, đánh giá và thông báo.</p>
+      <div class="auth-benefits">
+        <div class="auth-benefit"><strong>Giỏ hàng</strong><span>Lưu sản phẩm giữa các phiên.</span></div>
+        <div class="auth-benefit"><strong>Đơn hàng</strong><span>Theo dõi trạng thái và giao hàng.</span></div>
+        <div class="auth-benefit"><strong>AI</strong><span>Gợi ý theo lịch sử mua sắm.</span></div>
+      </div>
+    </div>
+    <a class="btn" href="/" style="width:max-content">← Về trang chủ</a>
+  </section>
+
+  <section class="auth-form-wrap">
+    <div class="auth-card">
+      <div class="eyebrow">Welcome back</div>
+      <h2>Đăng nhập</h2>
+      <p class="section-note" style="margin-bottom:1rem">Nhập thông tin tài khoản để truy cập các chức năng cá nhân.</p>
+      <form id="loginForm">
+        <div class="field">
+          <label>Tên đăng nhập</label>
+          <input id="username" autocomplete="username" autofocus>
+        </div>
+        <div class="field">
+          <label>Mật khẩu</label>
+          <input id="password" type="password" autocomplete="current-password">
+        </div>
+        <button class="btn primary block" id="loginBtn" type="submit">Đăng nhập</button>
+      </form>
+      <div id="message" class="notice auth-message"></div>
+      <div class="auth-alt">Chưa có tài khoản? <a id="registerLink" href="/register/">Đăng ký ngay</a></div>
+    </div>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const nextUrl = params.get('next') || '/';
+document.getElementById('registerLink').href = `/register/?next=${encodeURIComponent(nextUrl)}`;
+
+function setMessage(text, isError=false){
+  const el = document.getElementById('message');
+  el.style.display = text ? 'block' : 'none';
+  el.textContent = text || '';
+  el.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+}
+
+async function login(){
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('loginBtn');
+  if(!username || !password){
+    setMessage('Vui lòng nhập tên đăng nhập và mật khẩu.', true);
+    return;
+  }
+  btn.disabled = true;
+  setMessage('Đang đăng nhập...');
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/auth/login/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username, password})
+    });
+    ShopUI.saveSession(data, username);
+    window.location.href = nextUrl;
+  }catch(err){
+    btn.disabled = false;
+    setMessage(err.message || 'Đăng nhập thất bại.', true);
+  }
+}
+
+document.getElementById('loginForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  login();
+});
+
+if(ShopUI.token()){
+  setMessage('Bạn đã đăng nhập. Đang chuyển hướng...');
+  window.setTimeout(() => { window.location.href = nextUrl; }, 500);
+}
+</script>
+</body>
+</html>

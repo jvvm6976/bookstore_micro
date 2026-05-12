@@ -16,7 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
-    'modules.catalog.apps.CatalogConfig',
+    'app',
 ]
 
 MIDDLEWARE = [
@@ -33,9 +33,7 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
-MIGRATION_MODULES = {
-    'catalog': 'modules.catalog.infrastructure.migrations',
-}
+
 
 TEMPLATES = [
     {
@@ -83,4 +81,9 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': ('app.authentication.CustomJWTAuthentication',),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ],
 }
+

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bảng điều khiển - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Customer dashboard</div>
+      <h1 class="page-title">Tổng quan tài khoản</h1>
+      <p class="page-subtitle">Một điểm vào nhanh cho hồ sơ, đơn hàng, thông báo, wishlist và các luồng mua sắm chính.</p>
+    </div>
+    <span class="pill teal" data-auth-user>Khách</span>
+  </section>
+
+  <section class="quick-grid">
+    <a class="quick-card" href="/orders/"><span class="quick-icon">O</span><span><span class="quick-title">Đơn hàng</span><span class="quick-meta" id="orderCount">Đang tải</span></span></a>
+    <a class="quick-card" href="/cart/"><span class="quick-icon">C</span><span><span class="quick-title">Giỏ hàng</span><span class="quick-meta" id="cartCount">Đang tải</span></span></a>
+    <a class="quick-card" href="/wishlist/"><span class="quick-icon">W</span><span><span class="quick-title">Yêu thích</span><span class="quick-meta">Sản phẩm đã lưu</span></span></a>
+    <a class="quick-card" href="/notifications/"><span class="quick-icon">N</span><span><span class="quick-title">Thông báo</span><span class="quick-meta">Cập nhật mới nhất</span></span></a>
+  </section>
+
+  <section class="drawer-grid section">
+    <div class="panel pad">
+      <div class="section-head">
+        <h2 class="section-title">Đơn hàng gần đây</h2>
+        <a class="btn small" href="/orders/">Xem tất cả</a>
+      </div>
+      <div id="recentOrders" class="notice">Đang tải đơn hàng...</div>
+    </div>
+    <aside class="panel pad">
+      <h2 class="section-title">Hành động nhanh</h2>
+      <div style="display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem">
+        <a class="btn block" href="/products/">Duyệt catalog</a>
+        <a class="btn block" href="/coupons/">Xem ưu đãi</a>
+        <a class="btn block" href="/chatbot/">Hỏi AI assistant</a>
+        <button class="btn block" onclick="logout()">Đăng xuất</button>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+function logout(){
+  ShopUI.clearSession();
+  window.location.href = '/';
+}
+
+async function loadDashboard(){
+  if(!ShopUI.token()){
+    window.location.href = '/login/?next=/dashboard/';
+    return;
+  }
+  try{
+    const cart = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/cart/`, {headers:ShopUI.authHeaders(false)});
+    const items = ShopUI.safeList(cart);
+    document.getElementById('cartCount').textContent = `${items.reduce((s,i)=>s+Number(i.quantity||0),0)} sản phẩm`;
+  }catch(_){ document.getElementById('cartCount').textContent = 'Chưa có dữ liệu'; }
+
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/orders/`, {headers:ShopUI.authHeaders(false)});
+    const orders = ShopUI.safeList(data);
+    document.getElementById('orderCount').textContent = `${orders.length} đơn`;
+    document.getElementById('recentOrders').innerHTML = orders.length ? orders.slice(0,4).map(o => `
+      <div class="summary-row">
+        <span>Đơn #${o.id}<br><small>${new Date(o.created_at || Date.now()).toLocaleString('vi-VN')}</small></span>
+        <strong>${ShopUI.money(o.total_price || 0)}</strong>
+      </div>
+    `).join('') : 'Bạn chưa có đơn hàng nào.';
+  }catch(_){
+    document.getElementById('orderCount').textContent = 'Chưa có dữ liệu';
+    document.getElementById('recentOrders').textContent = 'Không tải được đơn hàng.';
+  }
+}
+loadDashboard();
+</script>
+</body>
+</html>

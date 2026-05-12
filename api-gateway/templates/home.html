@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopSphere - Mua sắm thông minh</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Marketplace đa ngành</div>
+      <h1 class="page-title">Mua sách, điện tử và thời trang trong một trải nghiệm thống nhất</h1>
+      <p class="page-subtitle">Duyệt sản phẩm, lưu yêu thích, thêm giỏ hàng, đặt đơn và nhận gợi ý cá nhân hóa từ AI.</p>
+    </div>
+    <div class="toolbar">
+      <span class="pill teal" data-auth-user>Khách</span>
+      <a class="btn primary" href="/products/">Duyệt catalog</a>
+    </div>
+  </section>
+
+  <section class="quick-grid section" aria-label="Lối tắt">
+    <a class="quick-card" href="/products/?domain=Books">
+      <span class="quick-icon">B</span>
+      <span><span class="quick-title">Sách</span><span class="quick-meta">Tiểu thuyết, khoa học</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Electronics">
+      <span class="quick-icon">E</span>
+      <span><span class="quick-title">Điện tử</span><span class="quick-meta">Điện thoại, laptop</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Fashion">
+      <span class="quick-icon">F</span>
+      <span><span class="quick-title">Thời trang</span><span class="quick-meta">Áo, váy, giày</span></span>
+    </a>
+    <a class="quick-card" href="/chatbot/">
+      <span class="quick-icon">AI</span>
+      <span><span class="quick-title">Tư vấn AI</span><span class="quick-meta">Gợi ý theo hành vi</span></span>
+    </a>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Sản phẩm mới trong catalog</h2>
+        <div id="productMeta" class="section-note">Đang tải dữ liệu...</div>
+      </div>
+      <div class="toolbar">
+        <button class="btn small" onclick="filterDomain('all')">Tất cả</button>
+        <button class="btn small" onclick="filterDomain('Books')">Sách</button>
+        <button class="btn small" onclick="filterDomain('Electronics')">Điện tử</button>
+        <button class="btn small" onclick="filterDomain('Fashion')">Thời trang</button>
+      </div>
+    </div>
+    <div id="productGrid" class="product-grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Gợi ý dành cho bạn</h2>
+        <div class="section-note">Kết hợp lịch sử mua hàng, đánh giá và sản phẩm phổ biến.</div>
+      </div>
+      <a class="btn subtle" href="/chatbot/">Hỏi AI</a>
+    </div>
+    <div id="recGrid" class="product-grid"></div>
+  </section>
+</main>
+
+<div class="footer-note">© 2026 ShopSphere. Giao diện customer dùng API gateway hiện tại của hệ thống microservices.</div>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+let allProducts = [];
+let currentDomain = 'all';
+
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+function logout(){
+  ShopUI.clearSession();
+  ShopUI.toast('Đã đăng xuất');
+}
+
+function filterDomain(domain){
+  currentDomain = domain;
+  renderProducts();
+}
+
+function renderProducts(){
+  const grid = document.getElementById('productGrid');
+  let items = allProducts;
+  if(currentDomain !== 'all'){
+    items = items.filter(p => String(p.domain_name || '').toLowerCase() === currentDomain.toLowerCase());
+  }
+  document.getElementById('productMeta').textContent = `${items.length} sản phẩm đang hiển thị`;
+  if(!items.length){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm</strong>Thử chọn danh mục khác hoặc tìm kiếm bằng từ khóa.</div>';
+    return;
+  }
+  grid.innerHTML = items.slice(0,8).map(p => ShopUI.productCard(p)).join('');
+}
+
+async function loadProducts(){
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Vui lòng chờ trong giây lát.</div>';
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`);
+    allProducts = ShopUI.safeList(data).map(ShopUI.normalizeProduct);
+    renderProducts();
+  }catch(err){
+    document.getElementById('productMeta').textContent = 'Không tải được sản phẩm';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Lỗi tải dữ liệu</strong>Gateway hoặc product-service chưa sẵn sàng.</div>';
+  }
+}
+
+async function loadRecommendations(){
+  const grid = document.getElementById('recGrid');
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tính gợi ý</strong>AI service đang chọn sản phẩm phù hợp.</div>';
+  try{
+    const uid = ShopUI.userId() || 1;
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/recommend/recommendations/?user_id=${encodeURIComponent(uid)}&limit=8`);
+    let items = ShopUI.safeList(data.recommendations || data).map(ShopUI.normalizeProduct);
+    if(!items.length && Array.isArray(data.recommended_product_ids)){
+      const detail = await Promise.all(data.recommended_product_ids.slice(0,6).map(id =>
+        fetch(`${ShopUI.API_BASE}/api/products/${id}/`).then(r => r.ok ? r.json() : null).catch(() => null)
+      ));
+      items = detail.filter(Boolean).map(ShopUI.normalizeProduct);
+    }
+    if(!items.length){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có gợi ý</strong>Hãy xem thêm sản phẩm hoặc hỏi AI chatbot.</div>';
+      return;
+    }
+    grid.innerHTML = items.slice(0,6).map(p => ShopUI.productCard(p)).join('');
+  }catch(_){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được gợi ý</strong>AI service sẽ thử lại khi bạn mở trang sau.</div>';
+  }
+}
+
+if(new URLSearchParams(window.location.search).get('tab') === 'login'){
+  window.location.replace('/login/?next=/');
+}
+loadProducts();
+loadRecommendations();
+</script>
+</body>
+</html>

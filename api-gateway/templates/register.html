@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đăng ký - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" %}
+<main class="auth-page">
+  <section class="auth-visual">
+    <div class="auth-copy">
+      <div class="eyebrow" style="color:#fff">Tạo tài khoản</div>
+      <h1>Bắt đầu mua sắm với giỏ hàng, wishlist và gợi ý cá nhân hóa.</h1>
+      <p>Sau khi đăng ký, bạn có thể thêm địa chỉ ở hồ sơ hoặc ngay trong checkout.</p>
+      <div class="auth-benefits">
+        <div class="auth-benefit"><strong>Đăng ký nhanh</strong><span>Chỉ cần username, email và mật khẩu.</span></div>
+        <div class="auth-benefit"><strong>Bảo mật</strong><span>Token JWT được lưu cho phiên mua sắm.</span></div>
+        <div class="auth-benefit"><strong>Liền mạch</strong><span>Chuyển thẳng về trang bạn đang cần.</span></div>
+      </div>
+    </div>
+    <a class="btn" href="/" style="width:max-content">← Về trang chủ</a>
+  </section>
+
+  <section class="auth-form-wrap">
+    <div class="auth-card">
+      <div class="eyebrow">New customer</div>
+      <h2>Đăng ký</h2>
+      <p class="section-note" style="margin-bottom:1rem">Tài khoản customer mặc định sẽ được dùng cho các chức năng mua hàng.</p>
+      <form id="registerForm">
+        <div class="auth-grid">
+          <div class="field">
+            <label>Tên đăng nhập</label>
+            <input id="username" autocomplete="username" autofocus>
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="email" type="email" autocomplete="email">
+          </div>
+          <div class="field">
+            <label>Họ</label>
+            <input id="firstName" autocomplete="given-name">
+          </div>
+          <div class="field">
+            <label>Tên</label>
+            <input id="lastName" autocomplete="family-name">
+          </div>
+          <div class="field">
+            <label>Số điện thoại</label>
+            <input id="phone" autocomplete="tel">
+          </div>
+          <div class="field">
+            <label>Mật khẩu</label>
+            <input id="password" type="password" autocomplete="new-password">
+          </div>
+        </div>
+        <button class="btn primary block" id="registerBtn" type="submit" style="margin-top:.3rem">Tạo tài khoản</button>
+      </form>
+      <div id="message" class="notice auth-message"></div>
+      <div class="auth-alt">Đã có tài khoản? <a id="loginLink" href="/login/">Đăng nhập</a></div>
+    </div>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const nextUrl = params.get('next') || '/';
+document.getElementById('loginLink').href = `/login/?next=${encodeURIComponent(nextUrl)}`;
+
+function setMessage(text, isError=false){
+  const el = document.getElementById('message');
+  el.style.display = text ? 'block' : 'none';
+  el.textContent = text || '';
+  el.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+}
+
+async function loginAfterRegister(username, password){
+  const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/auth/login/`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({username, password})
+  });
+  ShopUI.saveSession(data, username);
+}
+
+async function register(){
+  const payload = {
+    username: document.getElementById('username').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    first_name: document.getElementById('firstName').value.trim(),
+    last_name: document.getElementById('lastName').value.trim(),
+    password: document.getElementById('password').value
+  };
+  const phone = document.getElementById('phone').value.trim();
+  if(phone) payload.phone = phone;
+  if(!payload.username || !payload.email || !payload.password){
+    setMessage('Vui lòng nhập tên đăng nhập, email và mật khẩu.', true);
+    return;
+  }
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  setMessage('Đang tạo tài khoản...');
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/auth/register/`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    setMessage('Đã tạo tài khoản, đang đăng nhập...');
+    await loginAfterRegister(payload.username, payload.password);
+    window.location.href = nextUrl;
+  }catch(err){
+    btn.disabled = false;
+    setMessage(err.message || 'Đăng ký thất bại.', true);
+  }
+}
+
+document.getElementById('registerForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  register();
+});
+
+if(ShopUI.token()){
+  setMessage('Bạn đã đăng nhập. Đang chuyển hướng...');
+  window.setTimeout(() => { window.location.href = nextUrl; }, 500);
+}
+</script>
+</body>
+</html>

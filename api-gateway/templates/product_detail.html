@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chi tiết sản phẩm - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" with active_nav="products" %}
+<main class="page">
+  <div style="margin:.8rem 0">
+    <a class="btn ghost" href="/products/">← Quay lại catalog</a>
+  </div>
+
+  <section id="detailWrap" class="detail-grid">
+    <div class="empty-state" style="grid-column:1/-1"><strong>Đang tải sản phẩm</strong>Vui lòng chờ trong giây lát.</div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Sản phẩm liên quan</h2>
+        <div class="section-note">Dựa trên cùng ngành hàng hoặc gợi ý từ AI.</div>
+      </div>
+      <a class="btn subtle" href="/products/">Xem thêm</a>
+    </div>
+    <div id="relatedGrid" class="product-grid"></div>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const productId = Number('{{ product_id|default:0 }}');
+let currentProduct = null;
+
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+function specRows(product){
+  const rows = [
+    ['SKU', product.sku || '-'],
+    ['Danh mục', product.category_name || '-'],
+    ['Ngành hàng', product.domain_name || '-'],
+    ['Tồn kho', product.stock ?? '-']
+  ];
+  if(product.book){
+    rows.push(['Tác giả', product.book.author || '-']);
+    rows.push(['Nhà xuất bản', product.book.publisher || '-']);
+    rows.push(['ISBN', product.book.isbn || '-']);
+  }
+  if(product.electronics){
+    rows.push(['Thương hiệu', product.electronics.brand || '-']);
+    rows.push(['Bảo hành', `${product.electronics.warranty_months || 0} tháng`]);
+  }
+  if(product.fashion){
+    rows.push(['Kích cỡ', product.fashion.size || '-']);
+    rows.push(['Màu sắc', product.fashion.color || '-']);
+  }
+  return rows.map(([label,value]) => `
+    <div class="spec">
+      <span>${ShopUI.escapeHtml(label)}</span>
+      <strong>${ShopUI.escapeHtml(value)}</strong>
+    </div>
+  `).join('');
+}
+
+function renderDetail(product){
+  const p = ShopUI.normalizeProduct(product);
+  currentProduct = p;
+  document.title = `${p.name} - ShopSphere`;
+  document.getElementById('detailWrap').innerHTML = `
+    <div class="detail-media panel">
+      <img src="${ShopUI.imageFor(p)}" alt="${ShopUI.escapeHtml(p.name)}">
+    </div>
+    <article class="panel pad">
+      <div class="eyebrow">${ShopUI.escapeHtml(p.domain_name || 'ShopSphere')}</div>
+      <h1 class="page-title">${ShopUI.escapeHtml(p.name)}</h1>
+      <p class="page-subtitle">${ShopUI.escapeHtml(p.description || 'Sản phẩm đang có sẵn tại ShopSphere.')}</p>
+      <div class="toolbar" style="margin:1rem 0">
+        <span class="pill teal">${ShopUI.escapeHtml(p.category_name || 'Danh mục')}</span>
+        <span class="pill amber">${p.stock ?? 0} sản phẩm còn lại</span>
+        <span class="pill">${ShopUI.escapeHtml(p.status || 'active')}</span>
+      </div>
+      <div class="price" style="font-size:2rem;margin:.8rem 0">${ShopUI.money(p.price)}</div>
+      <div class="toolbar" style="margin-bottom:1.1rem">
+        <button class="btn primary" onclick="ShopUI.addToCart(${Number(p.id)})">Thêm vào giỏ</button>
+        <button class="btn" onclick="ShopUI.addWishlist(${Number(p.id)})">Lưu yêu thích</button>
+        <a class="btn subtle" href="/chatbot/">Hỏi AI về sản phẩm</a>
+      </div>
+      <div class="section">
+        <h2 class="section-title" style="margin-bottom:.7rem">Thông số sản phẩm</h2>
+        <div class="spec-grid">${specRows(product)}</div>
+      </div>
+    </article>
+  `;
+}
+
+async function loadRelated(product){
+  const grid = document.getElementById('relatedGrid');
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải sản phẩm liên quan</strong></div>';
+  try{
+    let data;
+    if(product.category_id){
+      data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/?category_id=${encodeURIComponent(product.category_id)}`);
+    }else{
+      data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`);
+    }
+    let items = ShopUI.safeList(data).map(ShopUI.normalizeProduct).filter(p => Number(p.id) !== Number(product.id));
+    if(!items.length && product.domain_id){
+      data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/?domain_id=${encodeURIComponent(product.domain_id)}`);
+      items = ShopUI.safeList(data).map(ShopUI.normalizeProduct).filter(p => Number(p.id) !== Number(product.id));
+    }
+    grid.innerHTML = items.length
+      ? items.slice(0,4).map(p => ShopUI.productCard(p)).join('')
+      : '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm liên quan</strong>Hãy quay lại catalog để xem ngành hàng khác.</div>';
+  }catch(_){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm liên quan</strong></div>';
+  }
+}
+
+async function loadDetail(){
+  if(!productId){
+    document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tìm thấy mã sản phẩm</strong></div>';
+    return;
+  }
+  try{
+    const product = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${productId}/`);
+    renderDetail(product);
+    loadRelated(product);
+  }catch(_){
+    document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm</strong>Sản phẩm có thể đã ngừng bán hoặc service chưa sẵn sàng.</div>';
+  }
+}
+
+loadDetail();
+</script>
+</body>
+</html>
+

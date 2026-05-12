@@ -1,7 +1,5 @@
-# Generated manually for initial schema
-
 from django.db import migrations, models
-import django.core.validators
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -11,27 +9,38 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name="Comment",
+            name='Review',
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("customer_id", models.IntegerField()),
-                ("book_id", models.IntegerField()),
-                ("content", models.TextField()),
-                (
-                    "rating",
-                    models.IntegerField(
-                        default=5,
-                        validators=[
-                            django.core.validators.MinValueValidator(1),
-                            django.core.validators.MaxValueValidator(5),
-                        ],
-                    ),
-                ),
-                ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("updated_at", models.DateTimeField(auto_now=True)),
-                ("helpful_count", models.IntegerField(default=0)),
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('user_id', models.IntegerField()),
+                ('product_id', models.IntegerField()),
+                ('order_id', models.IntegerField()),
+                ('rating', models.IntegerField()),
+                ('comment', models.TextField(blank=True, null=True)),
+                ('status', models.CharField(default='pending', max_length=50)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
             ],
-            options={"unique_together": {("customer_id", "book_id")}},
+            options={
+                'db_table': 'reviews',
+                'unique_together': {('user_id', 'product_id', 'order_id')},
+            },
+        ),
+        migrations.CreateModel(
+            name='ReviewReply',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('user_id', models.IntegerField()),
+                ('content', models.TextField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('review', models.ForeignKey(
+                    on_delete=django.db.models.deletion.CASCADE,
+                    related_name='replies',
+                    to='app.review',
+                )),
+            ],
+            options={
+                'db_table': 'review_replies',
+            },
         ),
     ]
-

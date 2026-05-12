@@ -1,0 +1,23 @@
+[
+  {
+    "model": "rnn",
+    "accuracy": 0.216176,
+    "precision": 0.142964,
+    "recall": 0.12442,
+    "f1_score": 0.068487
+  },
+  {
+    "model": "lstm",
+    "accuracy": 0.225,
+    "precision": 0.054493,
+    "recall": 0.125328,
+    "f1_score": 0.053224
+  },
+  {
+    "model": "bilstm",
+    "accuracy": 0.257353,
+    "precision": 0.085829,
+    "recall": 0.20811,
+    "f1_score": 0.111102
+  }
+]

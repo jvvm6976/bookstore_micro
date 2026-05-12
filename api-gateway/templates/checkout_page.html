@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thanh toán - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" with active_nav="cart" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Checkout</div>
+      <h1 class="page-title">Hoàn tất đơn hàng</h1>
+      <p class="page-subtitle">Chọn địa chỉ, phương thức thanh toán và xác nhận đơn hàng qua order-service/payment-service.</p>
+    </div>
+    <a class="btn" href="/cart/">← Quay lại giỏ hàng</a>
+  </section>
+
+  <section class="drawer-grid">
+    <div>
+      <div class="panel pad">
+        <div class="section-head">
+          <h2 class="section-title">Địa chỉ giao hàng</h2>
+          <button class="btn small" onclick="toggleAddressForm()">Tạo địa chỉ mới</button>
+        </div>
+        <div class="field">
+          <label>Địa chỉ đã lưu</label>
+          <select id="addressSelect" onchange="selectAddress()">
+            <option value="">Đang tải địa chỉ...</option>
+          </select>
+        </div>
+        <div id="newAddressForm" class="auth-grid" style="display:none;margin-top:.85rem">
+          <div class="field">
+            <label>Người nhận</label>
+            <input id="newReceiver">
+          </div>
+          <div class="field">
+            <label>Số điện thoại</label>
+            <input id="newPhone">
+          </div>
+          <div class="field full">
+            <label>Địa chỉ</label>
+            <input id="newStreet">
+          </div>
+          <div class="field">
+            <label>Thành phố</label>
+            <input id="newCity">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn primary block" onclick="createAddress()">Lưu địa chỉ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel pad section">
+        <h2 class="section-title">Thanh toán</h2>
+        <div class="auth-grid" style="margin-top:.85rem">
+          <div class="field">
+            <label>Phương thức</label>
+            <select id="paymentMethod">
+              <option value="cod">COD</option>
+              <option value="vnpay">VNPAY</option>
+              <option value="momo">MoMo</option>
+              <option value="stripe">Stripe</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Mã ưu đãi</label>
+            <input id="couponCode" placeholder="Chọn tại trang Ưu đãi">
+          </div>
+          <div class="field full">
+            <label>Ghi chú</label>
+            <textarea id="orderNote" rows="3" placeholder="Ghi chú cho đơn hàng"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="panel pad">
+      <h2 class="section-title">Tóm tắt giỏ hàng</h2>
+      <div id="cartPreview" style="margin-top:.8rem"></div>
+      <div style="margin-top:.8rem">
+        <div class="summary-row"><span>Số lượng</span><strong id="sumQty">0</strong></div>
+        <div class="summary-row"><span>Tạm tính</span><strong id="sumTotal">0₫</strong></div>
+        <div class="summary-row"><span>Coupon</span><strong id="couponPreview">Chưa áp dụng</strong></div>
+        <div class="summary-row summary-total"><span>Tổng thanh toán</span><strong id="grandTotal">0₫</strong></div>
+      </div>
+      <button id="checkoutBtn" class="btn primary block" onclick="checkout()" style="margin-top:.9rem">Đặt hàng và thanh toán</button>
+      <div id="checkoutMsg" class="notice" style="margin-top:.85rem;display:none"></div>
+    </aside>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+let cartItems = [];
+let addresses = [];
+let productMap = new Map();
+let selectedAddress = null;
+
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+function setMsg(text, isError=false){
+  const el = document.getElementById('checkoutMsg');
+  el.style.display = text ? '' : 'none';
+  el.textContent = text || '';
+  el.style.color = isError ? 'var(--danger)' : 'var(--muted)';
+}
+
+function toggleAddressForm(){
+  const el = document.getElementById('newAddressForm');
+  el.style.display = el.style.display === 'none' ? 'grid' : 'none';
+}
+
+function parseCartItems(data){
+  if(Array.isArray(data?.items)) return data.items;
+  if(Array.isArray(data?.results)) return data.results;
+  if(Array.isArray(data)) return data;
+  return [];
+}
+
+async function hydrateProducts(){
+  const ids = [...new Set(cartItems.map(x => Number(x.product_id || x.id)).filter(Boolean))];
+  await Promise.all(ids.map(async id => {
+    if(productMap.has(id)) return;
+    try{
+      const p = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${id}/`);
+      productMap.set(id, ShopUI.normalizeProduct(p));
+    }catch(_){
+      productMap.set(id, ShopUI.normalizeProduct({id, name:`Sản phẩm #${id}`}));
+    }
+  }));
+}
+
+function itemPrice(item){
+  const product = productMap.get(Number(item.product_id || item.id));
+  return Number(item.unit_price || item.price || item.price_at_add || product?.price || 0);
+}
+
+function renderCart(){
+  const box = document.getElementById('cartPreview');
+  if(!cartItems.length){
+    box.innerHTML = '<div class="empty-state"><strong>Giỏ hàng trống</strong>Hãy thêm sản phẩm trước khi checkout.</div>';
+    updateSummary();
+    return;
+  }
+  box.innerHTML = cartItems.map(item => {
+    const id = Number(item.product_id || item.id);
+    const product = productMap.get(id) || ShopUI.normalizeProduct({id});
+    const qty = Number(item.quantity || 0);
+    return `
+      <div class="summary-row" style="align-items:flex-start">
+        <span>${ShopUI.escapeHtml(product.name)}<br><small style="color:var(--muted)">x${qty}</small></span>
+        <strong>${ShopUI.money(itemPrice(item) * qty)}</strong>
+      </div>
+    `;
+  }).join('');
+  updateSummary();
+}
+
+function cartTotal(){
+  return cartItems.reduce((sum,item) => sum + itemPrice(item) * Number(item.quantity || 0), 0);
+}
+
+function updateSummary(){
+  const qty = cartItems.reduce((sum,item) => sum + Number(item.quantity || 0), 0);
+  const total = cartTotal();
+  const coupon = document.getElementById('couponCode').value.trim();
+  document.getElementById('sumQty').textContent = String(qty);
+  document.getElementById('sumTotal').textContent = ShopUI.money(total);
+  document.getElementById('grandTotal').textContent = ShopUI.money(total);
+  document.getElementById('couponPreview').textContent = coupon || 'Chưa áp dụng';
+}
+
+function renderAddresses(){
+  const select = document.getElementById('addressSelect');
+  if(!addresses.length){
+    select.innerHTML = '<option value="">Chưa có địa chỉ, hãy tạo mới</option>';
+    selectedAddress = null;
+    document.getElementById('newAddressForm').style.display = 'grid';
+    return;
+  }
+  select.innerHTML = addresses.map(a => `
+    <option value="${a.id}" ${a.is_default ? 'selected' : ''}>
+      ${ShopUI.escapeHtml(a.receiver_name || '')} - ${ShopUI.escapeHtml(a.street || '')}, ${ShopUI.escapeHtml(a.city || '')}
+    </option>
+  `).join('');
+  selectAddress();
+}
+
+function selectAddress(){
+  const id = document.getElementById('addressSelect').value;
+  selectedAddress = addresses.find(a => String(a.id) === String(id)) || addresses[0] || null;
+}
+
+async function loadAddresses(){
+  const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/users/addresses/`, {headers:ShopUI.authHeaders(false)});
+  addresses = ShopUI.safeList(data);
+  renderAddresses();
+}
+
+async function createAddress(){
+  const payload = {
+    receiver_name: document.getElementById('newReceiver').value.trim(),
+    phone: document.getElementById('newPhone').value.trim(),
+    street: document.getElementById('newStreet').value.trim(),
+    city: document.getElementById('newCity').value.trim(),
+    is_default: true
+  };
+  if(!payload.receiver_name || !payload.phone || !payload.street || !payload.city){
+    ShopUI.toast('Vui lòng nhập đủ địa chỉ', 'err');
+    return;
+  }
+  try{
+    const created = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/users/addresses/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify(payload)
+    });
+    addresses.push(created);
+    renderAddresses();
+    document.getElementById('addressSelect').value = created.id;
+    selectAddress();
+    document.getElementById('newAddressForm').style.display = 'none';
+    ShopUI.toast('Đã lưu địa chỉ');
+  }catch(err){
+    ShopUI.toast(err.message || 'Không lưu được địa chỉ', 'err');
+  }
+}
+
+async function loadCart(){
+  const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/cart/`, {headers:ShopUI.authHeaders(false)});
+  cartItems = parseCartItems(data);
+  await hydrateProducts();
+  renderCart();
+}
+
+async function checkout(){
+  if(!cartItems.length){ setMsg('Giỏ hàng đang trống.', true); return; }
+  if(!selectedAddress){ setMsg('Vui lòng chọn hoặc tạo địa chỉ giao hàng.', true); return; }
+  const btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  setMsg('Đang tạo đơn hàng...');
+  try{
+    const order = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/orders/checkout/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({
+        shipping_address: `${selectedAddress.street}, ${selectedAddress.city}`,
+        note: document.getElementById('orderNote').value.trim(),
+        coupon_code: document.getElementById('couponCode').value.trim()
+      })
+    });
+    const orderId = order.id;
+    const amount = Number(order.total_price || order.total_amount || cartTotal());
+    setMsg('Đã tạo đơn hàng, đang xử lý thanh toán...');
+    const payment = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/payment/pay/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({
+        order_id: orderId,
+        amount,
+        payment_method: document.getElementById('paymentMethod').value
+      })
+    });
+    ShopUI.toast(`Thanh toán ${payment.overall_status || 'success'}`);
+    localStorage.removeItem('selected_coupon');
+    window.location.href = `/orders/${orderId}/tracking/`;
+  }catch(err){
+    setMsg(err.message || 'Checkout thất bại.', true);
+    btn.disabled = false;
+  }
+}
+
+async function initCheckout(){
+  if(!ShopUI.token()){
+    window.location.href = '/login/';
+    return;
+  }
+  document.getElementById('couponCode').value = localStorage.getItem('selected_coupon') || '';
+  document.getElementById('couponCode').addEventListener('input', updateSummary);
+  try{
+    await Promise.all([loadCart(), loadAddresses()]);
+  }catch(err){
+    setMsg(err.message || 'Không tải được dữ liệu checkout.', true);
+  }
+}
+
+initCheckout();
+</script>
+</body>
+</html>
+

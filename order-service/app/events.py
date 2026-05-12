@@ -65,8 +65,8 @@ def publish(routing_key: str, payload: dict):
 def publish_order_created(order, items):
     publish('order.created', {
         'order_id': order.id,
-        'customer_id': order.customer_id,
-        'total_amount': float(order.total_amount),
+        'user_id': order.user_id,
+        'total_price': float(order.total_price),
         'items': items,
     })
 
@@ -74,13 +74,13 @@ def publish_order_created(order, items):
 def publish_order_paid(order):
     publish('order.paid', {
         'order_id': order.id,
-        'customer_id': order.customer_id,
-        'total_amount': float(order.total_amount),
+        'user_id': order.user_id,
+        'total_price': float(order.total_price),
     })
 
 
 def publish_order_canceled(order):
     publish('order.canceled', {
         'order_id': order.id,
-        'customer_id': order.customer_id,
+        'user_id': order.user_id,
     })

@@ -38,9 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'app',
+    'rest_framework',
     'corsheaders',
-    "rest_framework",
-    "app",
 ]
 
 MIDDLEWARE = [
@@ -147,7 +147,11 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
-    ]
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'app.authentication.CustomJWTAuthentication',
+    ],
 }
 
 CSRF_EXEMPT_VIEWS = ['*']
+

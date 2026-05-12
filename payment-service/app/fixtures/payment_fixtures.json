@@ -1,0 +1,25 @@
+{
+  "payments": [
+    {"id": 1, "order_id": 1, "amount": "718000.00", "overall_status": "success", "payment_method": "vnpay"},
+    {"id": 2, "order_id": 2, "amount": "26990000.00", "overall_status": "success", "payment_method": "momo"},
+    {"id": 3, "order_id": 3, "amount": "18990000.00", "overall_status": "pending", "payment_method": "cod"},
+    {"id": 4, "order_id": 4, "amount": "8990000.00", "overall_status": "success", "payment_method": "stripe"},
+    {"id": 5, "order_id": 5, "amount": "15990000.00", "overall_status": "failed", "payment_method": "cod"},
+    {"id": 6, "order_id": 6, "amount": "2890000.00", "overall_status": "success", "payment_method": "vnpay"},
+    {"id": 7, "order_id": 7, "amount": "7890000.00", "overall_status": "success", "payment_method": "momo"},
+    {"id": 8, "order_id": 8, "amount": "55990000.00", "overall_status": "pending", "payment_method": "stripe"},
+    {"id": 9, "order_id": 9, "amount": "13990000.00", "overall_status": "success", "payment_method": "vnpay"},
+    {"id": 10, "order_id": 10, "amount": "2690000.00", "overall_status": "refunded", "payment_method": "stripe"},
+    {"id": 11, "order_id": 11, "amount": "2190000.00", "overall_status": "pending", "payment_method": "cod"},
+    {"id": 12, "order_id": 12, "amount": "3890000.00", "overall_status": "success", "payment_method": "momo"}
+  ],
+  "transactions": [
+    {"payment_id": 1, "transaction_note": "Payment via vnpay", "transaction_code": "TXN-PAY-0001"},
+    {"payment_id": 2, "transaction_note": "Payment via momo", "transaction_code": "TXN-PAY-0002"},
+    {"payment_id": 4, "transaction_note": "Payment via stripe", "transaction_code": "TXN-PAY-0004"},
+    {"payment_id": 6, "transaction_note": "Payment via vnpay", "transaction_code": "TXN-PAY-0006"},
+    {"payment_id": 7, "transaction_note": "Payment via momo", "transaction_code": "TXN-PAY-0007"},
+    {"payment_id": 9, "transaction_note": "Payment via vnpay", "transaction_code": "TXN-PAY-0009"},
+    {"payment_id": 12, "transaction_note": "Payment via momo", "transaction_code": "TXN-PAY-0012"}
+  ]
+}

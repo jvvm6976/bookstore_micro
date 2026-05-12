@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đánh giá & Nhận xét - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--sh:0 8px 24px rgba(194,24,43,.12);--rs:8px;--r:12px}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
+nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300}
+.logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
+.main-wrap{max-width:1000px;margin:0 auto;padding:2rem}
+.title{font-size:1.3rem;font-weight:800;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.title::before{content:'';width:4px;height:1.3rem;background:var(--p)}
+.review-filters{display:flex;gap:.8rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.filter-btn{padding:.5rem 1rem;border:1.5px solid var(--b);border-radius:var(--rs);background:var(--s);cursor:pointer;transition:all .2s;font-weight:600}
+.filter-btn.active{background:var(--p);color:#fff;border-color:var(--p)}
+.reviews-grid{display:grid;grid-template-columns:1fr 280px;gap:1.5rem}
+.reviews-list{display:flex;flex-direction:column;gap:1.2rem}
+.review-card{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.2rem;box-shadow:var(--sh)}
+.review-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:.8rem}
+.review-author{font-weight:700}.review-date{font-size:.8rem;color:var(--tm)}
+.review-rating{font-size:1rem;color:#F59E0B;margin-bottom:.6rem}
+.review-text{font-size:.9rem;color:var(--tm);line-height:1.6}
+.review-actions{display:flex;gap:.5rem;margin-top:1rem}
+.review-composer{display:none;background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1rem;margin-bottom:1rem}
+.review-composer select,.review-composer textarea{width:100%;border:1px solid var(--b);border-radius:var(--rs);padding:.55rem;margin:.35rem 0 .65rem;font-family:inherit}
+.review-composer textarea{min-height:90px;resize:vertical}
+.btn{padding:.4rem .8rem;border:none;border-radius:var(--rs);font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pd)}
+.btn-ghost{background:#FFF4F5;color:var(--p);border:1px solid var(--b)}
+.aside{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.2rem;height:fit-content}
+.aside-title{font-weight:700;margin-bottom:1rem}
+.rating-stat{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;font-size:.9rem}
+.rating-bar{height:6px;background:var(--b);border-radius:3px;flex:1;margin:0 .8rem;overflow:hidden}
+.rating-bar-fill{height:100%;background:var(--p);border-radius:3px}
+.empty-state{text-align:center;padding:2rem;color:var(--tm)}
+.empty-icon{font-size:2rem;margin-bottom:1rem}
+footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:center}
+</style>
+<style>{% include "_customer_header.css" %}</style>
+</head>
+<body>
+
+{% include "_customer_header.html" %}
+<div class="main-wrap">
+  <div class="title">⭐ Đánh giá và nhận xét</div>
+  
+  <div class="review-filters">
+    <span class="filter-btn active" onclick="filterReviews('all', this)">Tất cả</span>
+    <span class="filter-btn" onclick="filterReviews(5, this)">⭐⭐⭐⭐⭐ 5 sao</span>
+    <span class="filter-btn" onclick="filterReviews(4, this)">⭐⭐⭐⭐ 4 sao</span>
+    <span class="filter-btn" onclick="filterReviews(3, this)">⭐⭐⭐ 3 sao</span>
+  </div>
+  <div id="orderContext" style="display:none;margin:-.7rem 0 1rem;padding:.6rem .9rem;background:var(--pll);border:1px solid var(--b);border-radius:var(--rs);font-size:.88rem;color:var(--pd)"></div>
+  <div id="reviewComposer" class="review-composer">
+    <div style="font-weight:700;margin-bottom:.4rem">Viet danh gia cho don hang nay</div>
+    <select id="reviewProduct"></select>
+    <select id="reviewRating">
+      <option value="5">5 sao</option>
+      <option value="4">4 sao</option>
+      <option value="3">3 sao</option>
+      <option value="2">2 sao</option>
+      <option value="1">1 sao</option>
+    </select>
+    <textarea id="reviewComment" placeholder="Cam nhan cua ban ve san pham"></textarea>
+    <button class="btn btn-p" onclick="createReview()">Gui danh gia</button>
+    <span id="reviewCreateMsg" style="font-size:.85rem;color:var(--tm);margin-left:.5rem"></span>
+  </div>
+
+  <div class="reviews-grid">
+    <div class="reviews-list" id="reviewsList">
+      <div class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem đánh giá</p>
+      </div>
+    </div>
+    
+    <aside class="aside">
+      <div class="aside-title">📊 Thống kê đánh giá</div>
+      <div id="ratingStats">
+        <div style="text-align:center;padding:1rem;color:var(--tm)">Đang tải...</div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<footer>
+  © 2026 ShopSphere | Cộng đồng đánh giá sản phẩm
+</footer>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const API_BASE = window.location.origin;
+let token = localStorage.getItem('token');
+const orderId = new URLSearchParams(window.location.search).get('order_id');
+let allReviews = [];
+let currentFilter = 'all';
+let productNameMap = {};
+let orderItemsForReview = [];
+
+async function loadReviews() {
+  if (!token) {
+    document.getElementById('reviewsList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem đánh giá</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews/me/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('load reviews failed');
+    const data = await res.json();
+    allReviews = data.results || data.reviews || data || [];
+    if (!Array.isArray(allReviews)) allReviews = [];
+    if (orderId) {
+      allReviews = allReviews.filter(r => String(r.order_id) === String(orderId));
+      const ctx = document.getElementById('orderContext');
+      ctx.style.display = 'block';
+      ctx.textContent = `Đang hiển thị đánh giá cho đơn #${orderId}`;
+      await loadOrderReviewOptions();
+    }
+
+    const productIds = [...new Set(allReviews.map(r => r.product_id).filter(Boolean))];
+    await Promise.all(productIds.map(async (pid) => {
+      try {
+        const pRes = await fetch(`${API_BASE}/api/products/${pid}/`);
+        if (!pRes.ok) return;
+        const prod = await pRes.json();
+        productNameMap[pid] = prod.name || `Sản phẩm #${pid}`;
+      } catch (_) {}
+    }));
+
+    renderReviews();
+    updateStats();
+  } catch (err) {
+    document.getElementById('reviewsList').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Lỗi tải đánh giá</p></div>`;
+  }
+}
+
+async function loadOrderReviewOptions() {
+  try {
+    const res = await fetch(`${API_BASE}/api/orders/${orderId}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) return;
+    const order = await res.json();
+    orderItemsForReview = Array.isArray(order.items) ? order.items : [];
+    if (!orderItemsForReview.length) return;
+    document.getElementById('reviewComposer').style.display = 'block';
+    document.getElementById('reviewProduct').innerHTML = orderItemsForReview.map(item => {
+      const pid = item.product_id;
+      return `<option value="${pid}">San pham #${pid}</option>`;
+    }).join('');
+  } catch (_) {}
+}
+
+async function createReview() {
+  const msg = document.getElementById('reviewCreateMsg');
+  const productId = document.getElementById('reviewProduct').value;
+  const rating = document.getElementById('reviewRating').value;
+  const comment = document.getElementById('reviewComment').value.trim();
+  if (!productId || !rating) {
+    msg.textContent = 'Vui long chon san pham va so sao';
+    return;
+  }
+  msg.textContent = 'Dang gui...';
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ order_id: orderId, product_id: productId, rating, comment })
+    });
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) {
+      msg.textContent = data.error || data.detail || 'Khong gui duoc danh gia';
+      return;
+    }
+    msg.textContent = 'Da gui danh gia, dang cho duyet';
+    document.getElementById('reviewComment').value = '';
+    await loadReviews();
+  } catch (e) {
+    msg.textContent = 'Loi ket noi khi gui danh gia';
+  }
+}
+
+function renderReviews() {
+  let filtered = allReviews;
+  
+  if (currentFilter !== 'all') {
+    filtered = allReviews.filter(r => r.rating === parseInt(currentFilter));
+  }
+
+  if (filtered.length === 0) {
+    const msg = orderId ? `Không có đánh giá nào cho đơn #${orderId}` : 'Không có đánh giá nào';
+    document.getElementById('reviewsList').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>${msg}</p></div>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(review => {
+    const stars = '⭐'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+    html += `
+      <div class="review-card">
+        <div class="review-header">
+          <div>
+            <div class="review-author">${review.author_name || 'Người dùng'}</div>
+            <div class="review-date">${new Date(review.created_at).toLocaleDateString('vi-VN')}</div>
+          </div>
+        </div>
+        <div class="review-rating">${stars} (${review.rating}/5)</div>
+        <div style="font-weight:700;color:var(--t);margin-bottom:.6rem">${productNameMap[review.product_id] || `Sản phẩm #${review.product_id}`}</div>
+        <div class="review-text">${review.comment || review.content}</div>
+        <div class="review-actions">
+          <button class="btn btn-ghost" onclick="deleteReview(${review.id})">✕ Xóa</button>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('reviewsList').innerHTML = html;
+}
+
+function updateStats() {
+  let stats = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+  let total = allReviews.length;
+  
+  allReviews.forEach(r => {
+    if (stats[r.rating] !== undefined) stats[r.rating]++;
+  });
+
+  let html = '<div style="font-size:.9rem">';
+  html += `<div style="font-weight:700;font-size:1.5rem;margin-bottom:1rem">${(allReviews.reduce((s, r) => s + r.rating, 0) / total || 0).toFixed(1)} ⭐</div>`;
+  
+  for (let i = 5; i >= 1; i--) {
+    const count = stats[i];
+    const percent = total > 0 ? (count / total * 100) : 0;
+    html += `
+      <div class="rating-stat">
+        <span>${'⭐'.repeat(i)}</span>
+        <div class="rating-bar"><div class="rating-bar-fill" style="width:${percent}%"></div></div>
+        <span>${count}</span>
+      </div>
+    `;
+  }
+  html += '</div>';
+  document.getElementById('ratingStats').innerHTML = html;
+}
+
+function filterReviews(type, el) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderReviews();
+}
+
+async function deleteReview(reviewId) {
+  if (!confirm('Bạn chắc chắn muốn xóa đánh giá này?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/reviews/${reviewId}/`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      alert('✗ Không thể xóa đánh giá');
+      return;
+    }
+    allReviews = allReviews.filter(r => r.id !== reviewId);
+    renderReviews();
+    updateStats();
+  } catch (e) {
+    alert('✗ Lỗi: ' + e.message);
+  }
+}
+
+loadReviews();
+</script>
+
+</body>
+</html>
+

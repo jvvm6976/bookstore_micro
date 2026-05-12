@@ -3,11 +3,11 @@ from pathlib import Path
 
 from django.core.management.base import BaseCommand
 
-from ...models import Comment
+from ...models import Review
 
 
 class Command(BaseCommand):
-    help = "Seed comment fixtures (idempotent by customer_id+book_id+order_id)."
+    help = "Seed review fixtures (idempotent by user_id+product_id+order_id)."
 
     def handle(self, *args, **options):
         fixture_path = Path(__file__).resolve().parents[2] / "fixtures" / "comment_fixtures.json"
@@ -15,18 +15,18 @@ class Command(BaseCommand):
             payload = json.load(f)
 
         count = 0
-        for item in payload.get("comments", []):
+        for item in payload.get("reviews", []):
             lookup = {
-                "customer_id": int(item["customer_id"]),
-                "book_id": int(item["book_id"]),
-                "order_id": int(item.get("order_id", 0)),
+                "user_id": int(item["user_id"]),
+                "product_id": int(item["product_id"]),
+                "order_id": int(item["order_id"]),
             }
             defaults = {
-                "content": item["content"],
-                "rating": int(item.get("rating", 5)),
-                "helpful_count": int(item.get("helpful_count", 0)),
+                "rating": int(item["rating"]),
+                "comment": item.get("comment", ""),
+                "status": item.get("status", "approved"),
             }
-            Comment.objects.update_or_create(**lookup, defaults=defaults)
+            Review.objects.update_or_create(**lookup, defaults=defaults)
             count += 1
 
-        self.stdout.write(self.style.SUCCESS(f"Seeded comment fixtures: {count} records"))
+        self.stdout.write(self.style.SUCCESS(f"Seeded {count} reviews"))

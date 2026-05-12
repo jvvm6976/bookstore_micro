@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manager Portal - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Operations</div>
+      <h1 class="page-title">Manager Portal</h1>
+      <p class="page-subtitle">Trang tổng quan vận hành cho catalog, đơn hàng, thanh toán, vận chuyển và dữ liệu AI. Các thao tác quản trị sâu có thể nối API role-based sau.</p>
+    </div>
+    <span class="pill amber">UI shell</span>
+  </section>
+
+  <section class="quick-grid">
+    <a class="quick-card" href="/products/"><span class="quick-icon">P</span><span><span class="quick-title">Catalog</span><span class="quick-meta" id="productCount">Đang tải</span></span></a>
+    <a class="quick-card" href="/orders/"><span class="quick-icon">O</span><span><span class="quick-title">Đơn hàng</span><span class="quick-meta">Theo dõi trạng thái</span></span></a>
+    <a class="quick-card" href="/reviews/"><span class="quick-icon">R</span><span><span class="quick-title">Đánh giá</span><span class="quick-meta">Duyệt phản hồi khách hàng</span></span></a>
+    <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">AI service</span><span class="quick-meta" id="aiState">Đang kiểm tra</span></span></a>
+  </section>
+
+  <section class="drawer-grid section">
+    <div class="panel pad">
+      <h2 class="section-title">Service Map</h2>
+      <div id="serviceMap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem;margin-top:.8rem"></div>
+    </div>
+    <aside class="panel pad">
+      <h2 class="section-title">Liên kết nhanh</h2>
+      <div style="display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem">
+        <a class="btn block" href="/coupons/">Quản lý ưu đãi UI</a>
+        <a class="btn block" href="/returns/">Yêu cầu đổi trả</a>
+        <a class="btn block" href="/notifications/">Trung tâm thông báo</a>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+const services = ['user-service','product-service','cart-service','order-service','payment-service','shipping-service','comment-rate-service','notification-service','ai-service'];
+document.getElementById('serviceMap').innerHTML = services.map(s => `<div class="spec"><span>${s}</span><strong>Connected through gateway</strong></div>`).join('');
+ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`).then(d => {
+  document.getElementById('productCount').textContent = `${ShopUI.safeList(d).length} sản phẩm active`;
+}).catch(() => document.getElementById('productCount').textContent = 'Chưa có dữ liệu');
+ShopUI.fetchJson(`${ShopUI.API_BASE}/api/v1/kb/status`).then(d => {
+  document.getElementById('aiState').textContent = d.status || 'Sẵn sàng';
+}).catch(() => document.getElementById('aiState').textContent = 'Sẵn sàng');
+</script>
+</body>
+</html>

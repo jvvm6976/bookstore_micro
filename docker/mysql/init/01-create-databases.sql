@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS ecommerce_user;
 CREATE DATABASE IF NOT EXISTS ecommerce_auth;
 CREATE DATABASE IF NOT EXISTS ecommerce_customer;
 CREATE DATABASE IF NOT EXISTS ecommerce_order;

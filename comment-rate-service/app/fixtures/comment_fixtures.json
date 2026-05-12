@@ -1,20 +1,14 @@
 {
-  "comments": [
-    {"customer_id": 1, "book_id": 1, "content": "Sách rất thực tế, giúp mình cải thiện coding style rõ rệt.", "rating": 5, "helpful_count": 12},
-    {"customer_id": 2, "book_id": 2, "content": "Nội dung ổn, ví dụ minh họa dễ hiểu.", "rating": 4, "helpful_count": 5},
-    {"customer_id": 3, "book_id": 3, "content": "Chất lượng tốt, giao hàng nhanh, sẽ mua lại.", "rating": 5, "helpful_count": 7},
-    {"customer_id": 4, "book_id": 4, "content": "Giá hơi cao nhưng chất lượng tương xứng.", "rating": 4, "helpful_count": 3},
-    {"customer_id": 5, "book_id": 5, "content": "Mình rất thích phần trình bày và nội dung.", "rating": 5, "helpful_count": 9},
-    {"customer_id": 6, "book_id": 6, "content": "Dùng tạm ổn, đóng gói cẩn thận.", "rating": 4, "helpful_count": 4},
-    {"customer_id": 7, "book_id": 7, "content": "Đáng tiền, đúng như mô tả.", "rating": 5, "helpful_count": 11},
-    {"customer_id": 8, "book_id": 8, "content": "Trải nghiệm tốt, hỗ trợ khách hàng nhanh.", "rating": 4, "helpful_count": 2},
-    {"customer_id": 9, "book_id": 9, "content": "Sản phẩm chất lượng, sẽ giới thiệu cho bạn bè.", "rating": 5, "helpful_count": 8},
-    {"customer_id": 10, "book_id": 10, "content": "Tốt trong tầm giá, xứng đáng 4 sao.", "rating": 4, "helpful_count": 6},
-    {"customer_id": 11, "book_id": 11, "content": "Chưa dùng lâu nhưng hiện tại khá ổn.", "rating": 4, "helpful_count": 1},
-    {"customer_id": 12, "book_id": 12, "content": "Hiệu năng tốt, sử dụng mượt mà.", "rating": 5, "helpful_count": 10},
-    {"customer_id": 1, "book_id": 13, "content": "Mình thích phong cách viết, dễ tiếp thu.", "rating": 5, "helpful_count": 4},
-    {"customer_id": 2, "book_id": 14, "content": "Đủ dùng cho nhu cầu cơ bản hằng ngày.", "rating": 4, "helpful_count": 2},
-    {"customer_id": 3, "book_id": 15, "content": "Phần nội dung có chiều sâu, đáng đọc.", "rating": 5, "helpful_count": 6},
-    {"customer_id": 4, "book_id": 16, "content": "Rất hài lòng với chất lượng tổng thể.", "rating": 5, "helpful_count": 7}
+  "reviews": [
+    {"user_id": 1, "product_id": 1, "order_id": 1, "rating": 5, "comment": "Sách rất thực tế, giúp mình cải thiện coding style rõ rệt.", "status": "approved"},
+    {"user_id": 2, "product_id": 2, "order_id": 2, "rating": 4, "comment": "Nội dung ổn, ví dụ minh họa dễ hiểu.", "status": "approved"},
+    {"user_id": 3, "product_id": 3, "order_id": 3, "rating": 5, "comment": "Chất lượng tốt, giao hàng nhanh, sẽ mua lại.", "status": "approved"},
+    {"user_id": 4, "product_id": 4, "order_id": 4, "rating": 4, "comment": "Giá hơi cao nhưng chất lượng tương xứng.", "status": "approved"},
+    {"user_id": 5, "product_id": 5, "order_id": 5, "rating": 5, "comment": "Mình rất thích phần trình bày và nội dung.", "status": "approved"},
+    {"user_id": 6, "product_id": 6, "order_id": 6, "rating": 4, "comment": "Dùng tạm ổn, đóng gói cẩn thận.", "status": "approved"},
+    {"user_id": 7, "product_id": 7, "order_id": 7, "rating": 5, "comment": "Đáng tiền, đúng như mô tả.", "status": "approved"},
+    {"user_id": 8, "product_id": 8, "order_id": 8, "rating": 4, "comment": "Trải nghiệm tốt, hỗ trợ khách hàng nhanh.", "status": "approved"},
+    {"user_id": 9, "product_id": 9, "order_id": 9, "rating": 5, "comment": "Sản phẩm chất lượng, sẽ giới thiệu cho bạn bè.", "status": "approved"},
+    {"user_id": 10, "product_id": 10, "order_id": 10, "rating": 4, "comment": "Tốt trong tầm giá, xứng đáng 4 sao.", "status": "approved"}
   ]
 }

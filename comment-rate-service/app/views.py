@@ -1,237 +1,289 @@
-import os
+import logging
 import requests
-from django.db.models import Avg, Count
-from rest_framework import status, viewsets
+from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import ValidationError
+from django.db import transaction
+from .models import Review, ReviewReply
+from .serializers import ReviewSerializer, ReviewReplySerializer
 
-from .models import Comment
-from .serializers import CommentCreateSerializer, CommentSerializer
+logger = logging.getLogger(__name__)
+
+ORDER_SERVICE_URL = 'http://order-service:8000'
 
 
-ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://order-service:8000')
-PAID_STATUSES = {'paid', 'shipped'}
+def _create_review(request):
+    user_id = request.user.id
+    order_id = request.data.get('order_id')
+    product_id = request.data.get('product_id')
+    rating = request.data.get('rating')
+    comment = request.data.get('comment', '')
 
-class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
+    # Validation
+    if not all([order_id, product_id, rating]):
+        raise ValidationError({'error': 'order_id, product_id, rating are required'})
 
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return CommentCreateSerializer
-        return CommentSerializer
+    try:
+        rating_val = int(rating)
+        if rating_val < 1 or rating_val > 5:
+            raise ValidationError({'error': 'Rating must be between 1 and 5'})
+    except (ValueError, TypeError):
+        raise ValidationError({'error': 'Rating must be an integer'})
 
-    def _get_paid_orders(self, customer_id):
-        url = f"{ORDER_SERVICE_URL}/api/orders/by_customer/"
-        resp = requests.get(url, params={'customer_id': customer_id}, timeout=8)
-        if resp.status_code != 200:
-            return None
-        data = resp.json()
-        orders = data.get('orders', [])
-        return [o for o in orders if str(o.get('status', '')).lower() in PAID_STATUSES]
+    # Check if already reviewed (UNIQUE constraint)
+    if Review.objects.filter(user_id=user_id, order_id=order_id, product_id=product_id).exists():
+        raise ValidationError({'error': 'You have already reviewed this product for this order'})
 
-    def _eligible_order_ids(self, customer_id, book_id):
-        orders = self._get_paid_orders(customer_id)
-        if orders is None:
-            return None
-        eligible = []
-        for order in orders:
-            oid = order.get('id')
-            for item in order.get('items', []) or []:
-                if int(item.get('book_id', 0) or 0) == int(book_id):
-                    eligible.append(int(oid))
-                    break
-        return eligible
+    # Validate order status = completed or paid
+    try:
+        order_resp = requests.get(f"{ORDER_SERVICE_URL}/internal/orders/{order_id}/", timeout=5)
+        if order_resp.status_code == 200:
+            order_data = order_resp.json()
+            order_status = order_data.get('current_status')
+            if order_status not in ['completed', 'paid', 'delivered']:
+                raise ValidationError({'error': f'You can only review completed or paid orders (current status: {order_status})'})
+        else:
+            raise ValidationError({'error': 'Order not found'})
+    except requests.RequestException as e:
+        logger.error(f"Error calling order service: {str(e)}")
+        raise ValidationError({'error': 'Failed to validate order'})
 
+    try:
+        review = Review.objects.create(
+            user_id=user_id,
+            order_id=order_id,
+            product_id=product_id,
+            rating=rating_val,
+            comment=comment,
+            status='pending'  # Default to pending, needs approval
+        )
+
+        serializer = ReviewSerializer(review)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        logger.error(f"Error creating review: {str(e)}")
+        return Response(
+            {'error': f'Failed to create review: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+class ReviewListView(generics.ListCreateAPIView):
+    """
+    Get all reviews (paginated, only approved)
+    GET /reviews/
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = ReviewSerializer
+    queryset = Review.objects.filter(status='approved').order_by('-created_at')
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
-        """
-        Create review with strict policy:
-        - Must have purchased book
-        - One review per (customer, book, order)
-        - If order_id omitted, auto-pick an eligible not-yet-reviewed order
-        """
-        serializer = CommentCreateSerializer(data=request.data)
-        if serializer.is_valid():
-            customer_id = serializer.validated_data['customer_id']
-            book_id = serializer.validated_data['book_id']
-            requested_order_id = serializer.validated_data.get('order_id')
+        return _create_review(request)
 
+
+class ReviewCreateView(generics.CreateAPIView):
+    """
+    Create review (only for completed or paid orders)
+    POST /reviews/
+    
+    Request: {order_id, product_id, rating, comment}
+    Response: {id, user_id, order_id, product_id, rating, comment, status}
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ReviewSerializer
+    
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        return _create_review(request)
+
+
+class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Get/Update/Delete review
+    GET /reviews/{id}/
+    PUT /reviews/{id}/
+    DELETE /reviews/{id}/
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ReviewSerializer
+    queryset = Review.objects.all()
+    
+    def update(self, request, *args, **kwargs):
+        review = self.get_object()
+        
+        # Only owner or admin can update
+        if review.user_id != request.user.id:
+            raise ValidationError({'error': 'You can only update your own reviews'})
+        
+        rating = request.data.get('rating')
+        comment = request.data.get('comment')
+        
+        if rating:
             try:
-                eligible_order_ids = self._eligible_order_ids(customer_id, book_id)
-            except requests.exceptions.RequestException:
-                eligible_order_ids = None
-
-            if eligible_order_ids is None:
-                return Response(
-                    {'error': 'Cannot verify purchase at this time. Please try again.'},
-                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
-                )
-
-            if not eligible_order_ids:
-                return Response(
-                    {'error': 'Bạn phải mua sản phẩm trước khi đánh giá.'},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
-
-            if requested_order_id is not None:
-                requested_order_id = int(requested_order_id)
-                if requested_order_id not in eligible_order_ids:
-                    return Response(
-                        {'error': 'Đơn hàng không hợp lệ cho sản phẩm này hoặc chưa thanh toán.'},
-                        status=status.HTTP_403_FORBIDDEN,
-                    )
-                order_id = requested_order_id
-            else:
-                reviewed_order_ids = set(
-                    Comment.objects.filter(customer_id=customer_id, book_id=book_id).values_list('order_id', flat=True)
-                )
-                order_id = next((oid for oid in eligible_order_ids if oid not in reviewed_order_ids), None)
-                if order_id is None:
-                    return Response(
-                        {'error': 'Bạn đã đánh giá sản phẩm này cho tất cả đơn mua hợp lệ.'},
-                        status=status.HTTP_409_CONFLICT,
-                    )
-
-            if Comment.objects.filter(customer_id=customer_id, book_id=book_id, order_id=order_id).exists():
-                return Response(
-                    {'error': 'Sản phẩm này đã được bạn đánh giá trong đơn hàng đã chọn.'},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            comment = serializer.save(order_id=order_id)
-            return Response(CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(detail=False, methods=['get'])
-    def by_book(self, request):
-        """Get all comments/reviews for a specific book"""
-        book_id = request.query_params.get('book_id')
-        if not book_id:
-            return Response({'error': 'book_id parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
+                rating_val = int(rating)
+                if rating_val < 1 or rating_val > 5:
+                    raise ValidationError({'error': 'Rating must be between 1 and 5'})
+                review.rating = rating_val
+            except (ValueError, TypeError):
+                raise ValidationError({'error': 'Rating must be an integer'})
         
-        comments = Comment.objects.filter(book_id=book_id).order_by('-created_at')
-        serializer = CommentSerializer(comments, many=True)
+        if comment is not None:
+            review.comment = comment
         
-        # Calculate average rating
-        stats = Comment.objects.filter(book_id=book_id).aggregate(
-            avg_rating=Avg('rating'),
-            total_reviews=Count('id')
-        )
+        review.save()
+        serializer = self.get_serializer(review)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def destroy(self, request, *args, **kwargs):
+        review = self.get_object()
         
-        return Response({
-            'book_id': book_id,
-            'average_rating': round(stats['avg_rating'] or 0, 2),
-            'total_reviews': stats['total_reviews'] or 0,
-            'comments': serializer.data
-        }, status=status.HTTP_200_OK)
+        # Only owner or admin can delete
+        if review.user_id != request.user.id:
+            raise ValidationError({'error': 'You can only delete your own reviews'})
+        
+        review.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['get'])
-    def summary(self, request):
-        """Bulk rating summary for product cards: /comments/summary/?book_ids=1,2,3"""
-        raw = (request.query_params.get('book_ids') or '').strip()
-        if not raw:
-            return Response({'error': 'book_ids parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            ids = [int(x) for x in raw.split(',') if x.strip()]
-        except ValueError:
-            return Response({'error': 'book_ids must be comma separated integers'}, status=status.HTTP_400_BAD_REQUEST)
-        if not ids:
-            return Response({'summaries': {}}, status=status.HTTP_200_OK)
 
-        agg = (
-            Comment.objects.filter(book_id__in=ids)
-            .values('book_id')
-            .annotate(avg_rating=Avg('rating'), total_reviews=Count('id'))
-        )
-        summaries = {str(i): {'average_rating': 0, 'total_reviews': 0} for i in ids}
-        for row in agg:
-            summaries[str(row['book_id'])] = {
-                'average_rating': round(row['avg_rating'] or 0, 2),
-                'total_reviews': row['total_reviews'] or 0,
-            }
-        return Response({'summaries': summaries}, status=status.HTTP_200_OK)
+class ReviewMyListView(generics.ListAPIView):
+    """
+    Get current user's reviews
+    GET /reviews/me/
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ReviewSerializer
+    
+    def get_queryset(self):
+        return Review.objects.filter(user_id=self.request.user.id).order_by('-created_at')
 
-    @action(detail=False, methods=['get'])
-    def by_customer(self, request):
-        """Get all comments submitted by a customer"""
-        customer_id = request.query_params.get('customer_id')
-        if not customer_id:
-            return Response({'error': 'customer_id parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        comments = Comment.objects.filter(customer_id=customer_id).order_by('-created_at')
-        serializer = CommentSerializer(comments, many=True)
-        
-        return Response({
-            'customer_id': customer_id,
-            'count': comments.count(),
-            'comments': serializer.data
-        }, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['get'])
-    def book_rating_stats(self, request):
-        """Get rating statistics for a book"""
-        book_id = request.query_params.get('book_id')
-        if not book_id:
-            return Response({'error': 'book_id parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        comments = Comment.objects.filter(book_id=book_id)
-        
-        # Calculate distribution
-        rating_dist = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        for comment in comments:
-            rating_dist[comment.rating] += 1
-        
-        stats = comments.aggregate(
-            avg_rating=Avg('rating'),
-            total_reviews=Count('id')
-        )
-        
-        return Response({
-            'book_id': book_id,
-            'average_rating': round(stats['avg_rating'] or 0, 2),
-            'total_reviews': stats['total_reviews'] or 0,
-            'rating_distribution': rating_dist,
-            'percentage_by_rating': {
-                rating: round((count / (stats['total_reviews'] or 1)) * 100, 1)
-                for rating, count in rating_dist.items()
-            }
-        }, status=status.HTTP_200_OK)
+class ReviewByProductView(generics.ListAPIView):
+    """
+    Get reviews by product_id
+    GET /reviews/products/{product_id}/
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = ReviewSerializer
+    
+    def get_queryset(self):
+        product_id = self.kwargs.get('pk')
+        return Review.objects.filter(product_id=product_id, status='approved').order_by('-created_at')
 
-    @action(detail=False, methods=['get'])
-    def filter_by_rating(self, request):
-        """Get comments filtered by rating"""
-        book_id = request.query_params.get('book_id')
-        rating = request.query_params.get('rating')
+
+class ReviewByOrderView(generics.ListAPIView):
+    """
+    Get reviews by order_id
+    GET /reviews/orders/{order_id}/
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ReviewSerializer
+    
+    def get_queryset(self):
+        order_id = self.kwargs.get('pk')
+        return Review.objects.filter(order_id=order_id).order_by('-created_at')
+
+
+class ReviewReplyCreateView(generics.CreateAPIView):
+    """
+    Add reply to review (admin/staff only)
+    POST /reviews/{id}/reply/
+    
+    Request: {content}
+    Response: {id, review_id, user_id, content, created_at}
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ReviewReplySerializer
+    
+    def create(self, request, *args, **kwargs):
+        review_id = self.kwargs.get('pk')
+        content = request.data.get('content')
         
-        if not book_id or not rating:
-            return Response({'error': 'book_id and rating parameters are required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not content:
+            raise ValidationError({'error': 'content is required'})
         
         try:
-            rating = int(rating)
-            if rating < 1 or rating > 5:
-                return Response({'error': 'rating must be between 1 and 5'}, status=status.HTTP_400_BAD_REQUEST)
-        except ValueError:
-            return Response({'error': 'rating must be an integer'}, status=status.HTTP_400_BAD_REQUEST)
+            review = Review.objects.get(id=review_id)
+        except Review.DoesNotExist:
+            raise ValidationError({'error': 'Review not found'})
         
-        comments = Comment.objects.filter(book_id=book_id, rating=rating).order_by('-helpful_count')
-        serializer = CommentSerializer(comments, many=True)
+        try:
+            reply = ReviewReply.objects.create(
+                review=review,
+                user_id=request.user.id,
+                content=content
+            )
+            
+            serializer = ReviewReplySerializer(reply)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error creating reply: {str(e)}")
+            return Response(
+                {'error': f'Failed to create reply: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+# Internal APIs
+
+class InternalReviewCreateView(generics.CreateAPIView):
+    """
+    Internal API - Create review (called from Order Service)
+    POST /internal/reviews/
+    
+    Request: {user_id, order_id, product_id, rating, comment}
+    Response: {id, user_id, order_id, product_id, rating, comment, status}
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = ReviewSerializer
+    
+    def create(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        order_id = request.data.get('order_id')
+        product_id = request.data.get('product_id')
+        rating = request.data.get('rating')
+        comment = request.data.get('comment', '')
         
-        return Response({
-            'book_id': book_id,
-            'rating': rating,
-            'count': comments.count(),
-            'comments': serializer.data
-        }, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=['patch'])
-    def mark_helpful(self, request, pk=None):
-        """Mark a comment as helpful"""
-        comment = self.get_object()
-        comment.helpful_count += 1
-        comment.save()
-
-        return Response({
-            'message': 'Comment marked as helpful',
-            'comment': CommentSerializer(comment).data
-        }, status=status.HTTP_200_OK)
+        # Validation
+        if not all([user_id, order_id, product_id, rating]):
+            raise ValidationError({'error': 'user_id, order_id, product_id, rating are required'})
+        
+        try:
+            rating_val = int(rating)
+            if rating_val < 1 or rating_val > 5:
+                raise ValidationError({'error': 'Rating must be between 1 and 5'})
+        except (ValueError, TypeError):
+            raise ValidationError({'error': 'Rating must be an integer'})
+        
+        # Check if already reviewed
+        if Review.objects.filter(user_id=user_id, order_id=order_id, product_id=product_id).exists():
+            raise ValidationError({'error': 'Review already exists for this product in this order'})
+        
+        try:
+            review = Review.objects.create(
+                user_id=user_id,
+                order_id=order_id,
+                product_id=product_id,
+                rating=rating_val,
+                comment=comment,
+                status='pending'
+            )
+            
+            serializer = ReviewSerializer(review)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            logger.error(f"Error creating review: {str(e)}")
+            return Response(
+                {'error': f'Failed to create review: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

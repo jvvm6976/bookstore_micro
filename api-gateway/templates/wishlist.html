@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yêu thích - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" with active_nav="wishlist" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Wishlist</div>
+      <h1 class="page-title">Danh sách yêu thích</h1>
+      <p class="page-subtitle">Lưu các sản phẩm muốn xem lại, chuyển nhanh sang giỏ hàng khi sẵn sàng đặt mua.</p>
+    </div>
+    <a class="btn primary" href="/products/">Tìm sản phẩm</a>
+  </section>
+
+  <section>
+    <div id="wishlistGrid" class="product-grid"></div>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+let wishlistItems = [];
+
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+async function loadProduct(id){
+  try{
+    return ShopUI.normalizeProduct(await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${id}/`));
+  }catch(_){
+    return ShopUI.normalizeProduct({id, name:`Sản phẩm #${id}`});
+  }
+}
+
+function wishlistCard(product, item){
+  const html = ShopUI.productCard(product, {secondary:false});
+  return html.replace('</div>\n        </div>\n      </article>', `
+          <div class="toolbar" style="margin-top:.3rem">
+            <button class="btn small" onclick="moveToCart(${Number(item.product_id)})">Chuyển sang giỏ</button>
+            <button class="btn small" onclick="removeWishlist(${Number(item.product_id)})">Xóa</button>
+          </div>
+        </div>
+      </article>`);
+}
+
+async function loadWishlist(){
+  const grid = document.getElementById('wishlistGrid');
+  if(!ShopUI.token()){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Vui lòng đăng nhập</strong><a class="btn primary" href="/login/" style="margin-top:.8rem">Đăng nhập</a></div>';
+    return;
+  }
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải danh sách yêu thích</strong></div>';
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/wishlist/`, {headers:ShopUI.authHeaders(false)});
+    wishlistItems = ShopUI.safeList(data);
+    if(!wishlistItems.length){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm yêu thích</strong>Hãy lưu sản phẩm từ catalog để xem lại sau.</div>';
+      return;
+    }
+    const products = await Promise.all(wishlistItems.map(item => loadProduct(item.product_id)));
+    grid.innerHTML = products.map((product, idx) => wishlistCard(product, wishlistItems[idx])).join('');
+  }catch(_){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được wishlist</strong>Vui lòng thử lại sau.</div>';
+  }
+}
+
+async function moveToCart(productId){
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/wishlist/move-to-cart/`, {
+      method:'PUT',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({product_id:productId})
+    });
+    ShopUI.toast('Đã chuyển sang giỏ hàng');
+    loadWishlist();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không chuyển được sản phẩm', 'err');
+  }
+}
+
+async function removeWishlist(productId){
+  try{
+    const res = await fetch(`${ShopUI.API_BASE}/api/wishlist/items/${productId}/`, {
+      method:'DELETE',
+      headers:ShopUI.authHeaders(false)
+    });
+    if(!res.ok) throw new Error('delete failed');
+    ShopUI.toast('Đã xóa khỏi yêu thích');
+    loadWishlist();
+  }catch(_){
+    ShopUI.toast('Không xóa được sản phẩm', 'err');
+  }
+}
+
+loadWishlist();
+</script>
+</body>
+</html>
+

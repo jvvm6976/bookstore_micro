@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Theo dõi vận chuyển - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--rs:8px;--r:12px;--sh:0 8px 24px rgba(194,24,43,.12)}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
+nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;grid-template-columns:auto 1fr auto;gap:1rem;position:sticky;top:0;z-index:300}
+.logo{font-size:1.3rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
+.main-wrap{max-width:900px;margin:0 auto;padding:2rem}
+.title{font-size:1.3rem;font-weight:800;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.title::before{content:'';width:4px;height:1.3rem;background:var(--p)}
+.card{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.5rem;margin-bottom:1.5rem;box-shadow:var(--sh)}
+.map-container{width:100%;height:400px;background:linear-gradient(135deg,#FFF1F2 0%,#FFE4E6 100%);border-radius:var(--rs);display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;font-size:2rem}
+.tracking-status{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
+.status-info{background:var(--pll);padding:1rem;border-radius:var(--rs);border-left:3px solid var(--p)}
+.status-label{font-size:.8rem;font-weight:700;color:var(--pd);text-transform:uppercase}
+.status-value{font-size:1.1rem;font-weight:800;color:var(--t);margin-top:.3rem}
+.timeline-mini{display:flex;gap:.3rem;margin-top:1rem}
+.timeline-dot{width:10px;height:10px;border-radius:50%;background:var(--b)}
+.timeline-dot.done{background:var(--p)}
+.location-info{background:var(--pll);padding:1.2rem;border-radius:var(--rs);margin-bottom:1rem}
+.location-title{font-weight:700;margin-bottom:.5rem}
+.location-details{font-size:.9rem;color:var(--tm);line-height:1.6}
+.contact-bar{display:flex;gap:1rem;padding:1rem;background:#FFF4F5;border-radius:var(--rs)}
+.btn{padding:.5rem 1rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-weight:700;cursor:pointer;transition:all .2s}
+.btn:hover{background:var(--pd)}
+.btn-ghost{background:transparent;border:1px solid var(--b);color:var(--t)}
+footer{background:var(--pdd);color:#fff;padding:1.5rem;text-align:center;margin-top:2rem}
+</style>
+<style>{% include "_customer_header.css" %}</style>
+</head>
+<body>
+
+{% include "_customer_header.html" with active_nav="orders" %}
+<div class="main-wrap">
+  <div class="title">🚚 Theo dõi vận chuyển chi tiết</div>
+
+  <!-- MAP -->
+  <div class="map-container" id="mapContainer">
+    🗺️ Bản đồ vận chuyển
+  </div>
+
+  <!-- CURRENT STATUS -->
+  <div class="card">
+    <div class="tracking-status">
+      <div class="status-info">
+        <div class="status-label">📦 Trạng thái hiện tại</div>
+        <div class="status-value" id="currentStatus">Đang tải...</div>
+        <div class="timeline-mini" id="statusTimeline"></div>
+      </div>
+      <div class="status-info">
+        <div class="status-label">📍 Vị trí hiện tại</div>
+        <div class="status-value" id="currentLocation">Đang tải...</div>
+        <div style="font-size:.85rem;color:var(--tm);margin-top:.3rem" id="updateTime">Cập nhật lần cuối...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOCATION UPDATES -->
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:1rem">📝 Chi tiết vận chuyển</div>
+    <div id="locationsList">
+      <div style="text-align:center;padding:1rem;color:var(--tm)">Đang tải...</div>
+    </div>
+  </div>
+
+  <!-- RECIPIENT INFO -->
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:1rem">👤 Thông tin người nhận</div>
+    <div class="location-info">
+      <div class="location-title" id="recipientName">Người nhận</div>
+      <div class="location-details" id="recipientInfo">Đang tải...</div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="card">
+    <div class="contact-bar">
+      <button class="btn" onclick="contact('call')">📞 Gọi tài xế</button>
+      <button class="btn" onclick="contact('sms')">💬 Nhắn tin tài xế</button>
+      <button class="btn btn-ghost" onclick="contact('support')">🆘 Liên hệ hỗ trợ</button>
+    </div>
+  </div>
+
+  <!-- HELP -->
+  <div class="card">
+    <div style="font-weight:700;margin-bottom:1rem">❓ Cần giúp đỡ?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-size:.9rem">
+      <div style="background:var(--pll);padding:1rem;border-radius:var(--rs)">
+        <div style="font-weight:700;margin-bottom:.3rem">🎁 Kiểm tra gói hàng</div>
+        <div style="color:var(--tm)">Bạn có thể kiểm tra nội dung gói hàng khi nhận</div>
+      </div>
+      <div style="background:var(--pll);padding:1rem;border-radius:var(--rs)">
+        <div style="font-weight:700;margin-bottom:.3rem">🔄 Không thể tiếp nhận</div>
+        <div style="color:var(--tm)">Bạn có thể từ chối nhận hàng nếu muốn</div>
+      </div>
+      <div style="background:var(--pll);padding:1rem;border-radius:var(--rs)">
+        <div style="font-weight:700;margin-bottom:.3rem">⏰ Sắp xếp lại thời gian</div>
+        <div style="color:var(--tm)">Liên hệ hỗ trợ để sắp xếp lại ngày giao</div>
+      </div>
+      <div style="background:var(--pll);padding:1rem;border-radius:var(--rs)">
+        <div style="font-weight:700;margin-bottom:.3rem">📍 Thay đổi địa điểm</div>
+        <div style="color:var(--tm)">Yêu cầu giao hàng tại địa chỉ khác</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2026 ShopSphere | Theo dõi giao hàng trong thời gian thực
+</footer>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const API_BASE = window.location.origin;
+const params = new URLSearchParams(window.location.search);
+const orderId = params.get('order_id') || window.location.pathname.split('/')[2];
+let token = localStorage.getItem('token');
+
+async function loadShipping() {
+  if (!token || !orderId) {
+    document.getElementById('mapContainer').textContent = '🔒 Vui lòng đăng nhập';
+    return;
+  }
+
+  try {
+    const shipmentRes = await fetch(`${API_BASE}/api/shipping/${orderId}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!shipmentRes.ok) throw new Error('shipment not found');
+    const shipment = await shipmentRes.json();
+
+    const res = await fetch(`${API_BASE}/api/shipping/tracking/${orderId}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = res.ok ? await res.json() : [];
+
+    const updates = Array.isArray(data) ? data : [];
+    const status = shipment.current_status || 'processing';
+    const latest = updates.length ? updates[0] : null;
+    const location = latest?.location || 'Trong kho';
+
+    document.getElementById('currentStatus').textContent = {
+      'pending': '⏳ Chờ xác nhận',
+      'paid': '💳 Đã thanh toán',
+      'processing': '📦 Đang chuẩn bị',
+      'shipping': '🛣️ Đang vận chuyển',
+      'delivered': '✓✓ Đã giao'
+    }[status] || status;
+
+    document.getElementById('currentLocation').textContent = location;
+
+    // Timeline
+    let timeline = '';
+    const statuses = ['pending', 'paid', 'processing', 'shipping', 'delivered'];
+    statuses.forEach(s => {
+      timeline += `<div class="timeline-dot ${statuses.indexOf(s) <= statuses.indexOf(status) ? 'done' : ''}"></div>`;
+    });
+    document.getElementById('statusTimeline').innerHTML = timeline;
+
+    // Location updates
+    if (updates.length === 0) {
+      document.getElementById('locationsList').innerHTML = `<div style="text-align:center;padding:1rem;color:var(--tm)">Chưa có cập nhật vị trí</div>`;
+    } else {
+      let html = '';
+      updates.forEach(upd => {
+        html += `
+          <div class="location-info">
+            <div class="location-title">${upd.location || 'Không xác định'}</div>
+            <div class="location-details">
+              📅 ${new Date(upd.updated_at).toLocaleString('vi-VN')}<br>
+              📝 ${upd.note || upd.status || '-'}
+            </div>
+          </div>
+        `;
+      });
+      document.getElementById('locationsList').innerHTML = html;
+    }
+
+    // Recipient info (example)
+    document.getElementById('recipientName').textContent = shipment.receiver_name || 'Người nhận';
+    document.getElementById('recipientInfo').innerHTML = `
+      📍 ${shipment.full_address || '-'}<br>
+      📞 ${shipment.phone || '-'}<br>
+      ⏰ Trạng thái: ${shipment.current_status || '-'}
+    `;
+  } catch (err) {
+    console.error('Error:', err);
+    document.getElementById('mapContainer').textContent = '⚠️ Lỗi tải thông tin';
+  }
+}
+
+function contact(type) {
+  const messages = {
+    'call': '📞 Gọi tài xế: 0937123456',
+    'sms': '💬 Gửi tin nhắn đến tài xế',
+    'support': '🆘 Liên hệ hỗ trợ: support@shopsphere.vn'
+  };
+  alert(messages[type] || 'Tính năng này sẽ được cập nhật');
+}
+
+loadShipping();
+</script>
+
+</body>
+</html>

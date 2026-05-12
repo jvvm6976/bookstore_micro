@@ -13,9 +13,8 @@ import requests
 logger = logging.getLogger(__name__)
 
 CART_SVC   = 'http://cart-service:8000'
-PAY_SVC    = 'http://pay-service:8000'
-SHIP_SVC   = 'http://ship-service:8000'
-BOOK_SVC   = 'http://book-service:8000'
+PAY_SVC    = 'http://payment-service:8000'
+SHIP_SVC   = 'http://shipping-service:8000'
 PRODUCT_SVC = 'http://product-service:8000'
 
 _TIMEOUT = 15
@@ -64,7 +63,7 @@ class OrderSaga:
     def _step_reserve_payment(self):
         resp = _post(f'{PAY_SVC}/api/payments/process/', {
             'order_id': self.order.id,
-            'amount': float(self.order.total_amount),
+            'amount': float(self.order.total_price),
             'payment_method': self.payment_method,
         })
         if resp.status_code not in (200, 201):
@@ -79,7 +78,7 @@ class OrderSaga:
         resp = _post(f'{SHIP_SVC}/api/shipments/create_shipment/', {
             'order_id': self.order.id,
             'address': self.shipping_address,
-            'customer_id': self.order.customer_id,
+            'user_id': self.order.user_id,
             'shipping_method': 'standard',
         })
         if resp.status_code not in (200, 201):

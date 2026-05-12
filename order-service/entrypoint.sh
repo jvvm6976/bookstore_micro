@@ -26,8 +26,5 @@ if [ $migrate_ok -ne 1 ]; then
     exit 1
 fi
 
-echo "Seeding order fixtures..."
-python manage.py seed_order_fixtures
-
 echo "Starting order-service..."
 python manage.py runserver 0.0.0.0:8000

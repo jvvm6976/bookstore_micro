@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thông báo - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--sh:0 8px 24px rgba(194,24,43,.12);--rs:8px;--r:12px}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
+nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;grid-template-columns:auto 1fr auto;gap:1rem;position:sticky;top:0;z-index:300}
+.logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}
+.logo em{color:var(--p);font-style:normal}
+.nav-right{display:flex;gap:.5rem}
+.btn{padding:.5rem 1rem;border-radius:var(--rs);border:none;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-p{background:var(--p);color:#fff}.btn-p:hover{background:var(--pd)}
+.btn-ghost{background:transparent;border:1px solid var(--b);color:var(--t)}
+.main-wrap{max-width:900px;margin:0 auto;padding:2rem}
+.section-title{font-size:1.3rem;font-weight:800;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.section-title::before{content:'';width:4px;height:1.3rem;background:var(--p)}
+.notif-filters{display:flex;gap:.8rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.notif-filter{padding:.5rem 1rem;border:1.5px solid var(--b);border-radius:var(--rs);background:var(--s);cursor:pointer;transition:all .2s;font-weight:600}
+.notif-filter.active{background:var(--p);color:#fff;border-color:var(--p)}
+.notif-list{display:flex;flex-direction:column;gap:1rem}
+.notif-card{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.2rem;box-shadow:var(--sh);transition:all .2s;display:flex;justify-content:space-between;align-items:center}
+.notif-card.unread{background:var(--pll);border-color:var(--p)}
+.notif-card:hover{border-color:var(--pl);box-shadow:var(--shl)}
+.notif-body{flex:1}
+.notif-type{font-size:.75rem;font-weight:700;color:var(--pd);text-transform:uppercase;margin-bottom:.2rem}
+.notif-title{font-size:.95rem;font-weight:700;margin-bottom:.3rem}
+.notif-msg{font-size:.87rem;color:var(--tm);line-height:1.5;margin-bottom:.4rem}
+.notif-time{font-size:.75rem;color:var(--tm)}
+.notif-actions{display:flex;gap:.5rem}
+.notif-btn{padding:.4rem .8rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s}
+.notif-btn:hover{background:var(--pd)}
+.notif-dismiss{background:#FEE2E2;color:var(--p)}
+.notif-dismiss:hover{background:#FECACA}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--tm)}
+.empty-icon{font-size:3rem;display:block;margin-bottom:1rem}
+footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:center}
+</style>
+<style>{% include "_customer_header.css" %}</style>
+</head>
+<body>
+
+{% include "_customer_header.html" %}
+<div class="main-wrap">
+  <div class="section-title">🔔 Trung tâm thông báo</div>
+  
+  <div class="notif-filters">
+    <span class="notif-filter active" onclick="filterNotif('all', this)">Tất cả</span>
+    <span class="notif-filter" onclick="filterNotif('order', this)">📦 Đơn hàng</span>
+    <span class="notif-filter" onclick="filterNotif('shipping', this)">🚚 Vận chuyển</span>
+    <span class="notif-filter" onclick="filterNotif('payment', this)">💳 Thanh toán</span>
+    <span class="notif-filter" onclick="filterNotif('system', this)">⚙️ Hệ thống</span>
+  </div>
+
+  <div id="notifContainer">
+    <div class="empty-state">
+      <div class="empty-icon">🔒</div>
+      <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem thông báo</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2026 ShopSphere | Quản lý thông báo của bạn
+</footer>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const API_BASE = window.location.origin;
+let token = localStorage.getItem('token');
+let allNotifs = [];
+let currentFilter = 'all';
+
+async function loadNotifications() {
+  if (!token) {
+    document.getElementById('notifContainer').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem thông báo</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/notifications/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    let data = await res.json();
+    
+    // Handle both list and paginated responses
+    allNotifs = Array.isArray(data) ? data : (data.results || []);
+    
+    if (allNotifs.length === 0) {
+      document.getElementById('notifContainer').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <p>Không có thông báo nào</p>
+        </div>
+      `;
+      return;
+    }
+
+    renderNotifications();
+  } catch (err) {
+    document.getElementById('notifContainer').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Lỗi tải thông báo</p></div>`;
+  }
+}
+
+function renderNotifications() {
+  let filtered = allNotifs;
+  
+  if (currentFilter !== 'all') {
+    filtered = allNotifs.filter(n => (n.type || '').toLowerCase().includes(currentFilter));
+  }
+
+  if (filtered.length === 0) {
+    document.getElementById('notifContainer').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Không có thông báo loại này</p></div>`;
+    return;
+  }
+
+  let html = '<div class="notif-list">';
+  filtered.forEach(notif => {
+    const isUnread = (notif.status || 'unread') === 'unread';
+    const types = {
+      'order': '📦 Đơn hàng',
+      'shipping': '🚚 Vận chuyển',
+      'payment': '💳 Thanh toán',
+      'system': '⚙️ Hệ thống'
+    };
+    
+    html += `
+      <div class="notif-card ${isUnread ? 'unread' : ''}">
+        <div class="notif-body">
+          <div class="notif-type">${types[notif.type] || notif.type}</div>
+          <div class="notif-title">${notif.title}</div>
+          <div class="notif-msg">${notif.content || ''}</div>
+          <div class="notif-time">${new Date(notif.created_at).toLocaleString('vi-VN')}</div>
+        </div>
+        <div class="notif-actions">
+          ${isUnread ? `<button class="notif-btn" onclick="markAsRead(${notif.id})">✓ Đã xem</button>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  document.getElementById('notifContainer').innerHTML = html;
+}
+
+function filterNotif(type, el) {
+  currentFilter = type;
+  document.querySelectorAll('.notif-filter').forEach(btn => btn.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderNotifications();
+}
+
+async function markAsRead(notifId) {
+  try {
+    await fetch(`${API_BASE}/api/notifications/${notifId}/read/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: '{}'
+    });
+    loadNotifications();
+  } catch (e) {
+    alert('✗ Lỗi: ' + e.message);
+  }
+}
+
+loadNotifications();
+</script>
+
+</body>
+</html>
+

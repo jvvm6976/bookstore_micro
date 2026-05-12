@@ -1,0 +1,10 @@
+{
+  "LSTM": {
+    "val_loss": 0.3724,
+    "val_seg_acc": 0.68
+  },
+  "MLP": {
+    "val_loss": 0.5483,
+    "val_seg_acc": 0.605
+  }
+}

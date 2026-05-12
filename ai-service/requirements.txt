@@ -1,0 +1,24 @@
+# Django API + ORM
+Django==5.2.12
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+psycopg2-binary==2.9.9
+
+# HTTP clients
+requests==2.31.0
+urllib3==2.2.1
+
+# Deep Learning — PyTorch (primary: LSTM behavior model)
+# torch installed separately in Dockerfile (CPU wheel)
+numpy==1.26.4
+
+# Neo4j driver (for graph-based hybrid recommendation)
+neo4j==5.20.0
+
+# Vector search — installed in Dockerfile separately
+# faiss-cpu==1.8.0
+
+# Utilities
+python-dotenv==1.0.0
+cryptography==41.0.7
+packaging==24.0

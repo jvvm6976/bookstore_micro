@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Assistant - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" with active_nav="ai" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">AI service</div>
+      <h1 class="page-title">Trợ lý mua sắm ShopSphere</h1>
+      <p class="page-subtitle">Hỏi về gợi ý sản phẩm, theo dõi đơn hàng, thanh toán, vận chuyển hoặc chính sách đổi trả.</p>
+    </div>
+    <span class="pill teal" id="aiStatus">Đang kiểm tra AI</span>
+  </section>
+
+  <section class="chat-layout">
+    <aside class="panel pad">
+      <h2 class="section-title">Gợi ý câu hỏi</h2>
+      <div class="section-note" style="margin:.35rem 0 .9rem">Chọn nhanh để bắt đầu hội thoại.</div>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <button class="btn block" onclick="quick('Gợi ý sản phẩm phù hợp với tôi')">Gợi ý sản phẩm</button>
+        <button class="btn block" onclick="quick('Tôi muốn xem đơn hàng gần đây')">Đơn hàng gần đây</button>
+        <button class="btn block" onclick="quick('Phương thức thanh toán hiện có là gì?')">Thanh toán</button>
+        <button class="btn block" onclick="quick('Chính sách đổi trả như thế nào?')">Đổi trả</button>
+        <button class="btn block" onclick="quick('Có sản phẩm nào giá tốt hôm nay?')">Giá tốt</button>
+      </div>
+      <div class="notice" style="margin-top:1rem">AI dùng `customer_id` từ phiên đăng nhập để cá nhân hóa khi có token.</div>
+    </aside>
+
+    <section class="panel chat-panel">
+      <div id="messages" class="messages"></div>
+      <div id="suggestionGrid" class="product-grid" style="padding:0 1rem 1rem;display:none"></div>
+      <div class="chat-input">
+        <input id="messageInput" placeholder="Nhập câu hỏi..." onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="btn primary" onclick="sendMessage()">Gửi</button>
+      </div>
+    </section>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const sessionId = `sess_${Math.random().toString(36).slice(2)}`;
+
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+function addMessage(text, who='bot'){
+  const el = document.createElement('div');
+  el.className = `message ${who}`;
+  el.textContent = text;
+  const box = document.getElementById('messages');
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+  return el;
+}
+
+function quick(text){
+  document.getElementById('messageInput').value = text;
+  sendMessage();
+}
+
+function renderSuggestions(items){
+  const grid = document.getElementById('suggestionGrid');
+  const products = (items || []).map(ShopUI.normalizeProduct).filter(p => p.id);
+  if(!products.length){
+    grid.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+  grid.style.display = 'grid';
+  grid.innerHTML = products.slice(0,3).map(p => ShopUI.productCard(p, {secondary:false})).join('');
+}
+
+async function sendMessage(){
+  const input = document.getElementById('messageInput');
+  const message = input.value.trim();
+  if(!message) return;
+  input.value = '';
+  addMessage(message, 'user');
+  const loading = addMessage('Đang xử lý...', 'bot');
+  try{
+    const payload = {
+      message,
+      customer_id: ShopUI.userId() ? Number(ShopUI.userId()) : null,
+      session_id: sessionId
+    };
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/chatbot/chat`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify(payload)
+    });
+    loading.remove();
+    addMessage(data.response || data.answer || data.message || 'Tôi đã nhận câu hỏi của bạn.');
+    const recs = Array.isArray(data.recommendations) ? data.recommendations : (Array.isArray(data.books) ? data.books : []);
+    renderSuggestions(recs);
+  }catch(err){
+    loading.remove();
+    addMessage('AI service chưa phản hồi. Vui lòng thử lại sau.');
+    ShopUI.toast(err.message || 'Lỗi AI service', 'err');
+  }
+}
+
+async function checkHealth(){
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/v1/kb/status`);
+    document.getElementById('aiStatus').textContent = data.status || 'AI sẵn sàng';
+  }catch(_){
+    document.getElementById('aiStatus').textContent = 'AI sẵn sàng';
+  }
+}
+
+addMessage('Xin chào, tôi là trợ lý ShopSphere. Bạn có thể hỏi tôi về sản phẩm, đơn hàng, thanh toán hoặc đổi trả.');
+checkHealth();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đơn hàng của tôi - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--sh:0 8px 24px rgba(194,24,43,.12);--rs:8px;--r:12px}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
+nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300}
+.logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
+.main-wrap{max-width:1000px;margin:0 auto;padding:2rem}
+.title{font-size:1.3rem;font-weight:800;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
+.title::before{content:'';width:4px;height:1.3rem;background:var(--p)}
+.order-filters{display:flex;gap:.8rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.filter-btn{padding:.5rem 1rem;border:1.5px solid var(--b);border-radius:var(--rs);background:var(--s);cursor:pointer;transition:all .2s;font-weight:600}
+.filter-btn.active{background:var(--p);color:#fff;border-color:var(--p)}
+.orders-list{display:flex;flex-direction:column;gap:1rem}
+.order-card{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.2rem;box-shadow:var(--sh);cursor:pointer;transition:all .2s}
+.order-card:hover{border-color:var(--pl);box-shadow:var(--shl)}
+.order-header{display:grid;grid-template-columns:1fr auto;gap:1rem;margin-bottom:1rem}
+.order-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;font-size:.9rem;margin-top:.8rem}
+.order-info-item{display:flex;flex-direction:column}
+.order-label{font-weight:700;color:var(--pd)}.order-value{color:var(--t);margin-top:.2rem}
+.order-status{display:inline-block;padding:.3rem .8rem;border-radius:20px;font-weight:700;font-size:.8rem}
+.status-pending{background:#FEF3C7;color:#B45309}
+.status-confirmed{background:#DBEAFE;color:#0C4A6E}
+.status-shipped{background:#DCFCE7;color:#166534}
+.status-delivered{background:#E0E7FF;color:#3730A3}
+.status-cancelled{background:#FEE2E2;color:#991B1B}
+.order-items{font-size:.9rem;color:var(--tm);margin:0;padding-left:1.2rem}
+.btn{padding:.4rem .8rem;border:none;border-radius:var(--rs);font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s}
+.btn-p{background:var(--p);color:#fff;margin-right:.4rem}
+.btn-p:hover{background:var(--pd)}
+.empty-state{text-align:center;padding:2rem;color:var(--tm)}
+.empty-icon{font-size:2rem;margin-bottom:1rem}
+footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:center}
+</style>
+<style>{% include "_customer_header.css" %}</style>
+</head>
+<body>
+
+{% include "_customer_header.html" with active_nav="orders" %}
+<div class="main-wrap">
+  <div class="title">📦 Đơn hàng của tôi</div>
+  
+  <div class="order-filters">
+    <span class="filter-btn active" onclick="filterOrders('all', this)">Tất cả</span>
+    <span class="filter-btn" onclick="filterOrders('pending', this)">⏳ Chờ xử lý</span>
+    <span class="filter-btn" onclick="filterOrders('paid', this)">💳 Đã thanh toán</span>
+    <span class="filter-btn" onclick="filterOrders('shipping', this)">🚚 Đang giao</span>
+    <span class="filter-btn" onclick="filterOrders('completed', this)">✓ Hoàn tất</span>
+    <span class="filter-btn" onclick="filterOrders('cancelled', this)">✕ Đã hủy</span>
+  </div>
+
+  <div class="orders-list" id="ordersList">
+    <div class="empty-state">
+      <div class="empty-icon">🔒</div>
+      <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem đơn hàng</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2026 ShopSphere | Quản lý đơn hàng của bạn
+</footer>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+const API_BASE = window.location.origin;
+let token = localStorage.getItem('token');
+let allOrders = [];
+let currentFilter = 'all';
+
+const statusLabels = {
+  'pending': 'Chờ xác nhận',
+  'paid': 'Đã thanh toán',
+  'processing': 'Đang chuẩn bị',
+  'shipping': 'Đang giao',
+  'shipped': 'Đã gửi',
+  'delivered': 'Đã giao',
+  'completed': 'Hoàn tất',
+  'cancelled': 'Đã hủy'
+};
+
+const statusClasses = {
+  'pending': 'status-pending',
+  'paid': 'status-confirmed',
+  'processing': 'status-confirmed',
+  'shipping': 'status-shipped',
+  'shipped': 'status-shipped',
+  'delivered': 'status-delivered',
+  'completed': 'status-delivered',
+  'cancelled': 'status-cancelled'
+};
+
+async function loadOrders() {
+  if (!token) {
+    document.getElementById('ordersList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔒</div>
+        <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem đơn hàng</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/orders/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('load orders failed');
+    const data = await res.json();
+    const rows = Array.isArray(data) ? data : (data.results || data.orders || []);
+    allOrders = rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    if (allOrders.length === 0) {
+      document.getElementById('ordersList').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Bạn chưa có đơn hàng nào</p></div>`;
+      return;
+    }
+
+    renderOrders();
+  } catch (err) {
+    document.getElementById('ordersList').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Lỗi tải đơn hàng</p></div>`;
+  }
+}
+
+function renderOrders() {
+  let filtered = allOrders;
+  if (currentFilter !== 'all') {
+    filtered = allOrders.filter(o => ((o.current_status || o.status || '').toLowerCase() === currentFilter));
+  }
+
+  if (filtered.length === 0) {
+    document.getElementById('ordersList').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Không có đơn hàng nào</p></div>`;
+    return;
+  }
+
+  let html = '';
+  filtered.forEach(order => {
+      const status = (order.current_status || order.status || 'pending').toLowerCase();
+      const itemCount = Array.isArray(order.items) ? order.items.length : (order.items_count || order.item_count || 0);
+      const fullAddress = order.address?.full_address || order.shipping_address || 'Chưa xác định';
+    html += `
+      <div class="order-card" onclick="window.location='/orders/${order.id}/tracking/'">
+        <div class="order-header">
+          <div>
+            <div style="font-weight:700;font-size:1rem">Đơn hàng #${order.id}</div>
+            <div style="font-size:.85rem;color:var(--tm);margin-top:.2rem">${new Date(order.created_at).toLocaleString('vi-VN')}</div>
+          </div>
+          <div><span class="order-status ${statusClasses[status] || 'status-pending'}">${statusLabels[status] || status}</span></div>
+        </div>
+        <div class="order-info">
+          <div class="order-info-item">
+            <span class="order-label">💰 Tổng tiền</span>
+            <span class="order-value" style="font-size:1.1rem;font-weight:800;color:var(--p)">${(order.total_price || 0).toLocaleString('vi-VN')}₫</span>
+          </div>
+          <div class="order-info-item">
+            <span class="order-label">📦 Số lượng</span>
+            <span class="order-value">${itemCount} sản phẩm</span>
+          </div>
+          <div class="order-info-item">
+            <span class="order-label">📍 Địa chỉ</span>
+            <span class="order-value">${fullAddress}</span>
+          </div>
+        </div>
+        <div style="margin-top:1rem">
+          <button class="btn btn-p" onclick="event.stopPropagation(); window.location='/orders/${order.id}/tracking/'">🔍 Chi tiết</button>
+          <button class="btn" style="background:#FFF4F5;color:var(--p);border:1px solid var(--b)" onclick="event.stopPropagation(); window.location='/reviews/?order_id=${order.id}'">💬 Đánh giá</button>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('ordersList').innerHTML = html;
+}
+
+function filterOrders(status, el) {
+  currentFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderOrders();
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>
+

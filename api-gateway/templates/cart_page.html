@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giỏ hàng - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
+</head>
+<body>
+{% include "_customer_header.html" with active_nav="cart" %}
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Checkout flow</div>
+      <h1 class="page-title">Giỏ hàng của bạn</h1>
+      <p class="page-subtitle">Kiểm tra sản phẩm, cập nhật số lượng và chuyển sang thanh toán khi sẵn sàng.</p>
+    </div>
+    <a class="btn" href="/products/">Tiếp tục mua sắm</a>
+  </section>
+
+  <section class="drawer-grid">
+    <div class="panel" id="cartPanel">
+      <div class="empty-state"><strong>Đang tải giỏ hàng</strong>Vui lòng chờ trong giây lát.</div>
+    </div>
+    <aside class="panel pad">
+      <h2 class="section-title">Tóm tắt đơn hàng</h2>
+      <div style="margin-top:.8rem">
+        <div class="summary-row"><span>Số lượng</span><strong id="sumQty">0</strong></div>
+        <div class="summary-row"><span>Tạm tính</span><strong id="sumTotal">0₫</strong></div>
+        <div class="summary-row"><span>Vận chuyển</span><strong>Chọn ở checkout</strong></div>
+        <div class="summary-row summary-total"><span>Tổng cộng</span><strong id="grandTotal">0₫</strong></div>
+      </div>
+      <button class="btn primary block" onclick="goCheckout()" style="margin-top:.9rem">Thanh toán</button>
+      <button class="btn block" onclick="clearCart()" style="margin-top:.55rem">Xóa giỏ hàng</button>
+      <div class="notice" style="margin-top:.9rem">Bạn cần có địa chỉ mặc định trước khi checkout. Nếu chưa có, trang checkout sẽ cho phép tạo nhanh.</div>
+    </aside>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Có thể bạn cũng thích</h2>
+        <div class="section-note">Gợi ý từ AI service, loại bỏ sản phẩm đã có trong giỏ.</div>
+      </div>
+      <a class="btn subtle" href="/products/">Xem catalog</a>
+    </div>
+    <div id="recGrid" class="product-grid"></div>
+  </section>
+</main>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>
+let cartItems = [];
+let detailMap = new Map();
+
+function goSearch(){
+  const q = document.getElementById('globalSearch').value.trim();
+  window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
+}
+
+function parseCartItems(data){
+  if(Array.isArray(data?.items)) return data.items;
+  if(Array.isArray(data?.results)) return data.results;
+  if(Array.isArray(data)) return data;
+  return [];
+}
+
+async function hydrateDetails(items){
+  const ids = [...new Set(items.map(x => Number(x.product_id || x.id)).filter(Boolean))];
+  await Promise.all(ids.map(async id => {
+    if(detailMap.has(id)) return;
+    try{
+      const product = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${id}/`);
+      detailMap.set(id, ShopUI.normalizeProduct(product));
+    }catch(_){
+      detailMap.set(id, ShopUI.normalizeProduct({id, name:`Sản phẩm #${id}`}));
+    }
+  }));
+}
+
+function rowPrice(item){
+  return Number(item.unit_price || item.price || item.price_at_add || detailMap.get(Number(item.product_id || item.id))?.price || 0);
+}
+
+function renderCart(){
+  const panel = document.getElementById('cartPanel');
+  if(!cartItems.length){
+    panel.innerHTML = '<div class="empty-state"><strong>Giỏ hàng đang trống</strong>Hãy thêm sản phẩm từ catalog hoặc hỏi AI để được gợi ý.</div>';
+    updateSummary();
+    return;
+  }
+  panel.innerHTML = cartItems.map(item => {
+    const productId = Number(item.product_id || item.id);
+    const product = detailMap.get(productId) || ShopUI.normalizeProduct({id:productId});
+    const qty = Number(item.quantity || 0);
+    const price = rowPrice(item);
+    return `
+      <div class="cart-row">
+        <a class="product-media" href="/products/${productId}/" style="border-radius:8px;aspect-ratio:1/1">
+          <img src="${ShopUI.imageFor(product)}" alt="${ShopUI.escapeHtml(product.name)}" loading="lazy">
+        </a>
+        <div>
+          <a class="product-title" href="/products/${productId}/">${ShopUI.escapeHtml(product.name)}</a>
+          <div class="product-desc">${ShopUI.escapeHtml(product.description || product.category_name || '')}</div>
+          <div class="product-meta">
+            <span class="pill teal">${ShopUI.escapeHtml(product.domain_name || 'Shop')}</span>
+            <span class="pill">${ShopUI.money(price)} / sản phẩm</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.55rem">
+          <div class="price">${ShopUI.money(price * qty)}</div>
+          <div class="qty-control">
+            <button onclick="changeQty(${productId}, ${Math.max(0, qty - 1)})">−</button>
+            <span>${qty}</span>
+            <button onclick="changeQty(${productId}, ${qty + 1})">+</button>
+          </div>
+          <button class="btn small" onclick="removeItem(${productId})">Xóa</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  updateSummary();
+}
+
+function updateSummary(){
+  const qty = cartItems.reduce((sum,item) => sum + Number(item.quantity || 0), 0);
+  const total = cartItems.reduce((sum,item) => sum + rowPrice(item) * Number(item.quantity || 0), 0);
+  document.getElementById('sumQty').textContent = String(qty);
+  document.getElementById('sumTotal').textContent = ShopUI.money(total);
+  document.getElementById('grandTotal').textContent = ShopUI.money(total);
+}
+
+async function loadCart(){
+  if(!ShopUI.token()){
+    document.getElementById('cartPanel').innerHTML = '<div class="empty-state"><strong>Vui lòng đăng nhập</strong><a class="btn primary" href="/login/" style="margin-top:.8rem">Đăng nhập</a></div>';
+    document.getElementById('recGrid').innerHTML = '';
+    return;
+  }
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/cart/`, {headers:ShopUI.authHeaders(false)});
+    cartItems = parseCartItems(data);
+    await hydrateDetails(cartItems);
+    renderCart();
+    loadRecommendations();
+  }catch(_){
+    document.getElementById('cartPanel').innerHTML = '<div class="empty-state"><strong>Không tải được giỏ hàng</strong>Vui lòng thử lại sau.</div>';
+  }
+}
+
+async function changeQty(productId, quantity){
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/cart/update/`, {
+      method:'PUT',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({product_id:productId, quantity})
+    });
+    await loadCart();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không cập nhật được số lượng', 'err');
+  }
+}
+
+async function removeItem(productId){
+  await changeQty(productId, 0);
+}
+
+async function clearCart(){
+  if(!cartItems.length) return;
+  if(!confirm('Xóa toàn bộ giỏ hàng?')) return;
+  try{
+    const res = await fetch(`${ShopUI.API_BASE}/api/cart/clear/`, {
+      method:'DELETE',
+      headers:ShopUI.authHeaders(false)
+    });
+    if(!res.ok) throw new Error('clear failed');
+    cartItems = [];
+    renderCart();
+    ShopUI.toast('Đã xóa giỏ hàng');
+  }catch(_){
+    ShopUI.toast('Không xóa được giỏ hàng', 'err');
+  }
+}
+
+function goCheckout(){
+  if(!cartItems.length){
+    ShopUI.toast('Giỏ hàng đang trống', 'err');
+    return;
+  }
+  window.location.href = '/checkout/';
+}
+
+async function loadRecommendations(){
+  const grid = document.getElementById('recGrid');
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải gợi ý</strong></div>';
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/recommend/recommendations/?user_id=${encodeURIComponent(ShopUI.userId() || 1)}&limit=8`);
+    const inCart = new Set(cartItems.map(x => Number(x.product_id || x.id)));
+    let items = ShopUI.safeList(data.recommendations || data).map(ShopUI.normalizeProduct).filter(p => !inCart.has(Number(p.id)));
+    if(!items.length && Array.isArray(data.recommended_product_ids)){
+      const details = await Promise.all(data.recommended_product_ids.filter(id => !inCart.has(Number(id))).slice(0,6).map(id =>
+        fetch(`${ShopUI.API_BASE}/api/products/${id}/`).then(r => r.ok ? r.json() : null).catch(() => null)
+      ));
+      items = details.filter(Boolean).map(ShopUI.normalizeProduct);
+    }
+    grid.innerHTML = items.length
+      ? items.slice(0,4).map(p => ShopUI.productCard(p)).join('')
+      : '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có gợi ý phù hợp</strong></div>';
+  }catch(_){
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được gợi ý</strong></div>';
+  }
+}
+
+loadCart();
+</script>
+</body>
+</html>
+
