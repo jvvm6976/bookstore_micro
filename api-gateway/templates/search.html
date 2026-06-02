@@ -83,6 +83,7 @@ let products = [];
 let categories = [];
 let domains = [];
 let viewMode = 'grid';
+let lastTrackedSearchKey = '';
 const searchAliases = {
   'dien thoai': ['phone', 'phones', 'smartphone', 'iphone', 'samsung'],
   'may tinh': ['laptop', 'laptops', 'macbook', 'electronics'],
@@ -181,11 +182,11 @@ function renderCompact(items){
     <div class="panel" style="grid-column:1/-1;overflow:hidden">
       ${items.map(p => `
         <div class="cart-row">
-          <a class="product-media" href="/products/${p.id}/" style="border-radius:8px;aspect-ratio:1/1">
+          <a class="product-media" href="/products/${p.id}/" onclick="ShopUI.track('view_detail', ${Number(p.id)})" style="border-radius:8px;aspect-ratio:1/1">
             <img src="${ShopUI.imageFor(p)}" alt="${ShopUI.escapeHtml(p.name)}" loading="lazy">
           </a>
           <div>
-            <a href="/products/${p.id}/" class="product-title">${ShopUI.escapeHtml(p.name)}</a>
+            <a href="/products/${p.id}/" class="product-title" onclick="ShopUI.track('view_detail', ${Number(p.id)})">${ShopUI.escapeHtml(p.name)}</a>
             <div class="product-desc">${ShopUI.escapeHtml(p.description || '')}</div>
             <div class="product-meta">
               <span class="pill teal">${ShopUI.escapeHtml(p.domain_name || 'Shop')}</span>
@@ -201,6 +202,16 @@ function renderCompact(items){
       `).join('')}
     </div>
   `;
+}
+
+function trackSearchResults(items, q, domain, category){
+  if(!ShopUI.userId() || !items.length) return;
+  const hasIntent = Boolean(q || domain || category);
+  if(!hasIntent) return;
+  const key = `${ShopUI.userId()}|${q}|${domain}|${category}|${items.slice(0,5).map(p => p.id).join(',')}`;
+  if(key === lastTrackedSearchKey) return;
+  lastTrackedSearchKey = key;
+  ShopUI.trackMany('search', items.slice(0,5).map(p => Number(p.id)), {query: q, category});
 }
 
 function renderCatalog(){
@@ -240,6 +251,7 @@ function renderCatalog(){
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tìm thấy sản phẩm</strong>Hãy nới rộng bộ lọc hoặc dùng từ khóa khác.</div>';
     return;
   }
+  trackSearchResults(items, q, domain, category);
   grid.innerHTML = viewMode === 'compact'
     ? renderCompact(items)
     : items.map(p => ShopUI.productCard(p)).join('');

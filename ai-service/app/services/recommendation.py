@@ -156,16 +156,38 @@ def get_personalized(
         intent_boost = 1.0 + max(0.0, action_boost_map.get(predicted_action, 1.0) - 1.0) * predicted_confidence
 
     purchased = _get_purchased_ids(customer_id)
+    directly_consumed = set(purchased)
+    for itype in ("view", "view_detail", "cart", "add_to_cart", "wishlist"):
+        directly_consumed.update(int(pid) for pid in interactions.get(itype, {}).keys() if pid)
 
-    # Category/author affinity from high-score books
+    # Category/domain/author affinity from high-score products. Search terms can be
+    # noisy, so later scoring preserves magnitude instead of treating every top
+    # category as equally preferred.
     cat_affinity:    dict[str, float] = defaultdict(float)
+    domain_affinity: dict[str, float] = defaultdict(float)
     author_affinity: dict[str, float] = defaultdict(float)
+    high_intent_cats: set[str] = set()
+    high_intent_domains: set[str] = set()
+    high_intent_types = {
+        "view", "view_detail", "cart", "add_to_cart", "purchase",
+        "rate", "rate_product", "wishlist", "click_recommendation",
+    }
     for bid, score in book_scores.items():
         book = catalog_client.get_product_by_id(bid)
         if not book:
             continue
         if book.get("category"):
             cat_affinity[book["category"]] += score
+            for itype, ids in interactions.items():
+                if itype in high_intent_types and bid in ids:
+                    high_intent_cats.add(book["category"])
+                    break
+        if book.get("domain_name"):
+            domain_affinity[book["domain_name"]] += score
+            for itype, ids in interactions.items():
+                if itype in high_intent_types and bid in ids:
+                    high_intent_domains.add(book["domain_name"])
+                    break
         if book.get("author"):
             author_affinity[book["author"]] += score
 
@@ -173,6 +195,8 @@ def get_personalized(
     top_authors = {a for a, _ in sorted(author_affinity.items(), key=lambda x: x[1], reverse=True)[:3]}
     if not top_cats and profile_pref_cats:
         top_cats = set(list(profile_pref_cats)[:3])
+    max_cat_affinity = max(cat_affinity.values()) if cat_affinity else 0.0
+    max_domain_affinity = max(domain_affinity.values()) if domain_affinity else 0.0
 
     # Fetch all products
     all_books = catalog_client.get_all_products(limit=500)
@@ -200,7 +224,7 @@ def get_personalized(
     }
     for book in all_books:
         bid = book.get("id")
-        if not bid or bid in purchased or book.get("stock", 0) <= 0:
+        if not bid or bid in directly_consumed or book.get("stock", 0) <= 0:
             continue
 
         if bid in customer_ratings:
@@ -236,16 +260,30 @@ def get_personalized(
 
         # ── w2: Graph score (Neo4j collaborative) ─────────────────────────────
         graph_component = graph_scores.get(bid, 0.0)
+        if high_intent_domains and book.get("domain_name") not in high_intent_domains:
+            graph_component *= 0.35
         if graph_component > 0:
             reasons.append("khách hàng tương tự cũng quan tâm")
 
         # ── w3: Content affinity ──────────────────────────────────────────────
         content_component = 0.0
-        if book.get("category") in top_cats:
-            content_component += 0.6
+        cat_score = 0.0
+        if max_cat_affinity > 0 and book.get("category"):
+            cat_score = cat_affinity.get(book["category"], 0.0) / max_cat_affinity
+        if cat_score > 0:
+            content_component += 0.2 + (0.75 * min(cat_score, 1.0))
+            if book.get("category") in high_intent_cats:
+                content_component += 0.12
             reasons.append(f"thể loại {book['category']} bạn yêu thích")
         elif book.get("category") in profile_pref_cats:
             content_component += 0.35
+        domain_score = 0.0
+        if max_domain_affinity > 0 and book.get("domain_name"):
+            domain_score = domain_affinity.get(book["domain_name"], 0.0) / max_domain_affinity
+        if domain_score > 0 and cat_score < 0.5:
+            content_component += 0.18 * min(domain_score, 1.0)
+            if book.get("domain_name") in high_intent_domains:
+                reasons.append(f"cùng ngành {book['domain_name']} bạn quan tâm")
         if book.get("author") in top_authors:
             content_component += 0.4
             reasons.append(f"tác giả {book['author']} bạn quan tâm")

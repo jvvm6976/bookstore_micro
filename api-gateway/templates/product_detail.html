@@ -130,6 +130,7 @@ async function loadDetail(){
   try{
     const product = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${productId}/`);
     renderDetail(product);
+    ShopUI.track('view_detail', Number(product.id || productId));
     loadRelated(product);
   }catch(_){
     document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm</strong>Sản phẩm có thể đã ngừng bán hoặc service chưa sẵn sàng.</div>';
@@ -140,4 +141,3 @@ loadDetail();
 </script>
 </body>
 </html>
-

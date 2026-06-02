@@ -147,13 +147,13 @@ const ShopUI = (() => {
     const addLabel = action === 'detail' ? 'Xem' : 'Thêm';
     return `
       <article class="product-card" data-product-card="${escapeHtml(p.id)}">
-        <a class="product-media" href="/products/${encodeURIComponent(p.id)}/" aria-label="${escapeHtml(p.name)}">
+        <a class="product-media" href="/products/${encodeURIComponent(p.id)}/" onclick="ShopUI.track('view_detail', ${Number(p.id)})" aria-label="${escapeHtml(p.name)}">
           <img src="${imageFor(p)}" alt="${escapeHtml(p.name)}" loading="lazy">
           <span class="product-badge">${escapeHtml(p.category_name || p.domain_name || 'Shop')}</span>
           <span class="product-stock">${escapeHtml(stockText)}</span>
         </a>
         <div class="product-body">
-          <a href="/products/${encodeURIComponent(p.id)}/" class="product-title">${escapeHtml(p.name)}</a>
+          <a href="/products/${encodeURIComponent(p.id)}/" onclick="ShopUI.track('view_detail', ${Number(p.id)})" class="product-title">${escapeHtml(p.name)}</a>
           <div class="product-desc">${escapeHtml(p.description || 'Sản phẩm đang có sẵn tại ShopSphere.')}</div>
           <div class="product-meta">
             ${p.domain_name ? `<span class="pill teal">${escapeHtml(p.domain_name)}</span>` : ''}
@@ -201,6 +201,7 @@ const ShopUI = (() => {
         body: JSON.stringify({ product_id: productId, quantity })
       });
       if (!res.ok) throw new Error('add cart failed');
+      track('add_to_cart', productId);
       toast('Đã thêm vào giỏ hàng');
       return true;
     } catch (_) {
@@ -218,6 +219,7 @@ const ShopUI = (() => {
         body: JSON.stringify({ product_id: productId })
       });
       if (!res.ok) throw new Error('add wishlist failed');
+      track('wishlist', productId);
       toast('Đã lưu vào yêu thích');
       return true;
     } catch (_) {
@@ -252,6 +254,38 @@ const ShopUI = (() => {
     return items;
   }
 
+  function track(interactionType, productId = 0, extra = {}) {
+    const uid = userId();
+    if (!uid || !interactionType) return false;
+    const payload = {
+      customer_id: Number(uid),
+      product_id: Number(productId || 0),
+      interaction_type: interactionType,
+      ...extra
+    };
+    const body = JSON.stringify(payload);
+    try {
+      if (navigator.sendBeacon) {
+        const blob = new Blob([body], { type: 'application/json' });
+        navigator.sendBeacon(`${API_BASE}/api/v1/track`, blob);
+        return true;
+      }
+    } catch (_) {}
+    fetch(`${API_BASE}/api/v1/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true
+    }).catch(() => {});
+    return true;
+  }
+
+  function trackMany(interactionType, productIds = [], extra = {}) {
+    [...new Set(productIds.map(x => Number(x || 0)).filter(Boolean))]
+      .slice(0, 5)
+      .forEach(pid => track(interactionType, pid, extra));
+  }
+
   function init() {
     updateNav();
     bindSearch();
@@ -282,6 +316,8 @@ const ShopUI = (() => {
     addWishlist,
     fetchJson,
     fetchAllPages,
+    track,
+    trackMany,
     init
   };
 })();

@@ -153,7 +153,15 @@ def _infer_book_titles_from_history(session_id: str, current_message: str, max_i
 
 
 def _get_interactions(customer_id: int) -> dict[str, dict[int, int]]:
-    """Load interaction counts from DB via Django ORM."""
+    """Load product-level interaction counts from DB plus completed order history."""
+    result: dict[str, dict[int, int]] = {}
+
+    def add(itype: str, pid: int, count: int = 1) -> None:
+        if not pid:
+            return
+        result.setdefault(itype, {})
+        result[itype][pid] = result[itype].get(pid, 0) + max(int(count or 1), 1)
+
     try:
         from django.apps import apps
         # Support both old (CustomerBookInteraction) and new (CustomerProductInteraction) model names
@@ -164,14 +172,23 @@ def _get_interactions(customer_id: int) -> dict[str, dict[int, int]]:
             Interaction = apps.get_model("app", "CustomerBookInteraction")
             id_field = "book_id"
         qs = Interaction.objects.filter(customer_id=customer_id)
-        result: dict[str, dict[int, int]] = {}
         for ix in qs:
             pid = getattr(ix, id_field, None) or getattr(ix, "product_id", None) or getattr(ix, "book_id", 0)
-            result.setdefault(ix.interaction_type, {})[pid] = ix.count
-        return result
+            add(ix.interaction_type, int(pid or 0), int(ix.count or 1))
     except Exception as exc:
         logger.debug("Could not load interactions: %s", exc)
-        return {}
+
+    try:
+        from .clients.order_client import order_client
+
+        for order in order_client.get_orders_by_customer(customer_id):
+            for item in order.get("items", []):
+                pid = item.get("product_id") or item.get("book_id")
+                add("purchase", int(pid or 0), int(item.get("quantity") or 1))
+    except Exception as exc:
+        logger.debug("Could not load order interactions: %s", exc)
+
+    return result
 
 
 def _get_customer_ratings(customer_id: int) -> dict[int, int]:
@@ -186,7 +203,7 @@ def _get_customer_ratings(customer_id: int) -> dict[int, int]:
             id_field = "book_id"
         qs = Interaction.objects.filter(
             customer_id=customer_id,
-            interaction_type="rate",
+            interaction_type__in=["rate", "rate_product"],
             rating__isnull=False,
         )
         result: dict[int, int] = {}
@@ -217,7 +234,7 @@ def _get_bestseller_from_interactions(limit: int = 8) -> list[dict]:
 
         rows = (
             Interaction.objects
-            .filter(interaction_type__in=["purchase", "cart", "view"])
+            .filter(interaction_type__in=["purchase", "cart", "add_to_cart", "view", "view_detail"])
             .values(id_field, "interaction_type")
             .annotate(total=Sum("count"))
         )
@@ -229,7 +246,7 @@ def _get_bestseller_from_interactions(limit: int = 8) -> list[dict]:
                 continue
             itype = str(r.get("interaction_type") or "")
             total = float(r.get("total") or 0)
-            w = 6.0 if itype == "purchase" else (2.0 if itype == "cart" else 1.0)
+            w = 6.0 if itype == "purchase" else (2.0 if itype in {"cart", "add_to_cart"} else 1.0)
             weighted[pid] = weighted.get(pid, 0.0) + (total * w)
 
         if not weighted:

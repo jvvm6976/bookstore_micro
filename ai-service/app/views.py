@@ -37,8 +37,22 @@ def _to_float(value, default=None):
 		return default
 
 
+def _add_interaction(interactions: dict[str, dict[int, int]], interaction_type: str, product_id: int, count: int = 1) -> None:
+	if not product_id:
+		return
+	interactions.setdefault(interaction_type, {})
+	interactions[interaction_type][product_id] = interactions[interaction_type].get(product_id, 0) + max(int(count or 1), 1)
+
+
+def _interaction_totals(interactions: dict[str, dict[int, int]]) -> dict[str, int]:
+	return {
+		itype: sum(int(count or 0) for count in product_counts.values())
+		for itype, product_counts in interactions.items()
+	}
+
+
 def _load_customer_signals(customer_id: int):
-	interactions = {}
+	interactions: dict[str, dict[int, int]] = {}
 	event_sequence = []
 
 	try:
@@ -47,7 +61,7 @@ def _load_customer_signals(customer_id: int):
 		qs = Interaction.objects.filter(customer_id=customer_id)
 		for row in qs:
 			itype = row.interaction_type
-			interactions[itype] = interactions.get(itype, 0) + row.count
+			_add_interaction(interactions, itype, int(row.product_id or 0), int(row.count or 1))
 			event_sequence.append({
 				'product_id': row.product_id,
 				'action': itype,
@@ -67,7 +81,7 @@ def _load_customer_signals(customer_id: int):
 				pid = item.get('product_id') or item.get('book_id')
 				if not pid:
 					continue
-				interactions['purchase'] = interactions.get('purchase', 0) + 1
+				_add_interaction(interactions, 'purchase', int(pid), int(item.get('quantity') or 1))
 				event_sequence.append({
 					'product_id': int(pid),
 					'action': 'purchase',
@@ -91,7 +105,7 @@ def _load_customer_signals(customer_id: int):
 			pid = c.get('product_id') or c.get('book_id')
 			if not pid:
 				continue
-			interactions['rate'] = interactions.get('rate', 0) + 1
+			_add_interaction(interactions, 'rate_product', int(pid), 1)
 			event_sequence.append({
 					'product_id': int(pid),
 					'action': 'rate_product',
@@ -166,7 +180,7 @@ def recommend(request, customer_id):
 				logger.debug('Could not infer model_best for recommend: %s', exc)
 		recs = rec_svc.get_personalized(
 			customer_id=customer_id,
-			interactions={itype: {0: cnt} for itype, cnt in interactions.items()},
+			interactions=interactions,
 			limit=max(1, min(limit, 20)),
 			budget_max=budget_max,
 			category=category,
@@ -235,7 +249,7 @@ def analyze_customer(request, customer_id):
 		interactions, event_sequence = _load_customer_signals(customer_id)
 		profile = behavior_service.analyze(
 			customer_id=customer_id,
-			interactions=interactions,
+			interactions=_interaction_totals(interactions),
 			event_sequence=event_sequence if event_sequence else None,
 		)
 		profile['customer_id'] = customer_id
