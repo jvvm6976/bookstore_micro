@@ -9,14 +9,14 @@
 </head>
 <body>
 {% include "_customer_header.html" %}
-<main class="page">
+<main id="staffApp" class="page">
   <section class="page-head">
     <div>
       <div class="eyebrow">Support workspace</div>
       <h1 class="page-title">Staff Workspace</h1>
-      <p class="page-subtitle">Giao diện tác nghiệp cho nhân viên hỗ trợ khách hàng: kiểm tra đơn, vận chuyển, đánh giá và yêu cầu đổi trả.</p>
+      <p class="page-subtitle">Không gian tác nghiệp cho nhân viên hỗ trợ khách hàng: kiểm tra đơn, vận chuyển, đánh giá và yêu cầu đổi trả.</p>
     </div>
-    <span class="pill teal">Support UI</span>
+    <span class="pill teal">Đang trực</span>
   </section>
 
   <section class="quick-grid">
@@ -38,14 +38,254 @@
       <div class="spec"><span>4. Theo dõi</span><strong>Kiểm tra lại sau khi cập nhật</strong></div>
     </div>
   </section>
+
+  <section class="section panel pad">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Vận hành giao hàng</h2>
+        <div class="section-note">Cập nhật vận đơn, đồng bộ trạng thái đơn hàng và phát sinh thông báo cho khách.</div>
+      </div>
+      <button class="btn small" onclick="loadShipments()">Tải lại</button>
+    </div>
+    <div class="toolbar" style="margin:.9rem 0">
+      <div class="field" style="min-width:170px">
+        <label>Lọc trạng thái</label>
+        <select id="shipStatusFilter" onchange="renderShipments()">
+          <option value="">Tất cả</option>
+          <option value="processing">Đang chuẩn bị</option>
+          <option value="shipping">Đang giao</option>
+          <option value="delivered">Đã giao</option>
+        </select>
+      </div>
+      <div class="field" style="min-width:260px">
+        <label>Vị trí cập nhật</label>
+        <input id="shipLocation" value="Kho ShopSphere">
+      </div>
+    </div>
+    <div id="shipmentsPanel" class="empty-state"><strong>Đang tải vận đơn</strong>Dữ liệu lấy từ shipping-service.</div>
+  </section>
+
+  <section class="section panel pad">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Đối soát đánh giá</h2>
+        <div class="section-note">Mở review theo từng đơn để xác nhận chỉ sản phẩm đã mua mới được đánh giá.</div>
+      </div>
+      <a class="btn small" href="/reviews/">Mở trang đánh giá</a>
+    </div>
+    <div id="reviewOpsPanel" class="spec-grid" style="margin-top:.9rem"></div>
+  </section>
 </main>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
+const STAFF_ROLES = ['admin', 'manager', 'staff'];
+
+function hasStaffAccess(){
+  return STAFF_ROLES.includes((ShopUI.role() || '').toLowerCase());
+}
+
+function renderStaffAccessDenied(){
+  document.getElementById('staffApp').innerHTML = `
+    <section class="panel pad">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Access control</div>
+          <h1 class="page-title">Cần tài khoản nhân viên</h1>
+          <p class="page-subtitle">Đăng nhập bằng tài khoản staff, manager hoặc admin để vận hành giao hàng và đối soát review.</p>
+        </div>
+        <a class="btn primary" href="/login/?next=/staff/">Đăng nhập</a>
+      </div>
+    </section>
+  `;
+}
+
 function goSearch(){
   const q = document.getElementById('globalSearch').value.trim();
   window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/orders/';
 }
+
+let shipments = [];
+let orderCache = new Map();
+let paymentCache = new Map();
+let userOrderMap = new Map();
+
+async function loadUserOrders(){
+  try{
+    const orders = await ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/orders/`, {headers:ShopUI.authHeaders(false)});
+    userOrderMap = new Map(orders.map(order => [Number(order.id), order]));
+  }catch(_){
+    userOrderMap = new Map();
+  }
+}
+
+async function loadOrder(orderId){
+  if(orderCache.has(orderId)) return orderCache.get(orderId);
+  if(userOrderMap.has(Number(orderId))){
+    const order = userOrderMap.get(Number(orderId));
+    orderCache.set(orderId, order);
+    return order;
+  }
+  orderCache.set(orderId, null);
+  return null;
+}
+
+async function loadPayment(orderId){
+  if(paymentCache.has(orderId)) return paymentCache.get(orderId);
+  try{
+    const payment = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/payments/${orderId}/`, {headers:ShopUI.authHeaders(false)});
+    paymentCache.set(orderId, payment);
+    return payment;
+  }catch(_){
+    paymentCache.set(orderId, null);
+    return null;
+  }
+}
+
+function nextShipmentStatus(status){
+  if(status === 'processing') return 'shipping';
+  if(status === 'shipping') return 'delivered';
+  return '';
+}
+
+function nextStatusLabel(status){
+  if(status === 'processing') return 'Bắt đầu giao';
+  if(status === 'shipping') return 'Đã giao hàng';
+  return 'Hoàn tất';
+}
+
+async function renderShipments(){
+  const panel = document.getElementById('shipmentsPanel');
+  const statusFilter = document.getElementById('shipStatusFilter').value;
+  const rows = statusFilter ? shipments.filter(s => s.current_status === statusFilter) : shipments;
+  if(!rows.length){
+    panel.className = 'empty-state';
+    panel.innerHTML = '<strong>Không có vận đơn</strong>Không tìm thấy vận đơn theo bộ lọc hiện tại.';
+    return;
+  }
+  const enriched = [];
+  for(const shipment of rows){
+    const order = await loadOrder(shipment.order_id);
+    const orderStatus = String(order?.current_status || '').toLowerCase();
+    const payment = ['paid', 'processing', 'shipping', 'delivered', 'completed'].includes(orderStatus)
+      ? await loadPayment(shipment.order_id)
+      : null;
+    enriched.push({shipment, order, payment});
+  }
+  panel.className = '';
+  panel.innerHTML = `
+    <div style="display:grid;gap:.7rem">
+      ${enriched.map(({shipment, order, payment}) => {
+        const status = shipment.current_status || 'processing';
+        const next = nextShipmentStatus(status);
+        return `
+          <div class="cart-row" style="align-items:flex-start">
+            <div>
+              <div class="product-title">Đơn #${shipment.order_id}</div>
+              <div class="product-desc">${ShopUI.escapeHtml(shipment.receiver_name || '')} - ${ShopUI.escapeHtml(shipment.full_address || '')}</div>
+              <div class="product-meta">
+                <span class="pill teal">Ship: ${ShopUI.escapeHtml(status)}</span>
+                <span class="pill">Order: ${ShopUI.escapeHtml(order?.current_status || 'không đọc được')}</span>
+                <span class="pill amber">Pay: ${ShopUI.escapeHtml(payment?.overall_status || 'chưa có')}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end">
+              <a class="btn small" href="/orders/${shipment.order_id}/tracking/">Chi tiết</a>
+              <a class="btn small" href="/shipping/${shipment.order_id}/tracking/">Tracking</a>
+              ${next ? `<button class="btn primary small" onclick="advanceShipment(${shipment.order_id}, '${next}')">${nextStatusLabel(status)}</button>` : ''}
+              <button class="btn small" onclick="addTracking(${shipment.order_id})">Thêm tracking</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function loadShipments(){
+  const panel = document.getElementById('shipmentsPanel');
+  if(!ShopUI.token()){
+    panel.innerHTML = '<strong>Cần đăng nhập</strong><a class="btn primary" href="/login/?next=/staff/" style="margin-top:.8rem">Đăng nhập</a>';
+    return;
+  }
+  if(!['admin', 'manager', 'staff'].includes(ShopUI.role())){
+    panel.className = 'empty-state';
+    panel.innerHTML = '<strong>Cần tài khoản nhân viên</strong>Tài khoản khách hàng chỉ được xem đơn và tracking của chính mình.';
+    document.getElementById('reviewOpsPanel').innerHTML = '<div class="spec"><span>Quyền truy cập</span><strong>Đăng nhập bằng tài khoản staff/manager/admin để vận hành giao hàng</strong></div>';
+    return;
+  }
+  panel.className = 'empty-state';
+  panel.innerHTML = '<strong>Đang tải vận đơn</strong>Dữ liệu lấy từ shipping-service.';
+  try{
+    await loadUserOrders();
+    shipments = await ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/shipping/`, {headers:ShopUI.authHeaders(false)});
+    await renderShipments();
+    renderReviewOps();
+  }catch(err){
+    panel.innerHTML = `<strong>Không tải được vận đơn</strong>${ShopUI.escapeHtml(err.message || '')}`;
+  }
+}
+
+async function advanceShipment(orderId, status){
+  const location = document.getElementById('shipLocation').value.trim() || 'Kho ShopSphere';
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/shipping/${orderId}/status/`, {
+      method:'PUT',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({current_status:status, location})
+    });
+    ShopUI.toast('Đã cập nhật vận chuyển');
+    shipments = shipments.map(s => Number(s.order_id) === Number(orderId) ? {...s, current_status:status} : s);
+    orderCache.delete(orderId);
+    await renderShipments();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không cập nhật được vận chuyển', 'err');
+  }
+}
+
+async function addTracking(orderId){
+  const location = document.getElementById('shipLocation').value.trim() || 'Kho ShopSphere';
+  const shipment = shipments.find(s => Number(s.order_id) === Number(orderId));
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/shipping/${orderId}/tracking/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({status: shipment?.current_status || 'processing', location})
+    });
+    ShopUI.toast('Đã thêm tracking');
+  }catch(err){
+    ShopUI.toast(err.message || 'Không thêm được tracking', 'err');
+  }
+}
+
+function renderReviewOps(){
+  const panel = document.getElementById('reviewOpsPanel');
+  const recent = shipments.slice(0, 6);
+  if(!recent.length){
+    panel.innerHTML = '<div class="spec"><span>Review</span><strong>Chưa có đơn để đối soát</strong></div>';
+    return;
+  }
+  panel.innerHTML = recent.map(s => `
+    <a class="spec" href="/reviews/?order_id=${s.order_id}">
+      <span>Đơn #${s.order_id}</span>
+      <strong>Mở review theo sản phẩm đã mua</strong>
+    </a>
+  `).join('');
+}
+
+function initStaffPage(){
+  if(!ShopUI.token()){
+    window.location.replace('/login/?next=/staff/');
+    return;
+  }
+  if(!hasStaffAccess()){
+    renderStaffAccessDenied();
+    return;
+  }
+  loadShipments();
+}
+
+initStaffPage();
 </script>
 </body>
 </html>

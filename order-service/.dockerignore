@@ -1,9 +1,16 @@
 __pycache__/
+**/__pycache__/
 *.pyc
+**/*.pyc
 *.pyo
+**/*.pyo
 *.pyd
+**/*.pyd
 
 venv/
+.venv/
+**/venv/
+**/.venv/
 .env
 
 *.sqlite3
@@ -14,3 +21,5 @@ db.sqlite3
 
 .DS_Store
 Thumbs.db
+.pytest_cache/
+.mypy_cache/

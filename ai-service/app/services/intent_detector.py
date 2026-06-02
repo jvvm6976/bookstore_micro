@@ -39,17 +39,17 @@ _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
     ]),
     ("product_advice", [
         (r"\b(gợi ý|goi y|recommend|đề xuất|de xuat|tư vấn|tu van|nên mua|nen mua|mua gì|mua gi)\b", 3.0),
+        (r"\b(sản phẩm|san pham|product|item|mặt hàng|mat hang)\b", 1.1),
         (r"\b(sản phẩm tương tự|san pham tuong tu|similar product|giống sản phẩm|giong san pham)\b", 3.0),
         (r"\b(danh mục quan tâm|danh muc quan tam|category quan tâm|favorite category)\b", 2.8),
         (r"\b(muốn mua|muon mua|cần mua|can mua)\b", 1.8),
-        (r"\b(sản phẩm|san pham|điện thoại|dien thoai|laptop|máy tính|may tinh|giày|giay|thời trang|thoi trang)\b", 1.6),
         (r"\b(đọc cuốn nào tiếp|doc cuon nao tiep|mua cuốn nào tiếp|mua cuon nao tiep|next book|đọc tiếp|doc tiep)\b", 2.8),
         (r"\b(giá tốt nhất|gia tot nhat|rẻ nhất|re nhat|cheapest|best price)\b", 3.0),
         (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|compare)\b", 2.8),
         (r"\b(còn hàng không|con hang khong|hết hàng|het hang|in stock|available)\b", 2.5),
         (r"\b(bán chạy|ban chay|best\s*seller|popular|sách mới|sach moi|mới nhất|moi nhat|new books|new arrivals)\b", 2.5),
         (r"\b(cùng tác giả|cung tac gia|same author|của tác giả|cua tac gia)\b", 2.3),
-        (r"\b(sách hay|sach hay|sách nào|sach nao|sách tốt|sach tot|best book|top sách|top sach|sản phẩm tốt|san pham tot|top sản phẩm|top san pham)\b", 2.5),
+        (r"\b(sách hay|sach hay|sách nào|sach nao|sách tốt|sach tot|best book|top sách|top sach)\b", 2.5),
         (r"\b(dưới|duoi|under|budget|giá|gia|price|tầm giá|tam gia)\b", 1.5),
         (r"\b(sách\s+giá\s+(trên|tren|dưới|duoi)|trên\s*\d+\s*(k|nghìn|nghin|đồng|dong|vnd)?|dưới\s*\d+\s*(k|nghìn|nghin|đồng|dong|vnd)?|từ\s*\d+\s*(k|nghìn|nghin)?\s*(đến|den|-)\s*\d+)\b", 3.2),
         (r"\b(sách|sach)\s*(trên|tren|dưới|duoi)\s*\d+\b", 3.3),
@@ -57,8 +57,9 @@ _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
         (r"\b(cho người mới|cho nguoi moi|beginner|người mới bắt đầu|nguoi moi bat dau)\b", 2.0),
     ]),
     ("general_search", [
-        (r"\b(tìm|tim|search|tìm kiếm|tim kiem|có sách|co sach|sách về|sach ve|sách của|sach cua|có sản phẩm|co san pham|sản phẩm về|san pham ve)\b", 2.5),
-        (r"\b(cuốn|cuon|quyển|quyen|book|title|product|sản phẩm|san pham)\b", 1.8),
+        (r"\b(tìm|tim|search|tìm kiếm|tim kiem|có sách|co sach|sách về|sach ve|sách của|sach cua)\b", 2.5),
+        (r"\b(sản phẩm|san pham|product|item|mặt hàng|mat hang)\b", 1.2),
+        (r"\b(cuốn|cuon|quyển|quyen|book|title)\b", 1.8),
         (r"\b(muốn mua cuốn|muon mua cuon|muốn mua sách|muon mua sach)\b", 3.0),
         (r"\b(giá tốt nhất|gia tot nhat|rẻ nhất|re nhat|cheapest|best price)\b", 2.8),
         (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|compare)\b", 2.8),
@@ -69,11 +70,14 @@ _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
         (r"\b(bán chạy|ban chay|best\s*seller|popular|sách mới|sach moi|mới nhất|moi nhat|new books|new arrivals)\b", 2.3),
         (r"\b(cùng tác giả|cung tac gia|same author|của tác giả|cua tac gia)\b", 2.2),
         (r"\b(tác giả|tac gia|author|thể loại|the loai|category|chủ đề|chu de|topic)\b", 1.5),
+        # Từ đơn lẻ — sách/vở/đồ dùng học tập
+        (r"^(sách|sach|vở|vo|bút|but|tập|tap)$", 2.0),
+        (r"\b(sách|sach|vở|vo)\b", 1.2),
     ]),
     ("faq", [
         (r"\b(faq|hỏi đáp|hoi dap|câu hỏi|cau hoi|thắc mắc|thac mac|giải đáp|giai dap)\b", 3.0),
         (r"\b(đăng ký|dang ky|register|tài khoản|tai khoan|account|mật khẩu|mat khau|password)\b", 2.0),
-        (r"\b(giới thiệu|gioi thieu|about|shopsphere|cloudbooks|moonbooks|marketplace|nhà sách|nha sach)\b", 1.5),
+        (r"\b(giới thiệu|gioi thieu|about|shopsphere|shop sphere|cửa hàng|cua hang|shop)\b", 1.5),
     ]),
 ]
 

@@ -215,7 +215,10 @@ class BehaviorAnalysisService:
 
         orders   = order_client.get_orders_by_customer(customer_id)
         comments = comment_client.get_all_comments()
-        ratings  = [c for c in comments if c.get("customer_id") == customer_id]
+        ratings  = [
+            c for c in comments
+            if c.get("customer_id") == customer_id or c.get("user_id") == customer_id
+        ]
         products = catalog_client.get_all_products(limit=500)
 
         # 1. LSTM — primary model (sequence-based, bám sát yêu cầu môn)

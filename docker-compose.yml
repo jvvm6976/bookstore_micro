@@ -129,6 +129,7 @@ services:
       - DB_HOST=db-postgres
       - DB_PORT=5432
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - PRODUCT_IMAGE_BASE_URL=http://localhost:8002/static/images/products
 
   cart-service:
     build: ./cart-service
@@ -148,6 +149,7 @@ services:
       - POSTGRES_PASSWORD=root
       - DB_HOST=db-postgres
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - PRODUCT_SERVICE_URL=http://product-service:8000
 
   order-service:
     build: ./order-service
@@ -170,6 +172,12 @@ services:
       - DB_HOST=db-mysql
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - PRODUCT_SERVICE_URL=http://product-service:8000
+      - USER_SERVICE_URL=http://user-service:8000
+      - CART_SERVICE_URL=http://cart-service:8000
+      - PAYMENT_SERVICE_URL=http://payment-service:8000
+      - SHIPPING_SERVICE_URL=http://shipping-service:8000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8000
 
   payment-service:
     build: ./payment-service
@@ -192,6 +200,8 @@ services:
       - DB_HOST=db-mysql
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - ORDER_SERVICE_URL=http://order-service:8000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8000
 
   shipping-service:
     build: ./shipping-service
@@ -214,6 +224,8 @@ services:
       - DB_HOST=db-mysql
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - ORDER_SERVICE_URL=http://order-service:8000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8000
 
   comment-rate-service:
     build: ./comment-rate-service
@@ -233,6 +245,8 @@ services:
       - POSTGRES_PASSWORD=root
       - DB_HOST=db-postgres
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
+      - ORDER_SERVICE_URL=http://order-service:8000
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8000
 
   notification-service:
     build: ./notification-service

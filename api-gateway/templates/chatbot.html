@@ -12,7 +12,7 @@
 <main class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">AI service</div>
+      <div class="eyebrow">ShopSphere Assistant</div>
       <h1 class="page-title">Trợ lý mua sắm ShopSphere</h1>
       <p class="page-subtitle">Hỏi về gợi ý sản phẩm, theo dõi đơn hàng, thanh toán, vận chuyển hoặc chính sách đổi trả.</p>
     </div>
@@ -56,7 +56,13 @@ function goSearch(){
 function addMessage(text, who='bot'){
   const el = document.createElement('div');
   el.className = `message ${who}`;
-  el.textContent = text;
+  if (who === 'bot') {
+    el.innerHTML = ShopUI.escapeHtml(text)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  } else {
+    el.textContent = text;
+  }
   const box = document.getElementById('messages');
   box.appendChild(el);
   box.scrollTop = box.scrollHeight;
@@ -100,12 +106,14 @@ async function sendMessage(){
     });
     loading.remove();
     addMessage(data.response || data.answer || data.message || 'Tôi đã nhận câu hỏi của bạn.');
-    const recs = Array.isArray(data.recommendations) ? data.recommendations : (Array.isArray(data.books) ? data.books : []);
+    const recs = Array.isArray(data.recommendations)
+      ? data.recommendations
+      : (Array.isArray(data.products) ? data.products : (Array.isArray(data.items) ? data.items : []));
     renderSuggestions(recs);
   }catch(err){
     loading.remove();
-    addMessage('AI service chưa phản hồi. Vui lòng thử lại sau.');
-    ShopUI.toast(err.message || 'Lỗi AI service', 'err');
+    addMessage('Trợ lý chưa phản hồi. Vui lòng thử lại sau.');
+    ShopUI.toast(err.message || 'Lỗi trợ lý tư vấn', 'err');
   }
 }
 
@@ -123,4 +131,3 @@ checkHealth();
 </script>
 </body>
 </html>
-

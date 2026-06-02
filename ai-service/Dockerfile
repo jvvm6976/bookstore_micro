@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir faiss-cpu==1.8.0 || echo "faiss-cpu optional, skipping"
 
 COPY . .
-RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
+RUN chmod +x entrypoint.sh
 RUN mkdir -p artifacts data
 
 EXPOSE 8000

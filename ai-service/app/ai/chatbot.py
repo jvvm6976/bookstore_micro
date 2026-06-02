@@ -57,9 +57,9 @@ def _format_book(book: dict) -> str:
     stock  = book.get('stock', 0)
     cat    = book.get('category', '')
     return (
-        f"📚 **{title}**\n"
+        f"🛍️ **{title}**\n"
         f"   ✍️ Tác giả: {author} | 📂 {cat}\n"
-        f"   💰 Giá: {float(price):,.0f}đ | 📦 Kho: {stock} cuốn"
+        f"   💰 Giá: {float(price):,.0f}đ | 📦 Kho: {stock} sản phẩm"
     )
 
 
@@ -84,10 +84,10 @@ def _handle_greeting(ctx: dict) -> dict:
     name = ctx.get('username', 'bạn')
     return {
         'text': (
-            f"Xin chào {name}! 👋 Tôi là AI Assistant của CloudBooks.\n"
+            f"Xin chào {name}! 👋 Tôi là AI Assistant của ShopSphere.\n"
             "Tôi có thể giúp bạn:\n"
-            "• 💡 Gợi ý sách phù hợp\n"
-            "• 🔍 Tìm kiếm sách\n"
+            "• 💡 Gợi ý sản phẩm phù hợp\n"
+            "• 🔍 Tìm kiếm sản phẩm\n"
             "• 📦 Tra cứu đơn hàng\n"
             "• ❓ Giải đáp thắc mắc về chính sách\n\n"
             "Bạn cần hỗ trợ gì?"
@@ -105,20 +105,20 @@ def _handle_recommend(ctx: dict, query: str) -> dict:
             books = [book_client.get_book(p['book_id']) for p in popular]
             books = [b for b in books if b]
             lines = [_format_book(b) for b in books[:5]]
-            return {
-                'text': "📚 Sách phổ biến nhất hiện tại:\n\n" + "\n\n".join(lines),
-                'intent': 'recommend',
-                'books': books[:5],
-            }
         return {
-            'text': "Đăng nhập để nhận gợi ý cá nhân hóa dựa trên sở thích của bạn! 🎯",
+            'text': "🛍️ Sản phẩm phổ biến nhất hiện tại:\n\n" + "\n\n".join(lines),
+            'intent': 'recommend',
+            'books': books[:5],
+        }
+        return {
+            'text': "Đăng nhập để nhận gợi ý sản phẩm cá nhân hóa dựa trên sở thích của bạn! 🎯",
             'intent': 'recommend',
         }
 
     recs = recommender.generate(customer_id, limit=5)
     if not recs:
         return {
-            'text': "Chưa có đủ dữ liệu để gợi ý. Hãy xem thêm sách để tôi hiểu sở thích của bạn! 📖",
+            'text': "Chưa có đủ dữ liệu để gợi ý. Hãy xem thêm sản phẩm để tôi hiểu sở thích của bạn! 🛍️",
             'intent': 'recommend',
         }
 
@@ -131,7 +131,7 @@ def _handle_recommend(ctx: dict, query: str) -> dict:
             books.append(book)
 
     return {
-        'text': "💡 Gợi ý sách dành riêng cho bạn:\n\n" + "\n\n".join(lines),
+        'text': "💡 Gợi ý sản phẩm dành riêng cho bạn:\n\n" + "\n\n".join(lines),
         'intent': 'recommend',
         'books': books,
         'recommendations': recs,
@@ -142,20 +142,19 @@ def _handle_book_search(ctx: dict, query: str) -> dict:
     search_q = _extract_book_query(query)
     if not search_q or len(search_q) < 2:
         return {
-            'text': "Bạn muốn tìm sách gì? Hãy cho tôi biết tên sách, tác giả hoặc thể loại nhé! 🔍",
+            'text': "Bạn muốn tìm sản phẩm gì? Hãy cho tôi biết tên, tác giả hoặc thể loại nhé! 🔍",
             'intent': 'book_search',
         }
 
     # Track search interaction if logged in
     customer_id = ctx.get('customer_id')
     if customer_id:
-        # We don't have a specific book_id for search, skip tracking
         pass
 
     books = book_client.search_books(search_q)
     if not books:
         return {
-            'text': f"Không tìm thấy sách nào với từ khóa '{search_q}'. Thử từ khóa khác nhé! 🔍",
+            'text': f"Không tìm thấy sản phẩm nào với từ khóa '{search_q}'. Thử từ khóa khác nhé! 🔍",
             'intent': 'book_search',
         }
 
@@ -204,7 +203,7 @@ def _handle_order_status(ctx: dict, query: str) -> dict:
     orders = order_client.get_orders_by_customer(customer_id)
     if not orders:
         return {
-            'text': "Bạn chưa có đơn hàng nào. Hãy mua sách ngay! 🛒",
+            'text': "Bạn chưa có đơn hàng nào. Hãy mua sản phẩm ngay! 🛒",
             'intent': 'order_status',
         }
 
@@ -224,7 +223,7 @@ def _handle_faq(ctx: dict, query: str) -> dict:
         return {
             'text': (
                 "Tôi chưa có thông tin về câu hỏi này. "
-                "Vui lòng liên hệ support@cloudbooks.vn để được hỗ trợ! 📧"
+                "Vui lòng liên hệ support@shopsphere.vn để được hỗ trợ! 📧"
             ),
             'intent': 'faq',
         }
@@ -257,8 +256,8 @@ def _handle_fallback(ctx: dict, query: str) -> dict:
         'text': (
             "Xin lỗi, tôi chưa hiểu câu hỏi của bạn. 🤔\n"
             "Bạn có thể hỏi tôi về:\n"
-            "• Gợi ý sách\n"
-            "• Tìm kiếm sách\n"
+            "• Gợi ý sản phẩm\n"
+            "• Tìm kiếm sản phẩm\n"
             "• Trạng thái đơn hàng\n"
             "• Chính sách đổi trả, thanh toán"
         ),

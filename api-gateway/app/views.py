@@ -7,6 +7,7 @@ from django.shortcuts import render
 SERVICES = {
     'users': os.environ.get('USER_SERVICE_URL', 'http://user-service:8000'),
     'auth': os.environ.get('USER_SERVICE_URL', 'http://user-service:8000'),
+    'roles': os.environ.get('USER_SERVICE_URL', 'http://user-service:8000'),
     'products': os.environ.get('PRODUCT_SERVICE_URL', 'http://product-service:8000'),
     'categories': os.environ.get('PRODUCT_SERVICE_URL', 'http://product-service:8000'),
     'domains': os.environ.get('PRODUCT_SERVICE_URL', 'http://product-service:8000'),
@@ -25,6 +26,9 @@ SERVICES = {
 @csrf_exempt
 def proxy_request(request, path):
     proxy_path = path or ''
+    if proxy_path == 'favicon.ico':
+        return HttpResponse(status=204)
+
     if proxy_path.startswith('api/v1/'):
         target_url = f"{SERVICES['recommend']}/{proxy_path}"
         service_prefix = 'v1'
@@ -32,11 +36,24 @@ def proxy_request(request, path):
         if proxy_path.startswith('api/'):
             proxy_path = proxy_path[4:]
 
+        if proxy_path.rstrip('/') == 'chatbot/chat':
+            target_url = f"{SERVICES['chatbot']}/api/v1/chat"
+        elif proxy_path.startswith('recommend/recommendations/'):
+            customer_id = request.GET.get('user_id') or request.GET.get('customer_id') or '1'
+            target_url = f"{SERVICES['recommend']}/api/v1/recommend/{customer_id}"
+        elif proxy_path.startswith('recommend/similar/'):
+            product_id = proxy_path.strip('/').split('/')[-1]
+            target_url = f"{SERVICES['recommend']}/api/v1/recommend/similar/{product_id}"
+        elif proxy_path.rstrip('/') == 'recommend/popular':
+            target_url = f"{SERVICES['recommend']}/api/v1/recommend/popular"
+        else:
+            target_url = None
+
         service_prefix = proxy_path.split('/')[0] if proxy_path else ''
         
-        if service_prefix in SERVICES:
+        if not target_url and service_prefix in SERVICES:
             target_url = f"{SERVICES[service_prefix]}/{proxy_path}"
-        else:
+        elif not target_url:
             return JsonResponse({'error': 'Service not found for prefix: ' + service_prefix}, status=404)
 
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
@@ -48,7 +65,8 @@ def proxy_request(request, path):
             headers=headers,
             data=request.body,
             params=request.GET,
-            allow_redirects=False
+            allow_redirects=False,
+            timeout=30,
         )
         
         django_response = HttpResponse(

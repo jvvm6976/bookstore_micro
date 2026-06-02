@@ -47,26 +47,14 @@ W_CONTENT = 0.25   # Content-based affinity (category/brand)
 W_RATING  = 0.10   # Community rating popularity
 
 
-def _matches_category(product: dict, category: str | None) -> bool:
-    if not category:
-        return True
-    wanted = str(category).strip().lower()
-    tags = {
-        str(product.get("category", "")).strip().lower(),
-        str(product.get("domain_name", "")).strip().lower(),
-    }
-    return wanted in tags
-
-
 def _get_purchased_ids(customer_id: int) -> set[int]:
     orders = order_client.get_orders_by_customer(customer_id)
     ids: set[int] = set()
     for order in orders:
         for item in order.get("items", []):
-            # order-service OrderItem uses product_id
-            pid = item.get("product_id")
+            pid = item.get("product_id") or item.get("book_id")
             if pid:
-                ids.add(int(pid))
+                ids.add(pid)
     return ids
 
 
@@ -81,6 +69,25 @@ def _popularity_score(product_id: int, ratings: dict[int, dict]) -> float:
     return (rm["avg"] / 5.0) * math.log1p(rm["count"]) * 0.3
 
 
+def _product_payload(book: dict, product_id: int) -> dict[str, Any]:
+    """Fields needed by API consumers and FE product cards."""
+    return {
+        "id": product_id,
+        "product_id": product_id,
+        "name": book.get("name") or book.get("title", ""),
+        "title": book.get("title") or book.get("name", ""),
+        "description": book.get("description", ""),
+        "sku": book.get("sku", ""),
+        "category": book.get("category", ""),
+        "category_name": book.get("category_name") or book.get("category", ""),
+        "domain_name": book.get("domain_name", ""),
+        "domain_id": book.get("domain_id"),
+        "price": float(book.get("price", 0) or 0),
+        "stock": book.get("stock", 0),
+        "image_url": book.get("image_url") or book.get("cover_image_url") or "",
+    }
+
+
 def get_personalized(
     customer_id: int,
     interactions: dict[str, dict[int, int]],   # {type: {product_id: count}}
@@ -90,6 +97,7 @@ def get_personalized(
     category: str | None = None,
     customer_ratings: dict[int, int] | None = None,
     event_sequence: list[dict] | None = None,  # for LSTM behavior analysis
+    model_best_prediction: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Generate personalized recommendations using hybrid scoring:
@@ -126,6 +134,26 @@ def get_personalized(
         }
     except Exception as exc:
         logger.debug("Behavior profile unavailable for C%s: %s", customer_id, exc)
+
+    predicted_action = ""
+    predicted_confidence = 0.0
+    intent_boost = 1.0
+    if model_best_prediction:
+        predicted_action = str(model_best_prediction.get("predicted_action") or "").lower()
+        try:
+            predicted_confidence = max(0.0, min(float(model_best_prediction.get("confidence", 0) or 0), 1.0))
+        except Exception:
+            predicted_confidence = 0.0
+        action_boost_map = {
+            "purchase": 1.20,
+            "add_to_cart": 1.14,
+            "wishlist": 1.10,
+            "rate_product": 1.08,
+            "click": 1.05,
+            "view": 1.02,
+            "search": 1.01,
+        }
+        intent_boost = 1.0 + max(0.0, action_boost_map.get(predicted_action, 1.0) - 1.0) * predicted_confidence
 
     purchased = _get_purchased_ids(customer_id)
 
@@ -184,7 +212,7 @@ def get_personalized(
             continue
         if budget_max is not None and price > budget_max:
             continue
-        if category and not _matches_category(book, category):
+        if category and book.get("category") != category:
             continue
 
         reasons = []
@@ -195,6 +223,10 @@ def get_personalized(
         if bscore >= PURCHASE_THRESHOLD:
             lstm_component = min(bscore / 20.0, 1.0)
             reasons.append(f"bạn đã tương tác {int(bscore)} lần")
+            if predicted_action in {"purchase", "add_to_cart", "wishlist", "rate_product"} and predicted_confidence > 0:
+                lstm_component *= intent_boost
+                if predicted_confidence >= 0.5:
+                    reasons.append(f"model_best dự đoán {predicted_action}")
         # Boost highly-rated by customer
         if bid in customer_ratings and customer_ratings[bid] >= 4:
             lstm_component += 0.3
@@ -235,13 +267,8 @@ def get_personalized(
 
         if final_score > 0 or not reasons:
             candidates.append({
-                "product_id":       bid,
-                "title":            book.get("title", ""),
+                **_product_payload(book, bid),
                 "author":           book.get("author", ""),
-                "brand":            book.get("brand", ""),
-                "category":         book.get("category", ""),
-                "stock":            int(book.get("stock", 0) or 0),
-                "price":            price,
                 "score":            round(final_score, 3),
                 "lstm_score":       round(lstm_component, 3),
                 "graph_score":      round(graph_component, 3),
@@ -324,16 +351,11 @@ def get_similar(
         if score > 0:
             rm = ratings.get(bid, {})
             candidates.append({
-                "product_id": bid,
-                "title":      book.get("title", ""),
-                "author":     book.get("author", ""),
-                "brand":      book.get("brand", ""),
-                "category":   book.get("category", ""),
-                "stock":      int(book.get("stock", 0) or 0),
-                "price":      price,
-                "score":      round(score, 3),
-                "reason":     ", ".join(reasons) if reasons else "sản phẩm tương tự",
-                "avg_rating": round(rm.get("avg", 0), 2),
+                **_product_payload(book, bid),
+                "author":      book.get("author", ""),
+                "score":       round(score, 3),
+                "reason":      ", ".join(reasons) if reasons else "sản phẩm tương tự",
+                "avg_rating":  round(rm.get("avg", 0), 2),
             })
 
     candidates.sort(key=lambda x: x["score"], reverse=True)
@@ -355,13 +377,8 @@ def get_popular(limit: int = 10) -> list[dict[str, Any]]:
         score = _popularity_score(bid, ratings)
         if score > 0 or rm.get("count", 0) > 0:
             result.append({
-                "product_id": bid,
-                "title":      book.get("title", ""),
+                **_product_payload(book, bid),
                 "author":     book.get("author", ""),
-                "brand":      book.get("brand", ""),
-                "category":   book.get("category", ""),
-                "stock":      int(book.get("stock", 0) or 0),
-                "price":      float(book.get("price", 0)),
                 "score":      round(score, 3),
                 "reason":     f"phổ biến ({rm.get('count', 0)} đánh giá)",
                 "avg_rating": round(rm.get("avg", 0), 2),

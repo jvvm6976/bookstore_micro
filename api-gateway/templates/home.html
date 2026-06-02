@@ -12,9 +12,9 @@
 <main class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">Marketplace đa ngành</div>
-      <h1 class="page-title">Mua sách, điện tử và thời trang trong một trải nghiệm thống nhất</h1>
-      <p class="page-subtitle">Duyệt sản phẩm, lưu yêu thích, thêm giỏ hàng, đặt đơn và nhận gợi ý cá nhân hóa từ AI.</p>
+      <div class="eyebrow">ShopSphere Marketplace</div>
+      <h1 class="page-title">Mua sắm sách, điện tử, thời trang và đồ gia dụng với giá niêm yết theo VND</h1>
+      <p class="page-subtitle">Catalog rõ ràng, ảnh sản phẩm riêng, giỏ hàng nhanh và gợi ý cá nhân hóa theo hành vi mua sắm.</p>
     </div>
     <div class="toolbar">
       <span class="pill teal" data-auth-user>Khách</span>
@@ -35,6 +35,34 @@
       <span class="quick-icon">F</span>
       <span><span class="quick-title">Thời trang</span><span class="quick-meta">Áo, váy, giày</span></span>
     </a>
+    <a class="quick-card" href="/products/?domain=Home%20%26%20Kitchen">
+      <span class="quick-icon">H</span>
+      <span><span class="quick-title">Nhà bếp</span><span class="quick-meta">Nồi chảo, máy pha cà phê</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Beauty%20%26%20Personal%20Care">
+      <span class="quick-icon">BE</span>
+      <span><span class="quick-title">Làm đẹp</span><span class="quick-meta">Skincare, nước hoa</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Sports%20%26%20Outdoors">
+      <span class="quick-icon">S</span>
+      <span><span class="quick-title">Thể thao</span><span class="quick-meta">Tạ, lều cắm trại</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Toys%20%26%20Games">
+      <span class="quick-icon">T</span>
+      <span><span class="quick-title">Đồ chơi</span><span class="quick-meta">Board game, giáo dục</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Grocery">
+      <span class="quick-icon">G</span>
+      <span><span class="quick-title">Tạp hóa</span><span class="quick-meta">Cà phê, đồ khô</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Automotive">
+      <span class="quick-icon">A</span>
+      <span><span class="quick-title">Ô tô xe máy</span><span class="quick-meta">Chăm sóc xe</span></span>
+    </a>
+    <a class="quick-card" href="/products/?domain=Office%20%26%20Stationery">
+      <span class="quick-icon">O</span>
+      <span><span class="quick-title">Văn phòng</span><span class="quick-meta">Sổ tay, bút viết</span></span>
+    </a>
     <a class="quick-card" href="/chatbot/">
       <span class="quick-icon">AI</span>
       <span><span class="quick-title">Tư vấn AI</span><span class="quick-meta">Gợi ý theo hành vi</span></span>
@@ -47,11 +75,8 @@
         <h2 class="section-title">Sản phẩm mới trong catalog</h2>
         <div id="productMeta" class="section-note">Đang tải dữ liệu...</div>
       </div>
-      <div class="toolbar">
-        <button class="btn small" onclick="filterDomain('all')">Tất cả</button>
-        <button class="btn small" onclick="filterDomain('Books')">Sách</button>
-        <button class="btn small" onclick="filterDomain('Electronics')">Điện tử</button>
-        <button class="btn small" onclick="filterDomain('Fashion')">Thời trang</button>
+      <div class="toolbar" id="domainFilterBar">
+        <button class="btn small primary" data-domain="all">Tất cả</button>
       </div>
     </div>
     <div id="productGrid" class="product-grid"></div>
@@ -69,7 +94,7 @@
   </section>
 </main>
 
-<div class="footer-note">© 2026 ShopSphere. Giao diện customer dùng API gateway hiện tại của hệ thống microservices.</div>
+<div class="footer-note">© 2026 ShopSphere. Giá hiển thị bằng VND, tồn kho và hình ảnh được đồng bộ từ catalog hiện tại.</div>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
@@ -88,7 +113,27 @@ function logout(){
 
 function filterDomain(domain){
   currentDomain = domain;
+  renderDomainFilters();
   renderProducts();
+}
+
+function renderDomainFilters(){
+  const bar = document.getElementById('domainFilterBar');
+  if(!bar) return;
+  const domainNames = [...new Set(allProducts.map(p => p.domain_name).filter(Boolean))]
+    .sort((a,b) => String(a).localeCompare(String(b), 'vi'));
+  if(currentDomain !== 'all' && !domainNames.includes(currentDomain)){
+    currentDomain = 'all';
+  }
+  const buttons = ['all', ...domainNames];
+  bar.innerHTML = buttons.map(domain => {
+    const label = domain === 'all' ? 'Tất cả' : domain;
+    const active = currentDomain === domain ? ' primary' : '';
+    return `<button class="btn small${active}" data-domain="${ShopUI.escapeHtml(domain)}">${ShopUI.escapeHtml(label)}</button>`;
+  }).join('');
+  bar.querySelectorAll('button[data-domain]').forEach(button => {
+    button.addEventListener('click', () => filterDomain(button.dataset.domain));
+  });
 }
 
 function renderProducts(){
@@ -109,18 +154,19 @@ async function loadProducts(){
   const grid = document.getElementById('productGrid');
   grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Vui lòng chờ trong giây lát.</div>';
   try{
-    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`);
-    allProducts = ShopUI.safeList(data).map(ShopUI.normalizeProduct);
+    const data = await ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`);
+    allProducts = data.map(ShopUI.normalizeProduct);
+    renderDomainFilters();
     renderProducts();
   }catch(err){
     document.getElementById('productMeta').textContent = 'Không tải được sản phẩm';
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Lỗi tải dữ liệu</strong>Gateway hoặc product-service chưa sẵn sàng.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Lỗi tải dữ liệu</strong>Hệ thống catalog chưa sẵn sàng, vui lòng thử lại sau.</div>';
   }
 }
 
 async function loadRecommendations(){
   const grid = document.getElementById('recGrid');
-  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tính gợi ý</strong>AI service đang chọn sản phẩm phù hợp.</div>';
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tính gợi ý</strong>ShopSphere đang chọn sản phẩm phù hợp.</div>';
   try{
     const uid = ShopUI.userId() || 1;
     const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/recommend/recommendations/?user_id=${encodeURIComponent(uid)}&limit=8`);
@@ -137,7 +183,7 @@ async function loadRecommendations(){
     }
     grid.innerHTML = items.slice(0,6).map(p => ShopUI.productCard(p)).join('');
   }catch(_){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được gợi ý</strong>AI service sẽ thử lại khi bạn mở trang sau.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được gợi ý</strong>Hệ thống gợi ý sẽ thử lại khi bạn mở trang sau.</div>';
   }
 }
 

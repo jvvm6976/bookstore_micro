@@ -3,14 +3,15 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import requests
 import json
+import os
 
-PRODUCT_SERVICE_URL = "http://product-service:8000"
-CART_SERVICE_URL = "http://cart-service:8000"
-ORDER_SERVICE_URL = "http://order-service:8000"
-PAYMENT_SERVICE_URL = "http://payment-service:8000"
-SHIPPING_SERVICE_URL = "http://shipping-service:8000"
-COMMENT_SERVICE_URL = "http://comment-rate-service:8000"
-USER_SERVICE_URL = "http://user-service:8000"
+PRODUCT_SERVICE_URL = os.environ.get("PRODUCT_SERVICE_URL", "http://product-service:8000")
+CART_SERVICE_URL = os.environ.get("CART_SERVICE_URL", "http://cart-service:8000")
+ORDER_SERVICE_URL = os.environ.get("ORDER_SERVICE_URL", "http://order-service:8000")
+PAYMENT_SERVICE_URL = os.environ.get("PAYMENT_SERVICE_URL", "http://payment-service:8000")
+SHIPPING_SERVICE_URL = os.environ.get("SHIPPING_SERVICE_URL", "http://shipping-service:8000")
+COMMENT_SERVICE_URL = os.environ.get("COMMENT_SERVICE_URL", "http://comment-rate-service:8000")
+USER_SERVICE_URL = os.environ.get("USER_SERVICE_URL", "http://user-service:8000")
 
 # ═══ FRONTEND PAGES ═══
 def home(request):

@@ -42,7 +42,7 @@
       </div>
       <div class="field" style="min-width:145px">
         <label>Giá đến</label>
-        <input id="maxPrice" type="number" min="0" placeholder="5000" oninput="renderCatalog()">
+        <input id="maxPrice" type="number" min="0" placeholder="70000000" oninput="renderCatalog()">
       </div>
       <div class="field" style="min-width:180px">
         <label>Sắp xếp</label>
@@ -72,7 +72,7 @@
   </section>
 </main>
 
-<div class="footer-note">Các sản phẩm được lấy trực tiếp từ product-service qua API gateway.</div>
+<div class="footer-note">Giá bán đang hiển thị theo VND và được đồng bộ từ catalog ShopSphere.</div>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
@@ -83,6 +83,56 @@ let products = [];
 let categories = [];
 let domains = [];
 let viewMode = 'grid';
+const searchAliases = {
+  'dien thoai': ['phone', 'phones', 'smartphone', 'iphone', 'samsung'],
+  'may tinh': ['laptop', 'laptops', 'macbook', 'electronics'],
+  'may tinh xach tay': ['laptop', 'laptops', 'macbook'],
+  'dien tu': ['electronics', 'phone', 'laptop', 'accessories'],
+  'giay': ['shoes', 'shoe', 'sneaker', 'boots'],
+  'thoi trang': ['fashion', 'shirt', 'dress', 'shoes', 'jeans'],
+  'vay': ['dress', 'womens', 'women'],
+  'ao': ['shirt', 'mens', 'womens', 'fashion'],
+  'sach': ['books', 'fiction', 'science', 'non-fiction'],
+  'nha bep': ['home', 'kitchen', 'cookware', 'appliances', 'coffee'],
+  'lam dep': ['beauty', 'skincare', 'haircare', 'fragrance', 'cleanser'],
+  'the thao': ['sports', 'fitness', 'camping', 'cycling', 'dumbbells', 'tent'],
+  'do choi': ['toys', 'games', 'board games', 'building sets', 'learning toys'],
+  'tap hoa': ['grocery', 'coffee', 'tea', 'snacks', 'pantry'],
+  'ca phe': ['coffee', 'tea', 'beans', 'espresso'],
+  'o to': ['automotive', 'car', 'vehicle', 'car care', 'wash'],
+  'xe may': ['automotive', 'motorcycle', 'vehicle accessories'],
+  'van phong': ['office', 'stationery', 'notebook', 'writing', 'desk']
+};
+
+function normalizeText(value){
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9&\\s-]/g, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
+}
+
+function expandedSearchTerms(value){
+  const normalized = normalizeText(value);
+  const terms = new Set([String(value || '').toLowerCase(), normalized]);
+  normalized.split(/\\s+/).filter(x => x.length >= 3).forEach(x => terms.add(x));
+  Object.entries(searchAliases).forEach(([source, aliases]) => {
+    if(normalized.includes(source)){
+      aliases.forEach(alias => {
+        terms.add(alias);
+        terms.add(normalizeText(alias));
+      });
+    }
+  });
+  return [...terms].filter(Boolean);
+}
+
+function productSearchText(product){
+  return normalizeText(`${product.name} ${product.description} ${product.category_name} ${product.domain_name} ${product.sku}`);
+}
 
 function applySearch(){
   const q = document.getElementById('globalSearch').value.trim();
@@ -165,7 +215,11 @@ function renderCatalog(){
 
   let items = [...products];
   if(q){
-    items = items.filter(p => `${p.name} ${p.description} ${p.category_name} ${p.domain_name} ${p.sku}`.toLowerCase().includes(q));
+    const terms = expandedSearchTerms(q);
+    items = items.filter(p => {
+      const text = productSearchText(p);
+      return terms.some(term => text.includes(normalizeText(term)));
+    });
   }
   if(domain) items = items.filter(p => p.domain_name === domain);
   if(category) items = items.filter(p => p.category_name === category);
@@ -194,14 +248,14 @@ function renderCatalog(){
 async function loadCatalog(){
   const grid = document.getElementById('productsGrid');
   document.getElementById('globalSearch').value = query;
-  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Dữ liệu đang được lấy từ product-service.</div>';
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Dữ liệu catalog mới nhất đang được đồng bộ.</div>';
   try{
-    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`);
-    products = ShopUI.safeList(data).map(ShopUI.normalizeProduct);
+    const data = await ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`);
+    products = data.map(ShopUI.normalizeProduct);
     populateFilters();
     renderCatalog();
   }catch(_){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được catalog</strong>Kiểm tra lại product-service hoặc gateway.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được catalog</strong>Hệ thống catalog chưa sẵn sàng, vui lòng thử lại sau.</div>';
   }
 }
 
@@ -209,4 +263,3 @@ loadCatalog();
 </script>
 </body>
 </html>
-

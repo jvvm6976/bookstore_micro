@@ -75,6 +75,40 @@ def _get_recent_recommendations(session_id: str) -> list[dict]:
     return _session_recommendations.get(session_id, [])
 
 
+def _enrich_recommendations_with_catalog(recommendations: list[dict]) -> list[dict]:
+    if not recommendations:
+        return recommendations
+    try:
+        from .clients.catalog_client import catalog_client
+    except Exception:
+        return recommendations
+
+    cache: dict[int, dict] = {}
+    for rec in recommendations:
+        try:
+            pid = int(rec.get("product_id") or rec.get("id") or 0)
+        except (TypeError, ValueError):
+            pid = 0
+        if not pid:
+            continue
+        if pid not in cache:
+            try:
+                cache[pid] = catalog_client.get_product_by_id(pid) or {}
+            except Exception:
+                cache[pid] = {}
+        product = cache.get(pid) or {}
+        if not product:
+            continue
+        for key in (
+            "id", "product_id", "name", "title", "description", "sku",
+            "category", "category_name", "domain_id", "domain_name",
+            "price", "stock", "image_url", "cover_image_url",
+        ):
+            if rec.get(key) in (None, "") and product.get(key) not in (None, ""):
+                rec[key] = product.get(key)
+    return recommendations
+
+
 def _infer_book_title_from_history(session_id: str, current_message: str) -> str | None:
     """Infer likely title from recent messages for follow-up questions like "bao nhieu tien?"."""
     history = _get_history(session_id)
@@ -245,10 +279,18 @@ def _build_model_sequence_from_interactions(interactions: dict[str, dict[int, in
                         "user_id": 0,
                         "product_id": int(pid),
                         "category": "unknown",
+                        "sub_category": "unknown",
+                        "action": interaction_type,
                         "action_type": interaction_type,
+                        "interaction_type": interaction_type,
                         "price": 0,
                         "rating": 0,
                         "cart_value": 0,
+                        "timestamp": 0,
+                        "device": "desktop",
+                        "source": "organic",
+                        "intent": "browse",
+                        "segment": "casual",
                     }
                 )
     return sequence[-12:]
@@ -314,6 +356,7 @@ class ChatOrchestrator:
         has_explicit_filter = bool(
             entities.get("budget_min") is not None
             or entities.get("budget_max") is not None
+            or entities.get("book_title")
             or entities.get("book_titles")
             or entities.get("ask_compare_price")
             or entities.get("ask_next_book")
@@ -333,6 +376,12 @@ class ChatOrchestrator:
         ):
             intent = "general_search"
 
+        if (
+            (entities.get("ask_price") or entities.get("ask_stock"))
+            and (entities.get("book_title") or entities.get("book_titles"))
+        ):
+            intent = "general_search"
+
         # Any explicit budget filter should be treated as product search.
         if entities.get("budget_min") is not None or entities.get("budget_max") is not None:
             intent = "general_search"
@@ -342,6 +391,7 @@ class ChatOrchestrator:
         recommendations: list[dict] = []
         sources: list[dict] = []
         graph_sources: list[dict] = []
+        model_best_prediction: dict[str, Any] | None = None
 
         if intent in ("faq", "return_policy", "payment_support", "shipping_support"):
             # RAG retrieval from KB
@@ -365,48 +415,52 @@ class ChatOrchestrator:
                 itype: {bid: cnt for bid, cnt in book_counts.items()}
                 for itype, book_counts in interactions.items()
             }
-
-            from .clients.catalog_client import catalog_client
-            from .clients.comment_client import comment_client as cc
-
-            def _products_to_recs(products: list[dict], reason: str) -> list[dict]:
-                product_ids = [b.get("id") for b in products if b.get("id")]
-                ratings = cc.get_reviews_for_products(product_ids) if product_ids else {}
-                out = []
-                for b in products:
-                    bid = b.get("id")
-                    rm = ratings.get(bid, {})
-                    out.append({
-                        "product_id": bid,
-                        "title": b.get("title", ""),
-                        "author": b.get("author", ""),
-                        "brand": b.get("brand", ""),
-                        "category": b.get("category", ""),
-                        "price": float(b.get("price", 0) or 0),
-                        "stock": int(b.get("stock", 0) or 0),
-                        "score": float(rm.get("avg", 0) or 0),
-                        "reason": reason,
-                        "avg_rating": round(float(rm.get("avg", 0) or 0), 2),
-                    })
-                return out
+            if customer_id and _best_model_predictor.available:
+                try:
+                    seq = _build_model_sequence_from_interactions(interactions)
+                    if seq:
+                        model_best_prediction = _best_model_predictor.predict_next_action(seq)
+                except Exception as exc:
+                    logger.debug("model_best inference unavailable in product_advice: %s", exc)
 
             direct_title = entities.get("book_title")
             if direct_title:
+                from .clients.catalog_client import catalog_client
+                from .clients.comment_client import comment_client as cc
+
                 direct_books = catalog_client.search_products(
                     query=direct_title,
                     category_slug=entities.get("category"),
                     min_price=entities.get("budget_min"),
                     max_price=entities.get("budget_max"),
-                    in_stock=True,
                 )
+                if not direct_books:
+                    ql = str(direct_title).lower().strip()
+                    all_books = catalog_client.get_all_products(limit=500)
+                    direct_books = [b for b in all_books if ql and ql in str(b.get("title", "")).lower()]
                 if direct_books:
-                    # Boost products whose titles contain the requested phrase.
+                    # Boost books whose titles contain the requested phrase.
                     ql = str(direct_title).lower()
                     direct_books.sort(
                         key=lambda b: (ql in str(b.get("title", "")).lower(), float(b.get("price", 0) or 0)),
                         reverse=True,
                     )
-                    matched_recs = _products_to_recs(direct_books[:3], "khớp theo tên sản phẩm bạn đang tìm")
+                    pids = [b.get("id") for b in direct_books if b.get("id")]
+                    ratings = cc.get_reviews_for_products(pids) if pids else {}
+                    matched_recs = []
+                    for b in direct_books[:3]:
+                        bid = b.get("id")
+                        rm = ratings.get(bid, {})
+                        matched_recs.append({
+                            "product_id": bid,
+                            "title": b.get("title", ""),
+                            "author": b.get("author", ""),
+                            "category": b.get("category", ""),
+                            "price": float(b.get("price", 0) or 0),
+                            "score": float(rm.get("avg", 0) or 0),
+                            "reason": "khớp theo tên sản phẩm bạn đang tìm",
+                            "avg_rating": round(float(rm.get("avg", 0) or 0), 2),
+                        })
 
                     # Add similar products around the top match to keep recommendation behavior.
                     top_match_id = matched_recs[0].get("product_id") if matched_recs else None
@@ -420,54 +474,6 @@ class ChatOrchestrator:
                 else:
                     data["not_found_title"] = direct_title
 
-            keywords = entities.get("product_keywords", [])
-            category = entities.get("category")
-            has_catalog_filter = bool(
-                keywords
-                or category
-                or entities.get("budget_min") is not None
-                or entities.get("budget_max") is not None
-            )
-            if not recommendations and has_catalog_filter:
-                query_parts = list(keywords)
-                if category and category.lower() not in " ".join(query_parts).lower():
-                    query_parts.append(str(category))
-                query = " ".join(query_parts).strip() or str(category or "")
-                catalog_matches = catalog_client.search_products(
-                    query=query,
-                    category_slug=category,
-                    min_price=entities.get("budget_min"),
-                    max_price=entities.get("budget_max"),
-                    in_stock=True,
-                )
-                if catalog_matches:
-                    query_terms = [t.lower() for t in query_parts if t]
-
-                    def _match_score(item: dict) -> tuple[int, float]:
-                        searchable = " ".join(
-                            str(item.get(k, ""))
-                            for k in ("title", "description", "category", "domain_name", "brand", "sku")
-                        ).lower()
-                        term_hits = sum(1 for term in query_terms if term and term.lower() in searchable)
-                        category_hit = int(bool(category and str(category).lower() in searchable))
-                        return (category_hit, term_hits, float(item.get("stock", 0) or 0))
-
-                    catalog_matches.sort(key=_match_score, reverse=True)
-                    catalog_recs = _products_to_recs(
-                        catalog_matches[:8],
-                        "phù hợp với yêu cầu tìm kiếm của bạn",
-                    )
-                    catalog_recs.sort(
-                        key=lambda r: (
-                            float(r.get("score", 0) or 0),
-                            int(r.get("stock", 0) or 0),
-                            -float(r.get("price", 0) or 0),
-                        ),
-                        reverse=True,
-                    )
-                    recommendations = catalog_recs
-                    data["recommendations"] = recommendations
-
             recs = rec_svc.get_personalized(
                 customer_id=customer_id or 0,
                 interactions=flat_interactions,
@@ -475,6 +481,7 @@ class ChatOrchestrator:
                 budget_min=entities.get("budget_min"),
                 budget_max=entities.get("budget_max"),
                 category=entities.get("category"),
+                model_best_prediction=model_best_prediction,
             )
 
             if customer_id:
@@ -518,10 +525,8 @@ class ChatOrchestrator:
                                     "product_id": pid,
                                     "title": b.get("title", ""),
                                     "author": b.get("author", ""),
-                                    "brand": b.get("brand", ""),
                                     "category": b.get("category", ""),
                                     "price": float(b.get("price", 0) or 0),
-                                    "stock": int(b.get("stock", 0) or 0),
                                     "score": float(g.get("score", 0) or 0),
                                     "reason": "goi y tu KB_Graph theo category da quan tam",
                                     "avg_rating": 0,
@@ -561,7 +566,7 @@ class ChatOrchestrator:
                 message,
                 graph_hints=_graph_hints_for_customer(customer_id),
                 top_k=2,
-                category="product",
+                category=None,
             )
             data["rag_context"] = build_context_string(rag_entries)
             sources = rag_entries
@@ -588,6 +593,7 @@ class ChatOrchestrator:
             has_explicit_filter = bool(
                 entities.get("budget_min") is not None
                 or entities.get("budget_max") is not None
+                or entities.get("book_title")
                 or entities.get("book_titles")
                 or entities.get("ask_compare_price")
                 or entities.get("ask_next_book")
@@ -610,7 +616,6 @@ class ChatOrchestrator:
                             "product_id": b.get("id"),
                             "title": b.get("title", ""),
                             "author": b.get("author", ""),
-                            "brand": b.get("brand", ""),
                             "category": b.get("category", ""),
                             "price": float(b.get("price", 0) or 0),
                             "stock": int(b.get("stock", 0) or 0),
@@ -631,7 +636,6 @@ class ChatOrchestrator:
                         "product_id": b.get("id"),
                         "title": b.get("title", ""),
                         "author": b.get("author", ""),
-                        "brand": b.get("brand", ""),
                         "category": b.get("category", ""),
                         "price": float(b.get("price", 0) or 0),
                         "stock": int(b.get("stock", 0) or 0),
@@ -661,7 +665,6 @@ class ChatOrchestrator:
                             "product_id": b.get("id"),
                             "title": b.get("title", ""),
                             "author": b.get("author", ""),
-                            "brand": b.get("brand", ""),
                             "category": b.get("category", ""),
                             "price": float(b.get("price", 0) or 0),
                             "stock": int(b.get("stock", 0) or 0),
@@ -703,7 +706,6 @@ class ChatOrchestrator:
                         "product_id": b.get("id"),
                         "title": b.get("title", ""),
                         "author": b.get("author", ""),
-                        "brand": b.get("brand", ""),
                         "category": b.get("category", ""),
                         "price": float(b.get("price", 0) or 0),
                         "stock": int(b.get("stock", 0) or 0),
@@ -723,12 +725,22 @@ class ChatOrchestrator:
                 if entities.get("book_titles"):
                     books_map: dict[int, dict] = {}
                     for t in entities.get("book_titles", []):
-                        for b in catalog_client.search_products(
+                        found = catalog_client.search_products(
                             query=str(t),
                             category_slug=category,
                             min_price=entities.get("budget_min"),
                             max_price=entities.get("budget_max"),
-                        ):
+                        )
+                        if not found:
+                            ql = str(t).lower().strip()
+                            all_books = catalog_client.get_all_products(limit=500)
+                            found = [b for b in all_books if ql and ql in str(b.get("title", "")).lower()]
+                        ql = str(t).lower()
+                        found.sort(
+                            key=lambda b: (ql in str(b.get("title", "")).lower(), int(b.get("id", 0) or 0)),
+                            reverse=True,
+                        )
+                        for b in found:
                             bid = b.get("id")
                             if bid and bid not in books_map:
                                 books_map[bid] = b
@@ -739,6 +751,14 @@ class ChatOrchestrator:
                         category_slug=category,
                         min_price=entities.get("budget_min"),
                         max_price=entities.get("budget_max"),
+                    )
+                    ql = str(entities.get("book_title")).lower().strip()
+                    if not books or not any(ql in str(b.get("title", "")).lower() for b in books[:2]):
+                        all_books = catalog_client.get_all_products(limit=500)
+                        books = [b for b in all_books if ql and ql in str(b.get("title", "")).lower()]
+                    books.sort(
+                        key=lambda b: (ql in str(b.get("title", "")).lower(), int(b.get("id", 0) or 0)),
+                        reverse=True,
                     )
                 elif (
                     (entities.get("ask_price") or entities.get("ask_best_price"))
@@ -753,14 +773,8 @@ class ChatOrchestrator:
                             continue
                         if entities.get("budget_max") is not None and p > float(entities.get("budget_max") or 0):
                             continue
-                        if category:
-                            cat = str(category).lower()
-                            product_tags = {
-                                str(b.get("category", "")).lower(),
-                                str(b.get("domain_name", "")).lower(),
-                            }
-                            if cat not in product_tags:
-                                continue
+                        if category and b.get("category") != category:
+                            continue
                         books.append(b)
                 else:
                     books = catalog_client.search_products(
@@ -781,7 +795,6 @@ class ChatOrchestrator:
                         "product_id": bid,
                         "title":      b.get("title", ""),
                         "author":     b.get("author", ""),
-                        "brand":      b.get("brand", ""),
                         "category":   b.get("category", ""),
                         "price":      float(b.get("price", 0)),
                         "stock":      int(b.get("stock", 0) or 0),
@@ -831,26 +844,32 @@ class ChatOrchestrator:
                     logger.debug("Graph enrichment failed in general_search: %s", exc)
 
         else:  # fallback
-            entries = retrieve_with_graph_hints(
-                message,
-                graph_hints=_graph_hints_for_customer(customer_id),
-                top_k=2,
-            )
-            sources = entries
-            data["sources"] = entries
+            try:
+                entries = retrieve_with_graph_hints(
+                    message,
+                    graph_hints=_graph_hints_for_customer(customer_id),
+                    top_k=2,
+                )
+                sources = entries
+                data["sources"] = entries
+            except Exception as exc:
+                logger.warning("Fallback RAG retrieval failed: %s", exc)
+                data["sources"] = []
 
         # 4. Compose response
         if customer_id and _best_model_predictor.available:
             try:
-                interactions = _get_interactions(customer_id)
-                seq = _build_model_sequence_from_interactions(interactions)
-                pred = _best_model_predictor.predict_next_action(seq)
-                if pred:
-                    data["model_best_prediction"] = pred
+                if model_best_prediction is None:
+                    interactions = _get_interactions(customer_id)
+                    seq = _build_model_sequence_from_interactions(interactions)
+                    if seq:
+                        model_best_prediction = _best_model_predictor.predict_next_action(seq)
+                if model_best_prediction:
+                    data["model_best_prediction"] = model_best_prediction
                     graph_sources.append(
                         {
                             "title": "model_best_inference",
-                            "content": f"predicted_action={pred['predicted_action']}, confidence={pred['confidence']}",
+                            "content": f"predicted_action={model_best_prediction['predicted_action']}, confidence={model_best_prediction['confidence']}",
                             "source_type": "model_best",
                         }
                     )
@@ -860,18 +879,28 @@ class ChatOrchestrator:
         if graph_sources:
             data["graph_insights"] = graph_sources
 
+        recommendations = _enrich_recommendations_with_catalog(recommendations)
+        if data.get("recommendations"):
+            data["recommendations"] = _enrich_recommendations_with_catalog(data["recommendations"])
+
         answer = compose(intent, entities, data, customer_id)
         _save_message(session_id, "assistant", answer)
         _save_recommendations(session_id, recommendations)
 
-        books_payload = []
+        products_payload = []
         for r in recommendations:
-            books_payload.append({
+            products_payload.append({
                 "id":         r.get("id") or r.get("product_id"),
+                "product_id": r.get("id") or r.get("product_id"),
+                "name":       r.get("name") or r.get("title", ""),
                 "title":      r.get("title", ""),
                 "author":     r.get("author", ""),
                 "category":   r.get("category", ""),
+                "category_name": r.get("category_name") or r.get("category", ""),
+                "domain_name": r.get("domain_name", ""),
                 "price":      r.get("price", 0),
+                "stock":      r.get("stock"),
+                "image_url":  r.get("image_url", ""),
                 "avg_rating": r.get("avg_rating", 0),
             })
 
@@ -882,7 +911,8 @@ class ChatOrchestrator:
             "answer":          answer,
             "response":        answer,
             "recommendations": recommendations,
-            "books":           books_payload,
+            "products":        products_payload,
+            "items":           products_payload,
             "sources":         [{"title": s["title"], "snippet": s["content"][:150]} for s in (sources + graph_sources)],
             "meta": {
                 "entities":    entities,

@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--sh:0 8px 24px rgba(194,24,43,.12);--rs:8px;--r:12px}
+{% include "_shared_theme_tokens.css" %}
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t);min-height:100vh}
 nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;grid-template-columns:auto 1fr auto;gap:1rem;position:sticky;top:0;z-index:300}
 .logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}
@@ -31,6 +31,7 @@ nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;gri
 .notif-title{font-size:.95rem;font-weight:700;margin-bottom:.3rem}
 .notif-msg{font-size:.87rem;color:var(--tm);line-height:1.5;margin-bottom:.4rem}
 .notif-time{font-size:.75rem;color:var(--tm)}
+.notif-recipient{display:inline-flex;margin-left:.35rem;padding:.1rem .35rem;border:1px solid var(--b);border-radius:999px;font-size:.68rem;color:var(--tm);text-transform:none}
 .notif-actions{display:flex;gap:.5rem}
 .notif-btn{padding:.4rem .8rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s}
 .notif-btn:hover{background:var(--pd)}
@@ -50,10 +51,13 @@ footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:
   
   <div class="notif-filters">
     <span class="notif-filter active" onclick="filterNotif('all', this)">Tất cả</span>
+    <span class="notif-filter" data-internal-filter onclick="filterNotif('internal', this)">🏢 Nội bộ</span>
     <span class="notif-filter" onclick="filterNotif('order', this)">📦 Đơn hàng</span>
     <span class="notif-filter" onclick="filterNotif('shipping', this)">🚚 Vận chuyển</span>
     <span class="notif-filter" onclick="filterNotif('payment', this)">💳 Thanh toán</span>
+    <span class="notif-filter" onclick="filterNotif('review', this)">⭐ Đánh giá</span>
     <span class="notif-filter" onclick="filterNotif('system', this)">⚙️ Hệ thống</span>
+    <button class="btn btn-ghost" type="button" onclick="markAllRead()">Đánh dấu đã đọc tất cả</button>
   </div>
 
   <div id="notifContainer">
@@ -74,6 +78,23 @@ const API_BASE = window.location.origin;
 let token = localStorage.getItem('token');
 let allNotifs = [];
 let currentFilter = 'all';
+const STAFF_ROLES = ['admin', 'manager', 'staff'];
+
+function isStaffRole() {
+  return STAFF_ROLES.includes((ShopUI.role() || '').toLowerCase());
+}
+
+function isInternalNotif(notif) {
+  return ['staff', 'admin', 'manager', 'all'].includes((notif.recipient_type || '').toLowerCase());
+}
+
+function recipientLabel(notif) {
+  return isInternalNotif(notif) ? 'Nội bộ' : 'Khách hàng';
+}
+
+document.querySelectorAll('[data-internal-filter]').forEach(el => {
+  el.style.display = isStaffRole() ? 'inline-flex' : 'none';
+});
 
 async function loadNotifications() {
   if (!token) {
@@ -115,7 +136,11 @@ function renderNotifications() {
   let filtered = allNotifs;
   
   if (currentFilter !== 'all') {
-    filtered = allNotifs.filter(n => (n.type || '').toLowerCase().includes(currentFilter));
+    if (currentFilter === 'internal') {
+      filtered = allNotifs.filter(isInternalNotif);
+    } else {
+      filtered = allNotifs.filter(n => (n.type || '').toLowerCase().includes(currentFilter));
+    }
   }
 
   if (filtered.length === 0) {
@@ -130,13 +155,14 @@ function renderNotifications() {
       'order': '📦 Đơn hàng',
       'shipping': '🚚 Vận chuyển',
       'payment': '💳 Thanh toán',
+      'review': '⭐ Đánh giá',
       'system': '⚙️ Hệ thống'
     };
     
     html += `
       <div class="notif-card ${isUnread ? 'unread' : ''}">
         <div class="notif-body">
-          <div class="notif-type">${types[notif.type] || notif.type}</div>
+          <div class="notif-type">${types[notif.type] || notif.type}<span class="notif-recipient">${recipientLabel(notif)}</span></div>
           <div class="notif-title">${notif.title}</div>
           <div class="notif-msg">${notif.content || ''}</div>
           <div class="notif-time">${new Date(notif.created_at).toLocaleString('vi-VN')}</div>
@@ -174,9 +200,24 @@ async function markAsRead(notifId) {
   }
 }
 
+async function markAllRead() {
+  try {
+    await fetch(`${API_BASE}/api/notifications/read-all/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: '{}'
+    });
+    loadNotifications();
+  } catch (e) {
+    alert('✗ Lỗi: ' + e.message);
+  }
+}
+
 loadNotifications();
 </script>
 
 </body>
 </html>
-

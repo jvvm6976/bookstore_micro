@@ -1,11 +1,21 @@
 from rest_framework import viewsets, status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from .models import User, Role, Address
 from .serializers import UserSerializer, RegisterSerializer, AddressSerializer, RoleSerializer, CustomTokenObtainPairSerializer
 from django.db import transaction
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+
+def _role_name(user):
+    role = getattr(user, 'role', None)
+    return getattr(role, 'role_name', role)
+
+
+def _assert_staff_user(user):
+    if _role_name(user) not in {'admin', 'manager', 'staff'}:
+        raise PermissionDenied('Only staff can access this endpoint')
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -56,9 +66,10 @@ class AddressViewSet(viewsets.ModelViewSet):
         If is_default=True, set all other addresses to is_default=False
         """
         with transaction.atomic():
-            if serializer.validated_data.get('is_default'):
+            should_be_default = serializer.validated_data.get('is_default') or not Address.objects.filter(user=self.request.user).exists()
+            if should_be_default:
                 Address.objects.filter(user=self.request.user).update(is_default=False)
-            serializer.save(user=self.request.user)
+            serializer.save(user=self.request.user, is_default=should_be_default)
 
     def perform_update(self, serializer):
         """
@@ -76,18 +87,24 @@ class AdminUserViewSet(viewsets.ReadOnlyModelViewSet):
     GET /users/ - List all users
     GET /users/{id}/ - Get user detail
     """
-    queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)  # Should add IsAdminUser later
+
+    def get_queryset(self):
+        _assert_staff_user(self.request.user)
+        return User.objects.all()
 
 class AdminRoleViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Admin endpoints to view roles
     GET /roles/ - List all roles
     """
-    queryset = Role.objects.all()
     serializer_class = RoleSerializer
     permission_classes = (IsAuthenticated,)  # Should add IsAdminUser later
+
+    def get_queryset(self):
+        _assert_staff_user(self.request.user)
+        return Role.objects.all()
 
 # Internal APIs (Service-to-Service)
 

@@ -17,6 +17,7 @@ const ShopUI = (() => {
   function token() { return localStorage.getItem('token') || ''; }
   function userId() { return localStorage.getItem('user_id') || ''; }
   function username() { return localStorage.getItem('username') || ''; }
+  function role() { return localStorage.getItem('role') || ''; }
 
   function authHeaders(json = true) {
     const h = {};
@@ -61,11 +62,12 @@ const ShopUI = (() => {
     localStorage.setItem('refresh', data.refresh || '');
     localStorage.setItem('user_id', String(data.user_id || payload.user_id || ''));
     localStorage.setItem('username', data.username || payload.username || fallbackUsername || '');
+    localStorage.setItem('role', data.role || payload.role || 'customer');
     updateNav();
   }
 
   function clearSession() {
-    ['token', 'refresh', 'user_id', 'username'].forEach(k => localStorage.removeItem(k));
+    ['token', 'refresh', 'user_id', 'username', 'role'].forEach(k => localStorage.removeItem(k));
     updateNav();
   }
 
@@ -77,6 +79,9 @@ const ShopUI = (() => {
   function updateNav() {
     document.querySelectorAll('[data-auth-user]').forEach(el => {
       el.textContent = token() ? `Xin chào ${username() || 'bạn'}` : 'Khách';
+    });
+    document.querySelectorAll('[data-auth-role]').forEach(el => {
+      el.textContent = token() ? (role() || 'customer') : 'guest';
     });
     document.querySelectorAll('[data-auth-only]').forEach(el => {
       el.style.display = token() ? 'inline-flex' : 'none';
@@ -231,6 +236,22 @@ const ShopUI = (() => {
     return data;
   }
 
+  async function fetchAllPages(url, options = {}) {
+    const items = [];
+    const current = new URL(url, window.location.origin);
+    let guard = 0;
+    while (guard < 50) {
+      const data = await fetchJson(current.toString(), options);
+      const pageItems = safeList(data);
+      items.push(...pageItems);
+      if (!data.next || !pageItems.length) break;
+      const page = Number(current.searchParams.get('page') || 1) + 1;
+      current.searchParams.set('page', String(page));
+      guard += 1;
+    }
+    return items;
+  }
+
   function init() {
     updateNav();
     bindSearch();
@@ -241,6 +262,7 @@ const ShopUI = (() => {
     token,
     userId,
     username,
+    role,
     authHeaders,
     safeList,
     money,
@@ -259,6 +281,7 @@ const ShopUI = (() => {
     addToCart,
     addWishlist,
     fetchJson,
+    fetchAllPages,
     init
   };
 })();

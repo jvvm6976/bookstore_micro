@@ -39,8 +39,10 @@ class CustomJWTAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed('Token does not contain user_id')
 
         class MockUser:
-            def __init__(self, user_id):
+            def __init__(self, user_id, role=None, username=''):
                 self.id = user_id
+                self.role = role
+                self.username = username
                 self.is_authenticated = True
 
-        return (MockUser(user_id), token)
+        return (MockUser(user_id, payload.get('role'), payload.get('username', '')), token)

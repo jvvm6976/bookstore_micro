@@ -24,6 +24,8 @@ STATUS_VI = {
     "success":    "✅ Thành công",
     "failed":     "❌ Thất bại",
     "refunded":   "💰 Đã hoàn tiền",
+    "completed":  "✅ Hoàn tất",
+    "cancelled":  "❌ Đã hủy",
 }
 
 
@@ -51,21 +53,18 @@ def get_order_info(customer_id: int, order_id: int | None = None) -> dict[str, A
         return {
             "found":    True,
             "order_id": order_id,
-            # order_client._normalize_order already adds "status" alias for current_status
-            "status":   _fmt_status(order.get("status") or order.get("current_status", "")),
-            # order_client._normalize_order already adds "total_amount" alias for total_price
-            "total":    float(order.get("total_amount") or order.get("total_price") or 0),
+            "status":   _fmt_status(order.get("current_status") or order.get("status", "")),
+            "total":    float(order.get("total_price") or order.get("total_amount") or 0),
             "items":    order.get("items", []),
-            # order_client._normalize_order already adds "shipping_address" from address.full_address
-            "address":  order.get("shipping_address") or (order.get("address") or {}).get("full_address", ""),
+            "address":  (order.get("address") or {}).get("full_address") or order.get("shipping_address", ""),
             "created":  str(order.get("created_at", ""))[:10],
             "shipping": {
-                "status":   _fmt_status(ship.get("status", "")),
+                "status":   _fmt_status(ship.get("current_status") or ship.get("status", "")),
                 "tracking": ship.get("tracking_number", "Chưa có"),
                 "eta":      ship.get("estimated_delivery", ""),
             },
             "payment": {
-                "status": _fmt_status(payment.get("status", "")),
+                "status": _fmt_status(payment.get("overall_status") or payment.get("status", "")),
                 "method": payment.get("payment_method", ""),
             },
         }
@@ -83,10 +82,8 @@ def get_order_info(customer_id: int, order_id: int | None = None) -> dict[str, A
         oid = o.get("id")
         summaries.append({
             "order_id": oid,
-            # _normalize_order adds "status" alias for current_status
-            "status":   _fmt_status(o.get("status") or o.get("current_status", "")),
-            # _normalize_order adds "total_amount" alias for total_price
-            "total":    float(o.get("total_amount") or o.get("total_price") or 0),
+            "status":   _fmt_status(o.get("current_status") or o.get("status", "")),
+            "total":    float(o.get("total_price") or o.get("total_amount") or 0),
             "items":    len(o.get("items", [])),
             "created":  str(o.get("created_at", ""))[:10],
         })

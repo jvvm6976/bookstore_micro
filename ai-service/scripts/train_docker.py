@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Multi-run training in Docker (RNN + LSTM + BiLSTM, 3 runs each)
+Multi-run training in Docker (RNN + LSTM + BiLSTM + GRU + BiGRU, 3 runs each)
 Run from /app directory
 """
 import json
@@ -17,13 +17,19 @@ sys.path.insert(0, '/app')
 
 ARTIFACTS_DIR = Path('/app/artifacts')
 ARTIFACTS_DIR.mkdir(exist_ok=True)
+DATASET_PATH = os.environ.get("AI_TRAINING_CSV")
 
-MODELS = ["rnn", "lstm", "bilstm"]
+if not DATASET_PATH:
+    raise SystemExit(
+        "Set AI_TRAINING_CSV to a real Kaggle/exported training CSV before running Docker training."
+    )
+
+MODELS = ["rnn", "lstm", "bilstm", "gru", "bigru"]
 RUNS = 3
 BASE_SEED = 42
 
 print("\n" + "="*70)
-print("MULTI-RUN TRAINING: RNN + LSTM + BiLSTM (3 runs each)")
+print("MULTI-RUN TRAINING: RNN + LSTM + BiLSTM + GRU + BiGRU (3 runs each)")
 print("="*70)
 
 all_runs = {model: {"runs": []} for model in MODELS}

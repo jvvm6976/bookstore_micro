@@ -1,5 +1,7 @@
+import json
 import logging
 import time
+from pathlib import Path
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -9,24 +11,14 @@ from .services.recommendation import recommendation_service as rec_svc
 from .services.behavior_analysis import behavior_service
 from .services.kb_ingestion import kb_service
 from .services.rag_retrieval import rag_service
+from .ml.preprocess import BestModelPredictor
 from .clients.order_client import order_client
 from .clients.comment_client import comment_client
 from .clients.catalog_client import catalog_client
 from .infrastructure.graph.neo4j_adapter import neo4j_adapter
 
 logger = logging.getLogger(__name__)
-_kb_bootstrapped = False
-
-
-def _ensure_kb_loaded():
-	global _kb_bootstrapped
-	if _kb_bootstrapped and kb_service.get_stats().get('total_entries', 0) > 0:
-		return
-	count = kb_service.load_from_disk()
-	ok = rag_service.load_index()
-	if not ok and count > 0:
-		rag_service.build_index()
-	_kb_bootstrapped = True
+_best_model_predictor = BestModelPredictor(Path(__file__).resolve().parents[1] / "artifacts")
 
 
 def _to_int(value, default):
@@ -49,22 +41,16 @@ def _load_customer_signals(customer_id: int):
 	interactions = {}
 	event_sequence = []
 
-	def add_interaction(itype, product_id, count=1):
-		if not product_id:
-			return
-		pid = int(product_id)
-		interactions.setdefault(itype, {})
-		interactions[itype][pid] = interactions[itype].get(pid, 0) + int(count or 1)
-
 	try:
 		from django.apps import apps
 		Interaction = apps.get_model('app', 'CustomerProductInteraction')
 		qs = Interaction.objects.filter(customer_id=customer_id)
 		for row in qs:
 			itype = row.interaction_type
-			add_interaction(itype, row.product_id, row.count)
+			interactions[itype] = interactions.get(itype, 0) + row.count
 			event_sequence.append({
 				'product_id': row.product_id,
+				'action': itype,
 				'interaction_type': itype,
 				'timestamp': int(row.timestamp.timestamp()),
 				'price_range': row.price_range,
@@ -78,13 +64,13 @@ def _load_customer_signals(customer_id: int):
 		orders = order_client.get_orders_by_customer(customer_id)
 		for order in orders:
 			for item in order.get('items', []):
-				# order-service OrderItem uses product_id
-				pid = item.get('product_id')
+				pid = item.get('product_id') or item.get('book_id')
 				if not pid:
 					continue
-				add_interaction('purchase', pid)
+				interactions['purchase'] = interactions.get('purchase', 0) + 1
 				event_sequence.append({
 					'product_id': int(pid),
+					'action': 'purchase',
 					'interaction_type': 'purchase',
 					'timestamp': now_ts,
 					'price_range': 2,
@@ -97,20 +83,23 @@ def _load_customer_signals(customer_id: int):
 		now_ts = int(time.time())
 		comments = comment_client.get_all_comments()
 		for c in comments:
-			# comment-service Review uses user_id and product_id
-			if c.get('user_id') != customer_id:
+			comment_owner = c.get('customer_id')
+			if comment_owner is None:
+				comment_owner = c.get('user_id')
+			if comment_owner != customer_id:
 				continue
-				pid = c.get('product_id')
-				if not pid:
-					continue
-				add_interaction('rate', pid)
-				event_sequence.append({
+			pid = c.get('product_id') or c.get('book_id')
+			if not pid:
+				continue
+			interactions['rate'] = interactions.get('rate', 0) + 1
+			event_sequence.append({
 					'product_id': int(pid),
-				'interaction_type': 'rate',
-				'timestamp': now_ts,
-				'price_range': 2,
-				'category_idx': 0,
-			})
+					'action': 'rate_product',
+					'interaction_type': 'rate',
+					'timestamp': now_ts,
+					'price_range': 2,
+					'category_idx': 0,
+				})
 	except Exception as exc:
 		logger.debug('Could not load comment signals: %s', exc)
 
@@ -119,14 +108,24 @@ def _load_customer_signals(customer_id: int):
 
 @api_view(['GET'])
 def health(request):
-	_ensure_kb_loaded()
 	stats = kb_service.get_stats()
 	from .infrastructure.ml.lstm_model import LSTM_MODEL_PATH
+	best_model_path = Path("artifacts") / "model_best.pt"
+	best_summary_path = Path("artifacts") / "model_best_summary.json"
+	best_model_type = None
+	if best_summary_path.exists():
+		try:
+			best_summary = json.loads(best_summary_path.read_text(encoding="utf-8"))
+			best_model_type = best_summary.get("model_best")
+		except Exception:
+			best_model_type = None
 	return Response({
 		'service': 'recommender-ai-service',
 		'status': 'healthy',
 		'kb_stats': stats,
-		'lstm_loaded': LSTM_MODEL_PATH.exists(),
+		'lstm_loaded': LSTM_MODEL_PATH.exists() or best_model_path.exists(),
+		'model_best_loaded': best_model_path.exists(),
+		'model_best_type': best_model_type,
 		'graph_enabled': neo4j_adapter.is_available(),
 		'hybrid_weights': {'lstm': 0.40, 'graph': 0.25, 'content': 0.25, 'rating': 0.10},
 	})
@@ -135,7 +134,6 @@ def health(request):
 @api_view(['POST'])
 def chat(request):
 	try:
-		_ensure_kb_loaded()
 		result = orchestrator.process(
 			message=request.data.get('message', ''),
 			customer_id=request.data.get('customer_id'),
@@ -145,7 +143,12 @@ def chat(request):
 		return Response(result)
 	except Exception as exc:
 		logger.exception('Chat error: %s', exc)
-		return Response({'error': str(exc)}, status=500)
+		return Response({
+			'answer': 'Xin lỗi, tôi gặp sự cố kỹ thuật. Bạn thử lại sau nhé! 🙏',
+			'intent': 'fallback',
+			'session_id': request.data.get('session_id', ''),
+			'recommendations': [],
+		})
 
 
 @api_view(['GET'])
@@ -155,13 +158,20 @@ def recommend(request, customer_id):
 		category = request.GET.get('category')
 		budget_max = _to_float(request.GET.get('budget_max'))
 		interactions, event_sequence = _load_customer_signals(customer_id)
+		model_best_prediction = None
+		if event_sequence:
+			try:
+				model_best_prediction = _best_model_predictor.predict_next_action(event_sequence)
+			except Exception as exc:
+				logger.debug('Could not infer model_best for recommend: %s', exc)
 		recs = rec_svc.get_personalized(
 			customer_id=customer_id,
-			interactions=interactions,
+			interactions={itype: {0: cnt} for itype, cnt in interactions.items()},
 			limit=max(1, min(limit, 20)),
 			budget_max=budget_max,
 			category=category,
 			event_sequence=event_sequence,
+			model_best_prediction=model_best_prediction,
 		)
 		return Response({'customer_id': customer_id, 'recommendations': recs, 'source': 'lstm_hybrid'})
 	except Exception as exc:
@@ -188,43 +198,6 @@ def popular(request):
 		return Response({'items': items, 'source': 'popular'})
 	except Exception as exc:
 		logger.exception('Popular error: %s', exc)
-		return Response({'error': str(exc)}, status=500)
-
-
-@api_view(['GET'])
-def recommend_by_query(request):
-	"""
-	Alias endpoint for frontend/gateway compatibility.
-	Called as: GET /recommend/recommendations/?user_id=<id>&limit=<n>
-	Returns: { recommended_product_ids: [...], recommendations: [...] }
-	"""
-	try:
-		customer_id = _to_int(request.GET.get('user_id'), 0)
-		limit = _to_int(request.GET.get('limit'), 8)
-		if not customer_id:
-			# Return popular items when no user_id provided
-			items = rec_svc.get_popular(limit=max(1, min(limit, 20)))
-			product_ids = [item.get('product_id') or item.get('id') for item in items if item.get('product_id') or item.get('id')]
-			return Response({
-				'recommended_product_ids': product_ids,
-				'recommendations': items,
-				'source': 'popular',
-			})
-		interactions, event_sequence = _load_customer_signals(customer_id)
-		recs = rec_svc.get_personalized(
-			customer_id=customer_id,
-			interactions=interactions,
-			limit=max(1, min(limit, 20)),
-			event_sequence=event_sequence,
-		)
-		product_ids = [r.get('product_id') or r.get('id') for r in recs if r.get('product_id') or r.get('id')]
-		return Response({
-			'recommended_product_ids': product_ids,
-			'recommendations': recs,
-			'source': 'lstm_hybrid',
-		})
-	except Exception as exc:
-		logger.exception('recommend_by_query error: %s', exc)
 		return Response({'error': str(exc)}, status=500)
 
 
@@ -346,10 +319,8 @@ def track(request):
 @api_view(['POST'])
 def kb_reindex(request):
 	try:
-		global _kb_bootstrapped
 		count = kb_service.reindex()
 		rag_service.build_index()
-		_kb_bootstrapped = True
 		return Response({'indexed': count, 'message': f'KB reindexed: {count} entries'})
 	except Exception as exc:
 		logger.exception('KB reindex error: %s', exc)
@@ -358,7 +329,6 @@ def kb_reindex(request):
 
 @api_view(['GET'])
 def kb_status(request):
-	_ensure_kb_loaded()
 	stats = kb_service.get_stats()
 	from .core.config import FAISS_INDEX_PATH
 	return Response({

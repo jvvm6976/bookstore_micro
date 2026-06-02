@@ -62,9 +62,10 @@ class Neo4jAdapter:
     def __init__(self):
         self._driver = None
         self._available = False
-        self._connect()
+        self._connect_attempted = False
 
     def _connect(self) -> None:
+        self._connect_attempted = True
         try:
             from neo4j import GraphDatabase
             self._driver = GraphDatabase.driver(
@@ -80,7 +81,12 @@ class Neo4jAdapter:
             self._driver = None
             self._available = False
 
+    def _ensure_connected(self) -> None:
+        if not self._available and not self._connect_attempted:
+            self._connect()
+
     def is_available(self) -> bool:
+        self._ensure_connected()
         return self._available
 
     def _init_schema(self) -> None:
@@ -104,6 +110,7 @@ class Neo4jAdapter:
         product_meta: dict | None = None,
     ) -> None:
         """Write Customer→Product relationship. Fire-and-forget."""
+        self._ensure_connected()
         if not self._available or not self._driver:
             return
         props = props or {}
@@ -176,6 +183,7 @@ class Neo4jAdapter:
 
     def get_collaborative_recs(self, customer_id: int, limit: int = 6) -> list[dict[str, Any]]:
         """Collaborative filtering: customers who bought X also bought Y."""
+        self._ensure_connected()
         if not self._available or not self._driver:
             return []
         try:
@@ -188,6 +196,7 @@ class Neo4jAdapter:
 
     def get_similar_products(self, product_id: int, limit: int = 6) -> list[dict]:
         """Products in same category from graph."""
+        self._ensure_connected()
         if not self._available or not self._driver:
             return []
         try:
@@ -204,6 +213,7 @@ class Neo4jAdapter:
         Score = weighted sum of relationship counts.
         Used in hybrid scoring: final_score = w1*lstm + w2*graph + w3*rag
         """
+        self._ensure_connected()
         if not self._available or not self._driver or not product_ids:
             return {}
 

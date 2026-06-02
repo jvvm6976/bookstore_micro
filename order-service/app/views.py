@@ -7,17 +7,59 @@ from django.db import transaction
 from .models import Order, OrderItem, OrderAddress, OrderStatusHistory
 from .serializers import OrderSerializer, OrderItemSerializer, OrderAddressSerializer, OrderStatusHistorySerializer
 from .rabbitmq_client import publish_event
+from decimal import Decimal, InvalidOperation
+import os
 import requests
 import logging
 
 logger = logging.getLogger(__name__)
 
-PRODUCT_SERVICE_URL = 'http://product-service:8000'
-USER_SERVICE_URL = 'http://user-service:8000'
-CART_SERVICE_URL = 'http://cart-service:8000'
-PAYMENT_SERVICE_URL = 'http://payment-service:8000'
-SHIPPING_SERVICE_URL = 'http://shipping-service:8000'
-NOTIFICATION_SERVICE_URL = 'http://notification-service:8000'
+PRODUCT_SERVICE_URL = os.environ.get('PRODUCT_SERVICE_URL', 'http://product-service:8000')
+USER_SERVICE_URL = os.environ.get('USER_SERVICE_URL', 'http://user-service:8000')
+CART_SERVICE_URL = os.environ.get('CART_SERVICE_URL', 'http://cart-service:8000')
+PAYMENT_SERVICE_URL = os.environ.get('PAYMENT_SERVICE_URL', 'http://payment-service:8000')
+SHIPPING_SERVICE_URL = os.environ.get('SHIPPING_SERVICE_URL', 'http://shipping-service:8000')
+NOTIFICATION_SERVICE_URL = os.environ.get('NOTIFICATION_SERVICE_URL', 'http://notification-service:8000')
+
+ORDER_STATUSES = {'pending', 'paid', 'shipping', 'completed', 'cancelled', 'failed'}
+
+
+def _send_notification(payload):
+    try:
+        requests.post(
+            f"{NOTIFICATION_SERVICE_URL}/internal/notifications/",
+            json=payload,
+            timeout=5
+        )
+    except Exception as e:
+        logger.warning(f"Warning: Failed to send notification: {str(e)}")
+
+
+def _notify_customer(user_id, title, content, notif_type, entity_id=None, priority='normal'):
+    _send_notification({
+        'user_id': user_id,
+        'recipient_type': 'customer',
+        'title': title,
+        'content': content,
+        'type': notif_type,
+        'entity_type': 'order',
+        'entity_id': entity_id,
+        'priority': priority,
+        'status': 'unread',
+    })
+
+
+def _notify_staff(title, content, notif_type, entity_id=None, priority='normal'):
+    _send_notification({
+        'recipient_type': 'staff',
+        'title': title,
+        'content': content,
+        'type': notif_type,
+        'entity_type': 'order',
+        'entity_id': entity_id,
+        'priority': priority,
+        'status': 'unread',
+    })
 
 class OrderCheckoutView(generics.CreateAPIView):
     """
@@ -63,7 +105,7 @@ class OrderCheckoutView(generics.CreateAPIView):
         except Exception as e:
             raise ValidationError({'error': f'Error calling user service: {str(e)}'})
 
-        total_price = 0
+        total_price = Decimal('0')
         reduced_stocks = []  # Track items to rollback if needed
         
         try:
@@ -95,7 +137,10 @@ class OrderCheckoutView(generics.CreateAPIView):
                 # Get price
                 prod_resp = requests.get(f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/price/", timeout=5)
                 if prod_resp.status_code == 200:
-                    unit_price = prod_resp.json().get('unit_price')
+                    try:
+                        unit_price = Decimal(str(prod_resp.json().get('unit_price')))
+                    except (InvalidOperation, TypeError):
+                        raise ValidationError({'error': f'Invalid price for product {product_id}'})
                 else:
                     raise ValidationError({'error': f'Product {product_id} not found'})
                     
@@ -111,7 +156,7 @@ class OrderCheckoutView(generics.CreateAPIView):
                 # Add to tracking list for rollback
                 reduced_stocks.append({'product_id': product_id, 'quantity': quantity})
 
-                total_price += float(unit_price) * quantity
+                total_price += unit_price * quantity
                 OrderItem.objects.create(
                     order=order,
                     product_id=product_id,
@@ -161,23 +206,23 @@ class OrderCheckoutView(generics.CreateAPIView):
             publish_event('order_created', {
                 'order_id': order.id,
                 'user_id': user_id,
-                'amount': float(total_price)
+                'amount': str(total_price)
             })
 
-            try:
-                requests.post(
-                    f"{NOTIFICATION_SERVICE_URL}/internal/notifications/",
-                    json={
-                        'user_id': user_id,
-                        'title': 'Order created',
-                        'content': f'Order #{order.id} has been created successfully',
-                        'type': 'order',
-                        'status': 'unread'
-                    },
-                    timeout=5
-                )
-            except Exception as e:
-                logger.warning(f"Warning: Failed to send order notification: {str(e)}")
+            _notify_customer(
+                user_id,
+                'Đặt hàng thành công',
+                f'Đơn hàng #{order.id} đã được tạo và đang chờ thanh toán',
+                'order',
+                entity_id=order.id,
+            )
+            _notify_staff(
+                'Đơn hàng mới cần xử lý',
+                f'Đơn hàng #{order.id} vừa được tạo, tổng tiền {total_price}',
+                'order',
+                entity_id=order.id,
+                priority='high',
+            )
 
             serializer = OrderSerializer(order)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -226,6 +271,8 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = OrderSerializer
 
     def get_queryset(self):
+        if getattr(self.request.user, 'role', None) in {'admin', 'manager', 'staff'}:
+            return Order.objects.all().order_by('-created_at')
         user_id = self.request.user.id
         return Order.objects.filter(user_id=user_id).order_by('-created_at')
 
@@ -254,7 +301,25 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         
         old_status = order.current_status
 
-        # Change status
+        # Stock is reserved at checkout time, so every allowed cancellation must release it.
+        for item in order.items.all():
+            try:
+                stock_resp = requests.post(
+                    f"{PRODUCT_SERVICE_URL}/internal/products/{item.product_id}/increase-stock/",
+                    json={"quantity": item.quantity},
+                    timeout=5
+                )
+                if stock_resp.status_code >= 400:
+                    raise ValidationError({
+                        'error': f'Failed to rollback stock for product {item.product_id}'
+                    })
+            except requests.RequestException as e:
+                logger.error(f"Error rolling back stock for product {item.product_id}: {str(e)}")
+                raise ValidationError({
+                    'error': f'Failed to rollback stock for product {item.product_id}'
+                })
+
+        # Change status after stock has been released.
         order.current_status = 'cancelled'
         order.save()
 
@@ -264,17 +329,56 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             status='cancelled'
         )
 
-        # Rollback stock if order was paid
+        refund_ok = False
         if old_status == 'paid':
-            for item in order.items.all():
-                try:
-                    requests.post(
-                        f"{PRODUCT_SERVICE_URL}/internal/products/{item.product_id}/increase-stock/",
-                        json={"quantity": item.quantity},
-                        timeout=5
-                    )
-                except Exception as e:
-                    logger.error(f"Error rolling back stock for product {item.product_id}: {str(e)}")
+            try:
+                refund_resp = requests.post(
+                    f"{PAYMENT_SERVICE_URL}/internal/payments/{order.id}/refund/",
+                    json={'reason': 'Order cancelled'},
+                    timeout=5
+                )
+                if refund_resp.status_code >= 400:
+                    logger.warning("Failed to refund payment for order %s: %s", order.id, refund_resp.text)
+                else:
+                    refund_ok = True
+            except requests.RequestException as e:
+                logger.warning("Failed to call payment refund for order %s: %s", order.id, str(e))
+
+        try:
+            shipment_resp = requests.post(
+                f"{SHIPPING_SERVICE_URL}/internal/shipments/{order.id}/cancel/",
+                json={'location': 'Order cancelled'},
+                timeout=5
+            )
+            if shipment_resp.status_code not in (200, 404):
+                logger.warning("Failed to cancel shipment for order %s: %s", order.id, shipment_resp.text)
+        except requests.RequestException as e:
+            logger.warning("Failed to call shipment cancel for order %s: %s", order.id, str(e))
+
+        _notify_customer(
+            order.user_id,
+            'Đơn hàng đã hủy',
+            f'Đơn hàng #{order.id} đã được hủy thành công',
+            'order',
+            entity_id=order.id,
+            priority='high',
+        )
+        if refund_ok:
+            _notify_customer(
+                order.user_id,
+                'Hoàn tiền đã được ghi nhận',
+                f'Thanh toán cho đơn hàng #{order.id} đã được chuyển sang trạng thái hoàn tiền',
+                'payment',
+                entity_id=order.id,
+                priority='high',
+            )
+        _notify_staff(
+            'Đơn hàng bị hủy',
+            f'Đơn hàng #{order.id} đã bị hủy sau trạng thái {old_status}',
+            'order',
+            entity_id=order.id,
+            priority='high',
+        )
 
         return Response({'message': 'Order cancelled successfully'}, status=status.HTTP_200_OK)
 
@@ -302,6 +406,8 @@ def internal_order_status_update(request, order_id):
     new_status = request.data.get('status')
     if not new_status:
         return Response({'error': 'status is required'}, status=status.HTTP_400_BAD_REQUEST)
+    if new_status not in ORDER_STATUSES:
+        return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
     
     # Update order status
     order.current_status = new_status

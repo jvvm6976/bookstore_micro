@@ -7,58 +7,34 @@ from ..core.config import PRODUCT_SERVICE_URL
 
 
 def _normalize_product(item: dict) -> dict:
-    """Normalize product-service payload to AI service recommendation schema.
-
-    Product-service serializer returns:
-      id, name, description, sku, price, stock, status,
-      category_id, category_name, domain_id, domain_name, image_url,
-      book: {author, publisher, isbn},
-      electronics: {brand, warranty_months},
-      fashion: {size, color}
-    """
-    # author lives inside nested book{} object
-    book_data = item.get("book") or {}
-    author = book_data.get("author") or ""
-
-    # category is returned as category_name (human-readable string)
-    category = item.get("category_name") or item.get("category") or ""
-
-    # brand lives inside nested electronics{} object
-    electronics_data = item.get("electronics") or {}
-    brand = electronics_data.get("brand") or ""
-
+    """Normalize product-service payload to AI service recommendation schema."""
+    attrs = item.get("attributes") or {}
+    # Support both book-style (author) and generic product
+    author = item.get("author") or attrs.get("author") or ""
+    category = item.get("category_name") or item.get("category_slug") or item.get("category") or ""
+    brand = item.get("brand_name") or attrs.get("brand") or ""
+    product_type = item.get("product_type_name") or ""
     return {
         "id":              item.get("id"),
         "product_id":      item.get("id"),
-        # product-service uses "name"; keep "title" alias for AI-internal use
-        "name":            item.get("name") or "",
-        "title":           item.get("name") or "",
+        "title":           item.get("title") or item.get("name") or "",
+        "name":            item.get("name") or item.get("title") or "",
         "author":          author,
         "brand":           brand,
         "category":        category,
-        "category_id":     item.get("category_id"),
+        "category_name":   item.get("category_name") or category,
+        "category_slug":   item.get("category_slug") or "",
         "domain_id":       item.get("domain_id"),
         "domain_name":     item.get("domain_name") or "",
+        "product_type":    product_type,
         "sku":             item.get("sku") or "",
         "price":           float(item.get("price") or 0),
-        "stock":           int(item.get("stock") or 0),
-        "status":          item.get("status") or "",
-        "description":     item.get("description") or "",
-        # product-service uses image_url (not cover_image_url)
-        "image_url":       item.get("image_url") or "",
-        "cover_image_url": item.get("image_url") or "",
+        "stock":           item.get("stock", 0),
+        "description":     item.get("description", ""),
+        "image_url":       item.get("image_url") or item.get("cover_image_url") or item.get("cover_image") or "",
+        "cover_image_url": item.get("cover_image_url") or item.get("cover_image") or item.get("image_url") or "",
+        "attributes":      attrs,
     }
-
-
-def _matches_category(product: dict, category_slug: str | None) -> bool:
-    if not category_slug:
-        return True
-    wanted = str(category_slug).strip().lower()
-    tags = {
-        str(product.get("category", "")).strip().lower(),
-        str(product.get("domain_name", "")).strip().lower(),
-    }
-    return wanted in tags
 
 
 class ProductServiceClient(ServiceClient):
@@ -71,8 +47,16 @@ class ProductServiceClient(ServiceClient):
         params: dict = {}
         if category_slug:
             params["keyword"] = category_slug
-        data = self.get("/products/", params=params or None)
-        return [_normalize_product(i) for i in _extract_list(data)][:limit]
+        products: list[dict] = []
+        page = 1
+        while len(products) < limit and page <= 50:
+            data = self.get("/products/", params={**params, "page": page})
+            batch = _extract_list(data)
+            products.extend(_normalize_product(i) for i in batch)
+            if not isinstance(data, dict) or not data.get("next") or not batch:
+                break
+            page += 1
+        return products[:limit]
 
     def get_product_by_id(self, product_id: int) -> dict | None:
         data = self.get(f"/products/{product_id}/")
@@ -95,20 +79,11 @@ class ProductServiceClient(ServiceClient):
         if max_price is not None:
             params["max_price"] = max_price
         if product_type:
-            params["keyword"] = f"{params.get('keyword', '')} {product_type}".strip()
+            params["product_type_name"] = product_type
         if in_stock:
-            params["status"] = "active"
+            params["in_stock"] = "true"
         data = self.get("/products/", params=params)
-        products = [_normalize_product(i) for i in _extract_list(data)]
-        if category_slug:
-            products = [p for p in products if _matches_category(p, category_slug)]
-        if min_price is not None:
-            products = [p for p in products if p["price"] >= min_price]
-        if max_price is not None:
-            products = [p for p in products if p["price"] <= max_price]
-        if in_stock:
-            products = [p for p in products if p["stock"] > 0]
-        return products
+        return [_normalize_product(i) for i in _extract_list(data)]
 
     def get_by_category(self, category_slug: str) -> list[dict]:
         data = self.get("/products/", params={"keyword": category_slug})

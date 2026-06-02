@@ -1,0 +1,171 @@
+{
+  "category_to_id": {
+    "general": 1
+  },
+  "sub_category_to_id": {
+    "general": 1
+  },
+  "max_product_id": 466867,
+  "max_price": 50.0,
+  "max_cart_value": 1.0,
+  "max_dwell_time": 30.0,
+  "seq_len": 12,
+  "feature_dim": 13,
+  "num_classes": 10,
+  "actions": [
+    "search",
+    "view",
+    "add_to_cart",
+    "purchase",
+    "rate_product",
+    "wishlist",
+    "remove_from_cart",
+    "click",
+    "compare",
+    "share"
+  ],
+  "dataset_name": "retailrocket",
+  "model_name": "lstm",
+  "model_type": "lstm",
+  "hidden_dim": 128,
+  "num_layers": 1,
+  "metrics": {
+    "accuracy": 0.072961,
+    "balanced_accuracy": 0.333333,
+    "precision": 0.02432,
+    "recall": 0.333333,
+    "f1_score": 0.045333,
+    "num_active_classes": 3,
+    "roc_auc": 0.671079,
+    "pr_auc": 0.460418,
+    "confusion_matrix": [
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        386,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        46,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        34,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "degenerate_target_space": false,
+    "train_loss": 1.585483,
+    "val_loss": 1.583371,
+    "best_val_balanced_accuracy": 0.333333,
+    "generalization_gap": -0.002111,
+    "pred_majority_share": 1.0,
+    "predicted_classes": 1
+  }
+}

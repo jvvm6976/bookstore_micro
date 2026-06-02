@@ -28,6 +28,18 @@ SEED_DATA_PATH = BASE_DIR / "data" / "seed_kb.json"
 _kb_entries: list[dict[str, Any]] = []
 
 
+def _ensure_loaded_from_disk() -> None:
+    global _kb_entries
+    if _kb_entries or not KB_JSON_PATH.exists():
+        return
+    try:
+        with open(KB_JSON_PATH, encoding="utf-8") as f:
+            _kb_entries = json.load(f)
+        logger.info("Lazy-loaded %d KB entries from disk", len(_kb_entries))
+    except Exception as exc:
+        logger.warning("Could not lazy-load KB entries: %s", exc)
+
+
 def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
@@ -82,10 +94,8 @@ def _ingest_products(products: list[dict]) -> list[dict]:
         pid   = p.get("id")
         name  = p.get("name") or p.get("title") or f"Product {pid}"
         cat   = p.get("category") or p.get("category_slug") or ""
-        domain = p.get("domain_name") or ""
         ptype = p.get("product_type") or ""
         brand = p.get("brand") or p.get("attributes", {}).get("brand") or ""
-        author = p.get("author") or p.get("attributes", {}).get("author") or ""
         desc  = p.get("description", "")
         price = float(p.get("price") or 0)
         stock = p.get("stock", 0)
@@ -97,13 +107,9 @@ def _ingest_products(products: list[dict]) -> list[dict]:
             content_parts.append(f"thương hiệu {brand}")
         if cat:
             content_parts.append(f"danh mục: {cat}")
-        if domain:
-            content_parts.append(f"ngành hàng: {domain}")
         if ptype:
             content_parts.append(f"loại: {ptype}")
-        if author:
-            content_parts.append(f"tác giả {author}")
-        content_parts.append(f"Giá: {price:,.2f}đ.")
+        content_parts.append(f"Giá: {int(price):,}đ.")
         if desc:
             content_parts.append(f"Mô tả: {desc}")
         content_parts.append(f"Còn {stock} sản phẩm trong kho.")
@@ -116,9 +122,12 @@ def _ingest_products(products: list[dict]) -> list[dict]:
         content = " ".join(content_parts)
 
         keywords = [
-            name.lower(), cat, domain, ptype, brand.lower(), author.lower(),
-            "san pham", "product", "shopsphere", str(pid),
+            name.lower(), cat, ptype, brand.lower(),
+            "san pham", "product", str(pid),
         ]
+        # Add author for books
+        if attrs.get("author"):
+            keywords.append(attrs["author"].lower())
 
         for i, chunk in enumerate(_chunk_text(content)):
             entries.append(_make_entry(
@@ -131,10 +140,8 @@ def _ingest_products(products: list[dict]) -> list[dict]:
                     "product_id":   pid,
                     "price":        price,
                     "category":     cat,
-                    "domain":       domain,
                     "product_type": ptype,
                     "brand":        brand,
-                    "author":       author,
                     "source_type":  "product",
                 },
             ))
@@ -158,7 +165,7 @@ def _ingest_reviews(comments: list[dict], products: list[dict]) -> list[dict]:
         name = product_map.get(pid, f"Product {pid}")
         avg  = sum(r.get("rating", 0) for r in reviews) / len(reviews)
         top  = sorted(reviews, key=lambda r: r.get("rating", 0), reverse=True)[:3]
-        snippets = ". ".join((r.get("comment") or r.get("content") or "")[:100] for r in top if (r.get("comment") or r.get("content")))
+        snippets = ". ".join(r.get("content", "")[:100] for r in top if r.get("content"))
         content = (
             f"Đánh giá sản phẩm '{name}': {len(reviews)} đánh giá, "
             f"điểm trung bình {avg:.1f}/5. "
@@ -177,10 +184,12 @@ def _ingest_reviews(comments: list[dict], products: list[dict]) -> list[dict]:
 
 
 def get_all_entries() -> list[dict]:
+    _ensure_loaded_from_disk()
     return list(_kb_entries)
 
 
 def get_stats() -> dict:
+    _ensure_loaded_from_disk()
     from collections import Counter
     cats = Counter(e["category"] for e in _kb_entries)
     return {
@@ -231,10 +240,8 @@ def load_from_disk() -> int:
     if KB_JSON_PATH.exists():
         with open(KB_JSON_PATH, encoding="utf-8") as f:
             _kb_entries = json.load(f)
-        if _kb_entries:
-            logger.info("Loaded %d KB entries from disk", len(_kb_entries))
-            return len(_kb_entries)
-        logger.info("KB file exists but is empty, running reindex...")
+        logger.info("Loaded %d KB entries from disk", len(_kb_entries))
+        return len(_kb_entries)
     logger.info("No KB on disk, running initial reindex...")
     return reindex()
 

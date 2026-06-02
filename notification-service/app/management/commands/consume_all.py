@@ -22,14 +22,24 @@ class Command(BaseCommand):
             order_id = data.get('order_id')
             user_id = data.get('user_id', 1)
             
-            title = f"Event: {method.routing_key}"
-            content = f"Event {method.routing_key} occurred for Order {order_id}"
+            event_map = {
+                'order_created': ('order', 'Đơn hàng mới', f'Đơn hàng #{order_id} vừa được tạo'),
+                'payment_success': ('payment', 'Thanh toán thành công', f'Đơn hàng #{order_id} đã thanh toán thành công'),
+                'shipment_created': ('shipping', 'Vận đơn mới', f'Đơn hàng #{order_id} đã có vận đơn mới'),
+            }
+            notif_type, title, content = event_map.get(
+                method.routing_key,
+                ('system', f"Event: {method.routing_key}", f"Event {method.routing_key} occurred for Order {order_id}")
+            )
             
             noti = Notification.objects.create(
                 user_id=user_id,
+                recipient_type='customer',
                 title=title,
                 content=content,
-                type=method.routing_key
+                type=notif_type,
+                entity_type='order',
+                entity_id=order_id,
             )
             NotificationLog.objects.create(
                 notification=noti,

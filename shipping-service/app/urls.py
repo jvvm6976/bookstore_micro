@@ -6,12 +6,14 @@ from .views import (
     ShipmentStatusUpdateView,
     ShipmentTrackingAddView,
     ShipmentDeleteView,
-    InternalShipmentCreateView
+    InternalShipmentCreateView,
+    InternalShipmentCancelView
 )
 
 urlpatterns = [
     # Internal APIs (must be first to avoid conflicts)
     path('internal/shipments/', InternalShipmentCreateView.as_view(), name='internal-shipment-create'),
+    path('internal/shipments/<int:order_id>/cancel/', InternalShipmentCancelView.as_view(), name='internal-shipment-cancel'),
     
     # Client APIs - More specific paths first
     path('shipping/tracking/<int:pk>/', ShipmentTrackingListView.as_view(), name='shipment-tracking-list'),

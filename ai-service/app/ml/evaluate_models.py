@@ -5,6 +5,8 @@ from pathlib import Path
 
 from .train_bilstm import run as run_bilstm
 from .train_common import plot_training_histories, save_metrics_files
+from .train_bigru import run as run_bigru
+from .train_gru import run as run_gru
 from .train_lstm import run as run_lstm
 from .train_rnn import run as run_rnn
 
@@ -14,6 +16,8 @@ def run_all(csv_path: str | Path | None = None) -> list[dict]:
         run_rnn(csv_path),
         run_lstm(csv_path),
         run_bilstm(csv_path),
+        run_gru(csv_path),
+        run_bigru(csv_path),
     ]
 
     base_dir = Path(__file__).resolve().parents[2]

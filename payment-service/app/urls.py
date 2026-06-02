@@ -4,7 +4,8 @@ from .views import (
     PaymentDetailView,
     PaymentTransactionListView,
     PaymentStatusUpdateView,
-    InternalPaymentCreateView
+    InternalPaymentCreateView,
+    InternalPaymentRefundView
 )
 
 urlpatterns = [
@@ -16,4 +17,5 @@ urlpatterns = [
     
     # Internal APIs
     path('internal/payments/', InternalPaymentCreateView.as_view(), name='internal-payment-create'),
+    path('internal/payments/<int:order_id>/refund/', InternalPaymentRefundView.as_view(), name='internal-payment-refund'),
 ]

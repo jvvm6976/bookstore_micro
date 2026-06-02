@@ -144,6 +144,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'app.authentication.CustomJWTAuthentication',
+    ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_PARSER_CLASSES': [
@@ -154,6 +157,4 @@ REST_FRAMEWORK = {
 }
 
 CSRF_EXEMPT_VIEWS = ['*']
-
-REST_FRAMEWORK = {'DEFAULT_AUTHENTICATION_CLASSES': ('app.authentication.CustomJWTAuthentication',)}
 

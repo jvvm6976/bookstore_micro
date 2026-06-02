@@ -1,17 +1,18 @@
-/* Shared core design tokens for bookstore theme */
+/* Shared core design tokens for ShopSphere web theme */
 :root{
-  --p:#C2182B;
-  --pl:#EF9A9A;
-  --pll:#FFEBEE;
-  --pd:#8E1120;
-  --pdd:#6A0C17;
-  --bg:#FFF5F5;
+  --p:#b4232f;
+  --pl:#e6818b;
+  --pll:#fff1f3;
+  --pd:#7f1621;
+  --pdd:#5f111a;
+  --bg:#f4f6f8;
   --s:#ffffff;
-  --t:#2C0D10;
-  --tm:#7F3D43;
-  --b:#F3CDD1;
-  --sh:0 8px 24px rgba(194,24,43,.12);
-  --shl:0 16px 34px rgba(194,24,43,.18);
-  --r:14px;
-  --rs:10px;
+  --t:#172033;
+  --tm:#667085;
+  --b:#e3e7ee;
+  --sh:0 1px 2px rgba(16,24,40,.05),0 10px 24px rgba(16,24,40,.07);
+  --shl:0 4px 10px rgba(16,24,40,.08),0 20px 44px rgba(16,24,40,.12);
+  --focus:0 0 0 3px rgba(180,35,47,.14);
+  --r:12px;
+  --rs:8px;
 }

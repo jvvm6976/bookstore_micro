@@ -1,6 +1,6 @@
 # AI Assistant Service
 
-Django-based AI service cho hệ thống e-commerce MoonBooks.
+Django-based AI service cho hệ thống e-commerce ShopSphere.
 
 ## Kiến trúc
 
@@ -16,7 +16,7 @@ recommender-ai-service/
 │   │   ├── entity_extractor.py      # Trích xuất entities (budget, category, order_id...)
 │   │   ├── behavior_analysis.py     # PyTorch MLP + rule-based fallback
 │   │   ├── recommendation.py        # Personalized + similar + popular
-│   │   ├── kb_ingestion.py          # Knowledge Base builder (seed + books + reviews)
+│   │   ├── kb_ingestion.py          # Knowledge Base builder (seed + products + reviews)
 │   │   ├── rag_retrieval.py         # FAISS + TF-IDF + keyword fallback
 │   │   ├── order_support.py         # Order + shipment + payment lookup
 │   │   └── response_composer.py     # Per-intent response formatter
@@ -54,12 +54,12 @@ Health check: `http://localhost:8011/health`
 
 | Intent | Trigger | Xử lý |
 |--------|---------|-------|
-| `product_advice` | "gợi ý sách", "recommend" | Behavior + Recommendation + RAG |
+| `product_advice` | "gợi ý sản phẩm", "recommend" | Behavior + Recommendation + RAG |
 | `return_policy` | "đổi trả", "refund" | KB + RAG |
 | `payment_support` | "thanh toán", "payment" | KB + RAG |
 | `shipping_support` | "giao hàng", "ship" | KB + RAG |
 | `order_support` | "đơn hàng", "order" | order-service + ship-service + pay-service |
-| `general_search` | "tìm sách", "search" | product-service + RAG |
+| `general_search` | "tìm sản phẩm", "search" | product-service + RAG |
 | `faq` | "faq", "hỏi đáp" | KB + RAG |
 | `fallback` | không nhận ra | RAG fallback |
 
@@ -75,11 +75,13 @@ Health check: `http://localhost:8011/health`
 ## Deep Learning Model
 
 Hybrid sequence modeling:
-- LSTM (PyTorch/TensorFlow) cho chuỗi hành vi: view/click/add_to_cart/purchase/rate
+- 5 models (PyTorch): RNN, LSTM, BiLSTM, GRU, BiGRU cho chuỗi hành vi: view/click/add_to_cart/purchase/rate
 - Output: purchase_propensity_score + customer_segment
 - Fallback: BehaviorMLP/rule-based khi thiếu checkpoint
 
-Train: `python scripts/train_model.py`
+Train local quick test: `python -m app.ml.evaluate_models`
+
+Train full on Kaggle (recommended): xem `docs/kaggle_training_guide.md`
 
 ## RAG Pipeline
 
@@ -92,15 +94,15 @@ Train: `python scripts/train_model.py`
 
 ```bash
 # Build và start
-docker compose up --build recommender-ai-service
+docker compose up --build ai-service
 
-# Reindex KB (sau khi books đã được seed)
+# Reindex KB (sau khi product catalog đã được seed)
 curl -X POST http://localhost:8000/api/v1/kb/reindex
 
 # Chat
 curl -X POST http://localhost:8000/api/v1/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "Gợi ý sách AI cho người mới dưới 300k", "customer_id": 1}'
+  -d '{"message": "Gợi ý sản phẩm AI cho người mới dưới 300k", "customer_id": 1}'
 
 # Stack status (Django + LSTM + RAG + Graph + Chatbot)
 curl http://localhost:8011/health

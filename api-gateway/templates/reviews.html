@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--sh:0 8px 24px rgba(194,24,43,.12);--rs:8px;--r:12px}
+{% include "_shared_theme_tokens.css" %}
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
 nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300}
 .logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
@@ -39,6 +39,15 @@ nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:flex;jus
 .empty-state{text-align:center;padding:2rem;color:var(--tm)}
 .empty-icon{font-size:2rem;margin-bottom:1rem}
 footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:center}
+@media(max-width:768px){
+  .main-wrap{padding:1rem;max-width:100%;overflow-x:hidden}
+  .reviews-grid{grid-template-columns:1fr;gap:1rem}
+  .review-card,.aside,.review-composer{padding:1rem}
+  .review-header{gap:.65rem;flex-wrap:wrap}
+  .review-filters{gap:.5rem}
+  .filter-btn{padding:.46rem .7rem;max-width:100%;white-space:normal;text-align:left}
+  .review-text{overflow-wrap:anywhere}
+}
 </style>
 <style>{% include "_customer_header.css" %}</style>
 </head>
@@ -56,7 +65,7 @@ footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:
   </div>
   <div id="orderContext" style="display:none;margin:-.7rem 0 1rem;padding:.6rem .9rem;background:var(--pll);border:1px solid var(--b);border-radius:var(--rs);font-size:.88rem;color:var(--pd)"></div>
   <div id="reviewComposer" class="review-composer">
-    <div style="font-weight:700;margin-bottom:.4rem">Viet danh gia cho don hang nay</div>
+    <div style="font-weight:700;margin-bottom:.4rem">Viết đánh giá cho đơn hàng này</div>
     <select id="reviewProduct"></select>
     <select id="reviewRating">
       <option value="5">5 sao</option>
@@ -65,8 +74,8 @@ footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:
       <option value="2">2 sao</option>
       <option value="1">1 sao</option>
     </select>
-    <textarea id="reviewComment" placeholder="Cam nhan cua ban ve san pham"></textarea>
-    <button class="btn btn-p" onclick="createReview()">Gui danh gia</button>
+    <textarea id="reviewComment" placeholder="Cảm nhận của bạn về sản phẩm"></textarea>
+    <button class="btn btn-p" onclick="createReview()">Gửi đánh giá</button>
     <span id="reviewCreateMsg" style="font-size:.85rem;color:var(--tm);margin-left:.5rem"></span>
   </div>
 
@@ -128,7 +137,10 @@ async function loadReviews() {
       await loadOrderReviewOptions();
     }
 
-    const productIds = [...new Set(allReviews.map(r => r.product_id).filter(Boolean))];
+    const productIds = [...new Set([
+      ...allReviews.map(r => r.product_id).filter(Boolean),
+      ...orderItemsForReview.map(item => item.product_id).filter(Boolean)
+    ])];
     await Promise.all(productIds.map(async (pid) => {
       try {
         const pRes = await fetch(`${API_BASE}/api/products/${pid}/`);
@@ -153,12 +165,35 @@ async function loadOrderReviewOptions() {
     if (!res.ok) return;
     const order = await res.json();
     orderItemsForReview = Array.isArray(order.items) ? order.items : [];
+    const status = String(order.current_status || '').toLowerCase();
+    const reviewableStatuses = ['paid', 'completed', 'delivered'];
+    const ctx = document.getElementById('orderContext');
+    if (!reviewableStatuses.includes(status)) {
+      ctx.textContent = `Đơn #${orderId} đang ở trạng thái ${status || 'không xác định'}, chỉ đánh giá sau khi đã thanh toán hoặc hoàn tất.`;
+      document.getElementById('reviewComposer').style.display = 'none';
+      return;
+    }
     if (!orderItemsForReview.length) return;
     document.getElementById('reviewComposer').style.display = 'block';
-    document.getElementById('reviewProduct').innerHTML = orderItemsForReview.map(item => {
+    const reviewed = new Set(allReviews.map(r => Number(r.product_id)));
+    const options = [];
+    for (const item of orderItemsForReview) {
       const pid = item.product_id;
-      return `<option value="${pid}">San pham #${pid}</option>`;
-    }).join('');
+      try {
+        const pRes = await fetch(`${API_BASE}/api/products/${pid}/`);
+        if (pRes.ok) {
+          const product = await pRes.json();
+          productNameMap[pid] = product.name || `Sản phẩm #${pid}`;
+        }
+      } catch (_) {}
+      if (!reviewed.has(Number(pid))) {
+        options.push(`<option value="${pid}">${productNameMap[pid] || `Sản phẩm #${pid}`}</option>`);
+      }
+    }
+    document.getElementById('reviewProduct').innerHTML = options.join('');
+    if (!options.length) {
+      document.getElementById('reviewCreateMsg').textContent = 'Bạn đã đánh giá tất cả sản phẩm trong đơn này.';
+    }
   } catch (_) {}
 }
 
@@ -168,12 +203,12 @@ async function createReview() {
   const rating = document.getElementById('reviewRating').value;
   const comment = document.getElementById('reviewComment').value.trim();
   if (!productId || !rating) {
-    msg.textContent = 'Vui long chon san pham va so sao';
+    msg.textContent = 'Vui lòng chọn sản phẩm và số sao';
     return;
   }
-  msg.textContent = 'Dang gui...';
+  msg.textContent = 'Đang gửi...';
   try {
-    const res = await fetch(`${API_BASE}/api/reviews/`, {
+    const res = await fetch(`${API_BASE}/api/reviews/create/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -183,10 +218,10 @@ async function createReview() {
     });
     const data = await res.json().catch(()=>({}));
     if (!res.ok) {
-      msg.textContent = data.error || data.detail || 'Khong gui duoc danh gia';
+      msg.textContent = data.error || data.detail || 'Không gửi được đánh giá';
       return;
     }
-    msg.textContent = 'Da gui danh gia, dang cho duyet';
+    msg.textContent = 'Đã gửi đánh giá, đang chờ duyệt';
     document.getElementById('reviewComment').value = '';
     await loadReviews();
   } catch (e) {
@@ -288,4 +323,3 @@ loadReviews();
 
 </body>
 </html>
-

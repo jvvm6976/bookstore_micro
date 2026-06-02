@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--sh:0 8px 24px rgba(194,24,43,.12);--rs:8px;--r:12px}
+{% include "_shared_theme_tokens.css" %}
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
 nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300}
 .logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
@@ -143,6 +143,7 @@ function renderOrders() {
       const status = (order.current_status || order.status || 'pending').toLowerCase();
       const itemCount = Array.isArray(order.items) ? order.items.length : (order.items_count || order.item_count || 0);
       const fullAddress = order.address?.full_address || order.shipping_address || 'Chưa xác định';
+      const canReview = ['paid', 'delivered', 'completed'].includes(status);
     html += `
       <div class="order-card" onclick="window.location='/orders/${order.id}/tracking/'">
         <div class="order-header">
@@ -168,7 +169,8 @@ function renderOrders() {
         </div>
         <div style="margin-top:1rem">
           <button class="btn btn-p" onclick="event.stopPropagation(); window.location='/orders/${order.id}/tracking/'">🔍 Chi tiết</button>
-          <button class="btn" style="background:#FFF4F5;color:var(--p);border:1px solid var(--b)" onclick="event.stopPropagation(); window.location='/reviews/?order_id=${order.id}'">💬 Đánh giá</button>
+          <button class="btn" style="background:#EEF6FF;color:#0C4A6E;border:1px solid #BFD7FF" onclick="event.stopPropagation(); window.location='/shipping/${order.id}/tracking/'">🚚 Vận chuyển</button>
+          ${canReview ? `<button class="btn" style="background:#FFF4F5;color:var(--p);border:1px solid var(--b)" onclick="event.stopPropagation(); window.location='/reviews/?order_id=${order.id}'">💬 Đánh giá</button>` : ''}
         </div>
       </div>
     `;
@@ -189,4 +191,3 @@ loadOrders();
 
 </body>
 </html>
-

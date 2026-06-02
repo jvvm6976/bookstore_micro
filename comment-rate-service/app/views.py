@@ -1,17 +1,68 @@
 import logging
+import os
 import requests
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from .models import Review, ReviewReply
 from .serializers import ReviewSerializer, ReviewReplySerializer
 
 logger = logging.getLogger(__name__)
 
-ORDER_SERVICE_URL = 'http://order-service:8000'
+ORDER_SERVICE_URL = os.environ.get('ORDER_SERVICE_URL', 'http://order-service:8000')
+NOTIFICATION_SERVICE_URL = os.environ.get('NOTIFICATION_SERVICE_URL', 'http://notification-service:8000')
+
+REVIEW_STATUSES = {'pending', 'approved', 'rejected'}
+
+
+def _is_staff_user(user):
+    return getattr(user, 'role', None) in {'admin', 'manager', 'staff'}
+
+
+def _assert_staff_user(user):
+    if not getattr(user, 'is_authenticated', False) or not _is_staff_user(user):
+        raise PermissionDenied('Only staff can moderate reviews')
+
+
+def _send_notification(payload):
+    try:
+        requests.post(
+            f"{NOTIFICATION_SERVICE_URL}/internal/notifications/",
+            json=payload,
+            timeout=5
+        )
+    except Exception as e:
+        logger.warning(f"Warning: Failed to send notification: {str(e)}")
+
+
+def _notify_customer(user_id, title, content, review_id, priority='normal'):
+    _send_notification({
+        'user_id': user_id,
+        'recipient_type': 'customer',
+        'title': title,
+        'content': content,
+        'type': 'review',
+        'entity_type': 'review',
+        'entity_id': review_id,
+        'priority': priority,
+        'status': 'unread',
+    })
+
+
+def _notify_staff(title, content, review_id, priority='normal'):
+    _send_notification({
+        'recipient_type': 'staff',
+        'title': title,
+        'content': content,
+        'type': 'review',
+        'entity_type': 'review',
+        'entity_id': review_id,
+        'priority': priority,
+        'status': 'unread',
+    })
 
 
 def _create_review(request):
@@ -41,9 +92,18 @@ def _create_review(request):
         order_resp = requests.get(f"{ORDER_SERVICE_URL}/internal/orders/{order_id}/", timeout=5)
         if order_resp.status_code == 200:
             order_data = order_resp.json()
+            if int(order_data.get('user_id') or 0) != int(user_id):
+                raise ValidationError({'error': 'You can only review your own orders'})
             order_status = order_data.get('current_status')
             if order_status not in ['completed', 'paid', 'delivered']:
                 raise ValidationError({'error': f'You can only review completed or paid orders (current status: {order_status})'})
+            ordered_product_ids = {
+                int(item.get('product_id'))
+                for item in order_data.get('items', [])
+                if item.get('product_id') is not None
+            }
+            if int(product_id) not in ordered_product_ids:
+                raise ValidationError({'error': 'You can only review products from this order'})
         else:
             raise ValidationError({'error': 'Order not found'})
     except requests.RequestException as e:
@@ -58,6 +118,19 @@ def _create_review(request):
             rating=rating_val,
             comment=comment,
             status='pending'  # Default to pending, needs approval
+        )
+
+        _notify_customer(
+            user_id,
+            'Đánh giá đang chờ duyệt',
+            f'Đánh giá của bạn cho sản phẩm #{product_id} đã được ghi nhận và đang chờ duyệt',
+            review.id,
+        )
+        _notify_staff(
+            'Đánh giá mới cần duyệt',
+            f'Khách hàng #{user_id} vừa gửi đánh giá {rating_val} sao cho sản phẩm #{product_id}',
+            review.id,
+            priority='high',
         )
 
         serializer = ReviewSerializer(review)
@@ -78,7 +151,12 @@ class ReviewListView(generics.ListCreateAPIView):
     """
     permission_classes = (AllowAny,)
     serializer_class = ReviewSerializer
-    queryset = Review.objects.filter(status='approved').order_by('-created_at')
+    def get_queryset(self):
+        queryset = Review.objects.filter(status='approved')
+        product_id = self.request.query_params.get('product_id')
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+        return queryset.order_by('-created_at')
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -120,14 +198,18 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     def update(self, request, *args, **kwargs):
         review = self.get_object()
         
-        # Only owner or admin can update
-        if review.user_id != request.user.id:
-            raise ValidationError({'error': 'You can only update your own reviews'})
+        is_owner = review.user_id == request.user.id
+        is_staff = _is_staff_user(request.user)
+        if not (is_owner or is_staff):
+            raise PermissionDenied('You can only update your own reviews')
         
         rating = request.data.get('rating')
         comment = request.data.get('comment')
+        review_status = request.data.get('status')
         
-        if rating:
+        if rating is not None:
+            if not is_owner:
+                raise PermissionDenied('Only review owner can edit rating')
             try:
                 rating_val = int(rating)
                 if rating_val < 1 or rating_val > 5:
@@ -137,18 +219,42 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
                 raise ValidationError({'error': 'Rating must be an integer'})
         
         if comment is not None:
+            if not is_owner:
+                raise PermissionDenied('Only review owner can edit comment')
             review.comment = comment
+
+        if review_status is not None:
+            if not is_staff:
+                raise PermissionDenied('Only staff can moderate reviews')
+            if review_status not in REVIEW_STATUSES:
+                raise ValidationError({'error': 'Invalid status'})
+            review.status = review_status
+        elif is_owner and (rating is not None or comment is not None):
+            # Owner edits should be moderated again before becoming public.
+            review.status = 'pending'
         
         review.save()
+        if review_status is not None:
+            status_labels = {
+                'approved': 'đã được duyệt',
+                'rejected': 'đã bị từ chối',
+                'pending': 'đang chờ duyệt',
+            }
+            _notify_customer(
+                review.user_id,
+                'Trạng thái đánh giá đã cập nhật',
+                f'Đánh giá #{review.id} {status_labels.get(review.status, review.status)}',
+                review.id,
+                priority='high' if review.status in {'approved', 'rejected'} else 'normal',
+            )
         serializer = self.get_serializer(review)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     def destroy(self, request, *args, **kwargs):
         review = self.get_object()
         
-        # Only owner or admin can delete
-        if review.user_id != request.user.id:
-            raise ValidationError({'error': 'You can only delete your own reviews'})
+        if review.user_id != request.user.id and not _is_staff_user(request.user):
+            raise PermissionDenied('You can only delete your own reviews')
         
         review.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -189,6 +295,15 @@ class ReviewByOrderView(generics.ListAPIView):
     
     def get_queryset(self):
         order_id = self.kwargs.get('pk')
+        try:
+            order_resp = requests.get(f"{ORDER_SERVICE_URL}/internal/orders/{order_id}/", timeout=5)
+            if order_resp.status_code != 200:
+                return Review.objects.none()
+            order_data = order_resp.json()
+            if int(order_data.get('user_id') or 0) != int(self.request.user.id):
+                raise PermissionDenied('You can only view reviews for your own orders')
+        except requests.RequestException:
+            return Review.objects.none()
         return Review.objects.filter(order_id=order_id).order_by('-created_at')
 
 
@@ -204,6 +319,7 @@ class ReviewReplyCreateView(generics.CreateAPIView):
     serializer_class = ReviewReplySerializer
     
     def create(self, request, *args, **kwargs):
+        _assert_staff_user(request.user)
         review_id = self.kwargs.get('pk')
         content = request.data.get('content')
         
@@ -220,6 +336,13 @@ class ReviewReplyCreateView(generics.CreateAPIView):
                 review=review,
                 user_id=request.user.id,
                 content=content
+            )
+
+            _notify_customer(
+                review.user_id,
+                'Có phản hồi cho đánh giá của bạn',
+                f'Nhân viên đã phản hồi đánh giá #{review.id}',
+                review.id,
             )
             
             serializer = ReviewReplySerializer(reply)
@@ -276,6 +399,13 @@ class InternalReviewCreateView(generics.CreateAPIView):
                 rating=rating_val,
                 comment=comment,
                 status='pending'
+            )
+
+            _notify_staff(
+                'Đánh giá mới cần duyệt',
+                f'Khách hàng #{user_id} vừa gửi đánh giá {rating_val} sao cho sản phẩm #{product_id}',
+                review.id,
+                priority='high',
             )
             
             serializer = ReviewSerializer(review)

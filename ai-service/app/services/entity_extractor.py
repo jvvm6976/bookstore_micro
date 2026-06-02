@@ -23,68 +23,42 @@ logger = logging.getLogger(__name__)
 
 # Category keyword map (ASCII + Vietnamese)
 _CATEGORY_MAP: dict[str, list[str]] = {
-    "Phones": [
-        "điện thoại", "dien thoai", "phone", "phones", "smartphone", "mobile",
-        "iphone", "samsung", "android",
-    ],
-    "Laptops": [
-        "laptop", "laptops", "máy tính xách tay", "may tinh xach tay",
-        "macbook", "notebook",
-    ],
-    "Accessories": [
-        "phụ kiện", "phu kien", "accessory", "accessories", "tai nghe", "sạc", "sac",
-    ],
-    "Electronics": [
-        "điện tử", "dien tu", "electronics", "thiết bị", "thiet bi", "gadget", "công nghệ", "cong nghe",
-    ],
-    "Shoes": [
-        "giày", "giay", "shoes", "shoe", "sneaker", "sneakers", "footwear",
-    ],
-    "Mens": [
-        "nam", "men", "mens", "áo nam", "ao nam", "quần nam", "quan nam",
-    ],
-    "Womens": [
-        "nữ", "nu", "women", "womens", "váy", "vay", "đầm", "dam", "dress", "dresses", "áo nữ", "ao nu",
-    ],
-    "Fashion": [
-        "thời trang", "thoi trang", "fashion", "quần áo", "quan ao", "clothing", "áo", "ao",
-    ],
-    "Science": [
-        "khoa học", "khoa hoc", "science", "vật lý", "vat ly", "hóa học", "hoa hoc",
-        "sinh học", "sinh hoc", "biology", "physics", "chemistry",
-    ],
-    "Fiction": [
-        "tiểu thuyết", "tieu thuyet", "fiction", "novel", "truyện", "truyen",
-        "văn học", "van hoc", "literature",
-    ],
-    "Non-Fiction": [
-        "phi hư cấu", "phi hu cau", "non-fiction", "nonfiction", "non fiction",
-        "kinh doanh", "kinh te", "business", "marketing", "management",
-        "quản trị", "quan tri", "khởi nghiệp", "khoi nghiep", "startup",
-        "kỹ năng", "ky nang", "self help", "phát triển bản thân", "phat trien ban than",
-        "tâm lý", "tam ly", "psychology", "motivation",
-    ],
-    "Books": [
-        "book", "books", "nhà sách", "nha sach",
-    ],
-    "programming": [
-        "lập trình", "lap trinh", "programming", "code", "coding",
-        "python", "java", "javascript", "algorithm", "thuật toán", "thuat toan",
-        "ai", "machine learning", "deep learning", "data science",
-    ],
-    "history": [
-        "lịch sử", "lich su", "history", "lịch", "lich", "chiến tranh", "chien tranh",
-    ],
-    "math": [
-        "toán", "toan", "math", "mathematics", "calculus", "algebra", "statistics",
-        "xác suất", "xac suat",
-    ],
+    "Fiction": ["tiểu thuyết", "tieu thuyet", "fiction", "novel", "truyện", "truyen", "văn học", "van hoc"],
+    "Non-Fiction": ["non-fiction", "non fiction", "kinh doanh", "business", "thói quen", "thoi quen", "sapiens", "startup"],
+    "Science": ["khoa học", "khoa hoc", "science", "vật lý", "vat ly", "lập trình", "lap trinh", "code", "coding"],
+    "Phones": ["điện thoại", "dien thoai", "phone", "phones", "smartphone", "iphone", "samsung galaxy"],
+    "Laptops": ["laptop", "máy tính", "may tinh", "macbook", "ultrabook"],
+    "Accessories": ["tai nghe", "headphone", "headphones", "earbuds", "usb-c", "phụ kiện", "phu kien"],
+    "Mens": ["áo nam", "ao nam", "mens", "men", "shirt"],
+    "Womens": ["quần nữ", "quan nu", "womens", "women", "jeans"],
+    "Shoes": ["giày", "giay", "shoe", "shoes", "sneaker", "boots"],
+    "Cookware": ["nồi", "noi", "chảo", "chao", "cookware"],
+    "Appliances": ["máy pha", "may pha", "appliance", "espresso", "đồ gia dụng", "do gia dung"],
+    "Decor": ["decor", "trang trí", "trang tri"],
+    "Skincare": ["skincare", "sữa rửa mặt", "sua rua mat", "cleanser", "chăm sóc da", "cham soc da"],
+    "Haircare": ["haircare", "dầu gội", "dau goi", "tóc", "toc"],
+    "Fragrance": ["nước hoa", "nuoc hoa", "perfume", "fragrance"],
+    "Fitness": ["fitness", "gym", "tạ", "ta", "dumbbell", "tập luyện", "tap luyen"],
+    "Camping": ["camping", "lều", "leu", "dã ngoại", "da ngoai"],
+    "Cycling": ["cycling", "xe đạp", "xe dap"],
+    "Board Games": ["board game", "board games", "catan", "cờ", "co"],
+    "Building Sets": ["lego", "building set", "xếp hình", "xep hinh"],
+    "Learning Toys": ["learning toy", "đồ chơi học tập", "do choi hoc tap"],
+    "Coffee & Tea": ["coffee", "cà phê", "ca phe", "trà", "tra"],
+    "Snacks": ["snack", "snacks", "bánh", "banh", "kẹo", "keo"],
+    "Pantry": ["pantry", "gia vị", "gia vi", "thực phẩm khô", "thuc pham kho"],
+    "Car Care": ["car care", "rửa xe", "rua xe", "chăm sóc xe", "cham soc xe"],
+    "Motorcycle Gear": ["motorcycle", "xe máy", "xe may", "mũ bảo hiểm", "mu bao hiem"],
+    "Vehicle Accessories": ["phụ kiện xe", "phu kien xe", "vehicle accessories"],
+    "Notebooks": ["notebook", "notebooks", "vở", "vo", "sổ tay", "so tay"],
+    "Writing": ["bút", "but", "pen", "pencil", "writing"],
+    "Desk Accessories": ["desk", "bàn làm việc", "ban lam viec", "desk accessories"],
 }
 
 # Policy topic map
 _POLICY_MAP: dict[str, list[str]] = {
     "return":   ["đổi trả", "doi tra", "hoàn tiền", "hoan tien", "refund", "return"],
-    "payment":  ["thanh toán", "thanh toan", "payment", "pay", "thẻ", "the", "cod"],
+    "payment":  ["thanh toán", "thanh toan", "payment", "pay", "thẻ", "cod"],
     "shipping": ["giao hàng", "giao hang", "vận chuyển", "van chuyen", "ship", "delivery"],
     "account":  ["tài khoản", "tai khoan", "account", "đăng ký", "dang ky", "register"],
     "warranty": ["bảo hành", "bao hanh", "warranty", "guarantee"],
@@ -137,7 +111,8 @@ def _extract_category(text: str) -> str | None:
     text_lower = text.lower()
     for cat, keywords in _CATEGORY_MAP.items():
         for kw in keywords:
-            if kw in text_lower:
+            phrase = kw.lower()
+            if re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text_lower, re.I):
                 return cat
     return None
 
@@ -165,13 +140,47 @@ def _extract_author(text: str) -> str | None:
     return None
 
 
+def _cleanup_title_candidate(value: str) -> str:
+    cleaned = value.strip(" .,!?:;\"'()[]")
+    cleaned = re.sub(
+        r"^(?:so\s+sanh(?:\s+gia)?|so sánh(?:\s+giá)?|giá|gia|price|compare|tìm|tim|mua|ban|sản phẩm|san pham|product|item|mặt hàng|mat hang|cuốn|cuon|quyển|quyen|sách|sach|tựa|tua|tên|ten)\s+",
+        "",
+        cleaned,
+        flags=re.I,
+    )
+    cleaned = re.sub(
+        r"\b(?:giá|gia|bao nhiêu|bao nhieu|price|cost|tầm giá|tam gia|còn hàng|con hang|hết hàng|het hang|tốt nhất|tot nhat|rẻ nhất|re nhat|đắt nhất|dat nhat)\b.*$",
+        "",
+        cleaned,
+        flags=re.I,
+    )
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" .,!?:;\"'()[]")
+    return cleaned
+
+
+def _is_plausible_title(value: str) -> bool:
+    if not value or len(value) < 2:
+        return False
+    first_word = value.split()[0].lower()
+    if first_word in {
+        "so", "gợi", "goi", "tim", "tìm", "mua", "ban", "cần", "can", "xem",
+        "sản", "san", "phẩm", "pham", "product", "item", "giá", "gia", "price",
+        "phù", "hợp", "với", "toi", "tôi", "ban", "mình", "minh", "cho", "để",
+        "tot", "tốt", "rẻ", "re", "đẹp", "dep", "mới", "moi", "cũ", "cu", "hot",
+    }:
+        return False
+    if first_word in {"nao", "nào", "gi", "gì", "bao", "nhieu", "nhiêu"}:
+        return False
+    return True
+
+
 def _is_price_question(text: str) -> bool:
     t = text.lower()
     if re.search(r"\b(bao nhiêu tiền|bao nhieu tien|giá bao nhiêu|gia bao nhieu|price|cost|mức giá|muc gia|tầm giá|tam gia)\b", t, re.I):
         return True
-    if re.search(r"\b(sách|sach|sản phẩm|san pham|product)\s*(trên|tren|dưới|duoi)\s*\d+\b", t, re.I):
+    if re.search(r"\b(sách|sach)\s*(trên|tren|dưới|duoi)\s*\d+\b", t, re.I):
         return True
-    if re.search(r"\b(sách|sach|sản phẩm|san pham|product)\s*(từ|tu)\s*\d+\s*(đến|den|-)\s*\d+\b", t, re.I):
+    if re.search(r"\b(sách|sach)\s*(từ|tu)\s*\d+\s*(đến|den|-)\s*\d+\b", t, re.I):
         return True
     if re.search(r"\b(trên|tren|dưới|duoi)\s*\d+\s*(k|nghìn|nghin|đồng|dong|vnd)?\b", t, re.I):
         return True
@@ -195,15 +204,15 @@ def _is_compare_price_question(text: str) -> bool:
 
 
 def _is_next_book_question(text: str) -> bool:
-    return bool(re.search(r"\b(đọc cuốn nào tiếp|doc cuon nao tiep|mua cuốn nào tiếp|mua cuon nao tiep|nên đọc cuốn nào tiếp|nen doc cuon nao tiep|xem sản phẩm nào tiếp|xem san pham nao tiep|sản phẩm tương tự|san pham tuong tu|next book|next product|đọc tiếp|doc tiep)\b", text, re.I))
+    return bool(re.search(r"\b(đọc cuốn nào tiếp|doc cuon nao tiep|mua cuốn nào tiếp|mua cuon nao tiep|nên đọc cuốn nào tiếp|nen doc cuon nao tiep|next book|đọc tiếp|doc tiep)\b", text, re.I))
 
 
 def _is_bestseller_question(text: str) -> bool:
-    return bool(re.search(r"\b(bán chạy|ban chay|best\s*seller|popular|phổ biến|pho bien|top\s*sách|top\s*sach|top\s*sản phẩm|top\s*san pham)\b", text, re.I))
+    return bool(re.search(r"\b(bán chạy|ban chay|best\s*seller|popular|phổ biến|pho bien|top\s*sách|top\s*sach)\b", text, re.I))
 
 
 def _is_new_books_question(text: str) -> bool:
-    return bool(re.search(r"\b(sách mới|sach moi|sản phẩm mới|san pham moi|mới nhất|moi nhat|new\s*arrivals|new books|new products|vừa ra mắt|vua ra mat)\b", text, re.I))
+    return bool(re.search(r"\b(sách mới|sach moi|mới nhất|moi nhat|new\s*arrivals|new books|vừa ra mắt|vua ra mat)\b", text, re.I))
 
 
 def _is_same_author_question(text: str) -> bool:
@@ -220,31 +229,35 @@ def _is_category_interest_question(text: str) -> bool:
 
 def _extract_book_titles_for_compare(text: str) -> list[str]:
     # Examples: "Dune va Cosmos cuon nao re hon", "so sanh gia Clean Code va Dune"
+    normalized = re.sub(
+        r"^(?:so\s+sanh(?:\s+gia)?|so sánh(?:\s+giá)?|compare(?:\s+price)?|giá|gia|price)\s+",
+        "",
+        text,
+        flags=re.I,
+    ).strip()
     m = re.search(
         r"([A-ZÀ-Ỹa-zà-ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{1,60}?)\s+(?:và|va|vs|với|voi)\s+([A-ZÀ-Ỹa-zà-ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{1,60})",
-        text,
+        normalized,
         re.I,
     )
     if not m:
         # Fallback for comma-separated compare prompts: "Dune, Cosmos cuốn nào rẻ hơn"
         m = re.search(
             r"([A-ZÀ-Ỹa-zà-ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{1,60})\s*,\s*([A-ZÀ-Ỹa-zà-ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{1,60})",
-            text,
+            normalized,
             re.I,
         )
     if not m:
         return []
 
     noise = r"\b(cuon|cuốn|quyen|quyển|sach|sách|nao|nào|re|rẻ|dat|đắt|hon|hơn|gia|giá|bao|nhieu|nhiêu|tien|tiền|co|có|khong|không|so\s+sanh|sánh)\b"
-    t1 = re.sub(noise, " ", m.group(1), flags=re.I).strip(" .,!?:;\"'()[]")
-    t2 = re.sub(noise, " ", m.group(2), flags=re.I).strip(" .,!?:;\"'()[]")
-    # Remove common trailing question tails that can cling to 2nd title.
-    t2 = re.sub(r"\b(cuốn|cuon|quyển|quyen)?\s*(nào|nao)?\s*(rẻ|re|đắt|dat)?\s*(hơn|hon)?\s*$", "", t2, flags=re.I).strip(" .,!?:;\"'()[]")
+    t1 = _cleanup_title_candidate(re.sub(noise, " ", m.group(1), flags=re.I))
+    t2 = _cleanup_title_candidate(re.sub(noise, " ", m.group(2), flags=re.I))
     t1 = re.sub(r"\s+", " ", t1)
     t2 = re.sub(r"\s+", " ", t2)
     out = []
     for t in (t1, t2):
-        if len(t) >= 2 and t.lower() not in {"nào", "nao"}:
+        if _is_plausible_title(t):
             out.append(t)
     return out[:2]
 
@@ -252,26 +265,37 @@ def _extract_book_titles_for_compare(text: str) -> list[str]:
 def _extract_book_title(text: str) -> str | None:
     quoted = re.search(r"[\"']([^\"']{2,80})[\"']", text)
     if quoted:
-        q = quoted.group(1).strip()
-        if len(q) >= 2:
+        q = _cleanup_title_candidate(quoted.group(1).strip())
+        if _is_plausible_title(q):
             return q
 
-    # Examples: "mua cuon Romeo", "tim quyen Clean Code"
+    prefix_pattern = (
+        r"(?:sản phẩm|san pham|product|item|mặt hàng|mat hang|"
+        r"cuốn|cuon|quyển|quyen|sách|sach|tựa|tua|tên|ten)"
+    )
     m = re.search(
-        r"(?:cuốn|cuon|quyển|quyen|tựa|tua|tên|ten)\s+([A-ZÀ-Ỹa-zà-ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{1,60})",
+        rf"{prefix_pattern}\s+([A-ZÀ-Ỹa-zà-ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{{1,80}})",
+        text,
+        re.I,
+    )
+    if m:
+        title = _cleanup_title_candidate(m.group(1))
+        if _is_plausible_title(title):
+            return title
+
+    if not re.search(r"\b(?:giá|gia|price|cost|bao nhiêu|bao nhieu|còn hàng|con hang|hết hàng|het hang)\b", text, re.I):
+        return None
+
+    # Fallback: capture a title-like phrase before price / stock / question tails.
+    m = re.search(
+        r"([A-ZÀ-Ỹ0-9][A-ZÀ-Ỹa-zà-ỹ0-9\s\-\+\.#]{1,80}?)(?=\s+(?:giá|gia|price|cost|bao nhiêu|bao nhieu|còn hàng|con hang|hết hàng|het hang)\b|[?!.]|$)",
         text,
         re.I,
     )
     if not m:
         return None
-    title = m.group(1).strip(" .,!?:;\"'()[]")
-    if len(title) < 2:
-        return None
-    first_word = title.split()[0].lower() if title.split() else ""
-    if first_word in {"nao", "nào", "gi", "gì", "bao", "co", "có", "con", "còn"}:
-        return None
-    lowered = title.lower()
-    if re.search(r"\b(gia|giá|tot|tốt|nhat|nhất|hang|khong|không|bao\s+nhieu)\b", lowered, re.I):
+    title = _cleanup_title_candidate(m.group(1))
+    if not _is_plausible_title(title):
         return None
     return title
 
@@ -285,9 +309,9 @@ def _extract_product_keywords(text: str, category: str | None) -> list[str]:
         "the", "a", "an", "is", "are", "to", "for", "me", "my", "i",
         "gợi", "goi", "ý", "y", "sách", "sach", "book", "books",
         "muốn", "muon", "cần", "can", "mua", "buy", "cuốn", "cuon", "quyển", "quyen",
-        "sản", "san", "phẩm", "pham", "product", "products", "phù", "phu", "hợp", "hop",
-        "hãy", "hay", "giúp", "giup", "mình", "minh", "tìm", "tim", "kiếm", "kiem",
-        "catalog", "shop", "store", "hàng", "hang", "loại", "loai", "danh", "mục", "muc",
+        "sản", "san", "phẩm", "pham", "product", "item", "hàng", "hang", "mặt", "mat",
+        "giá", "gia", "price", "cost", "bao", "nhiêu", "nhieu", "sánh", "sanh", "so",
+        "phù", "hợp", "với", "voi", "mình", "minh", "cho", "để", "de", "thế", "nào", "nao",
     }
     words = re.findall(r"\b\w{3,}\b", text.lower())
     keywords = [w for w in words if w not in stopwords]
@@ -366,15 +390,16 @@ def extract(message: str, intent: str) -> dict[str, Any]:
     if author:
         entities["author"] = author
 
-    book_title = _extract_book_title(text)
-    if book_title:
-        entities["book_title"] = book_title
+    if intent in ("general_search", "product_advice"):
+        book_title = _extract_book_title(text)
+        if book_title:
+            entities["book_title"] = book_title
 
-    compare_titles = _extract_book_titles_for_compare(text)
-    if len(compare_titles) >= 2:
-        entities["book_titles"] = compare_titles
-        if "book_title" not in entities:
-            entities["book_title"] = compare_titles[0]
+        compare_titles = _extract_book_titles_for_compare(text)
+        if len(compare_titles) >= 2:
+            entities["book_titles"] = compare_titles
+            if "book_title" not in entities:
+                entities["book_title"] = compare_titles[0]
 
     keywords = _extract_product_keywords(text, category)
     if keywords:

@@ -19,7 +19,8 @@ class ChatResponse(BaseModel):
     answer: str
     response: Optional[str] = None
     recommendations: list[dict] = []
-    books: list[dict] = []
+    products: list[dict] = []
+    items: list[dict] = []
     sources: list[dict] = []
     meta: dict = {}
 

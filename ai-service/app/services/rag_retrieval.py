@@ -198,6 +198,9 @@ def retrieve(
 
     results: list[dict] = []
 
+    if _index is None or not _index_meta:
+        load_index()
+
     # Try FAISS first
     if _index is not None and _index_meta:
         try:

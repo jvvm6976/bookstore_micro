@@ -5,12 +5,18 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # ── Service URLs ──────────────────────────────────────────────────────────────
-PRODUCT_SERVICE_URL  = os.getenv("PRODUCT_SERVICE_URL",  "http://product-service:8000")
-USER_SERVICE_URL     = os.getenv("USER_SERVICE_URL", "http://user-service:8000")
-ORDER_SERVICE_URL    = os.getenv("ORDER_SERVICE_URL",    "http://order-service:8000")
-COMMENT_SERVICE_URL  = os.getenv("COMMENT_SERVICE_URL",  "http://comment-rate-service:8000")
-SHIP_SERVICE_URL     = os.getenv("SHIP_SERVICE_URL", os.getenv("SHIPPING_SERVICE_URL", "http://shipping-service:8000"))
-PAY_SERVICE_URL      = os.getenv("PAY_SERVICE_URL", os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:8000"))
+PRODUCT_SERVICE_URL = os.getenv("PRODUCT_SERVICE_URL", "http://product-service:8000")
+USER_SERVICE_URL = os.getenv("USER_SERVICE_URL", "http://user-service:8000")
+ORDER_SERVICE_URL = os.getenv("ORDER_SERVICE_URL", "http://order-service:8000")
+COMMENT_SERVICE_URL = os.getenv("COMMENT_SERVICE_URL", "http://comment-rate-service:8000")
+SHIP_SERVICE_URL = os.getenv(
+    "SHIP_SERVICE_URL",
+    os.getenv("SHIPPING_SERVICE_URL", "http://shipping-service:8000"),
+)
+PAY_SERVICE_URL = os.getenv(
+    "PAY_SERVICE_URL",
+    os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:8000"),
+)
 
 # ── DB ────────────────────────────────────────────────────────────────────────
 DATABASE_URL = os.getenv(

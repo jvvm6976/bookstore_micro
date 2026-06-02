@@ -8,14 +8,15 @@ Steps:
   5. Compensate on any failure
 """
 import logging
+import os
 import requests
 
 logger = logging.getLogger(__name__)
 
-CART_SVC   = 'http://cart-service:8000'
-PAY_SVC    = 'http://payment-service:8000'
-SHIP_SVC   = 'http://shipping-service:8000'
-PRODUCT_SVC = 'http://product-service:8000'
+CART_SVC = os.environ.get('CART_SERVICE_URL', 'http://cart-service:8000')
+PAY_SVC = os.environ.get('PAYMENT_SERVICE_URL', 'http://payment-service:8000')
+SHIP_SVC = os.environ.get('SHIPPING_SERVICE_URL', 'http://shipping-service:8000')
+PRODUCT_SVC = os.environ.get('PRODUCT_SERVICE_URL', 'http://product-service:8000')
 
 _TIMEOUT = 15
 
@@ -27,6 +28,14 @@ def _patch(url, data):
     return requests.patch(url, json=data, timeout=_TIMEOUT)
 
 
+def _delete(url):
+    return requests.delete(url, timeout=_TIMEOUT)
+
+
+def _item_product_id(item):
+    return item.get('product_id') or item.get('book_id')
+
+
 class OrderSaga:
     """
     Orchestrates the distributed order transaction.
@@ -35,7 +44,7 @@ class OrderSaga:
 
     def __init__(self, order, items, cart_id, payment_method, shipping_address):
         self.order = order
-        self.items = items          # list of {book_id, quantity, price}
+        self.items = items          # list of {product_id, quantity, price}
         self.cart_id = cart_id
         self.payment_method = payment_method
         self.shipping_address = shipping_address
@@ -61,7 +70,7 @@ class OrderSaga:
     # ── saga steps ────────────────────────────────────────────────────────────
 
     def _step_reserve_payment(self):
-        resp = _post(f'{PAY_SVC}/api/payments/process/', {
+        resp = _post(f'{PAY_SVC}/internal/payments/', {
             'order_id': self.order.id,
             'amount': float(self.order.total_price),
             'payment_method': self.payment_method,
@@ -69,71 +78,70 @@ class OrderSaga:
         if resp.status_code not in (200, 201):
             raise SagaException('reserve_payment', f'Payment failed: {resp.text}')
         data = resp.json()
-        if data.get('status') not in ('success', 'pending'):
+        if data.get('overall_status') not in ('success', 'pending'):
             raise SagaException('reserve_payment', f'Payment declined: {data}')
-        self.payment_id = data.get('payment', {}).get('id')
+        self.payment_id = data.get('id')
         self.steps.append({'step': 'reserve_payment', 'status': 'ok', 'payment_id': self.payment_id})
 
     def _step_reserve_shipping(self):
-        resp = _post(f'{SHIP_SVC}/api/shipments/create_shipment/', {
+        address = self.shipping_address or {}
+        if isinstance(address, str):
+            address = {'full_address': address}
+        resp = _post(f'{SHIP_SVC}/internal/shipments/', {
             'order_id': self.order.id,
-            'address': self.shipping_address,
-            'user_id': self.order.user_id,
-            'shipping_method': 'standard',
+            'receiver_name': address.get('receiver_name', ''),
+            'phone': address.get('phone', ''),
+            'full_address': address.get('full_address') or address.get('address', ''),
         })
         if resp.status_code not in (200, 201):
             raise SagaException('reserve_shipping', f'Shipping failed: {resp.text}')
         data = resp.json()
-        self.shipment_id = data.get('shipment', {}).get('id')
+        self.shipment_id = data.get('id')
         self.steps.append({'step': 'reserve_shipping', 'status': 'ok', 'shipment_id': self.shipment_id})
 
     def _step_confirm_order(self):
-        from .models import OrderStatus
-        self.order.status = OrderStatus.PAID
-        self.order.save(update_fields=['status'])
+        self.order.current_status = 'paid'
+        self.order.save(update_fields=['current_status'])
         self.steps.append({'step': 'confirm_order', 'status': 'ok'})
 
     def _step_clear_cart(self):
-        if not self.cart_id:
-            return
-        for item in self.items:
-            try:
-                _post(f'{CART_SVC}/api/carts/{self.cart_id}/update_item_quantity/', {
-                    'book_id': item['book_id'], 'quantity': 0,
-                })
-            except Exception:
-                pass
+        try:
+            _delete(f'{CART_SVC}/internal/carts/{self.order.user_id}/clear/')
+        except Exception:
+            pass
         self.steps.append({'step': 'clear_cart', 'status': 'ok'})
 
     def _step_update_stock(self):
-        """Decrement stock for each book ordered."""
+        """Decrement stock for each product ordered."""
         for item in self.items:
+            product_id = _item_product_id(item)
+            if not product_id:
+                continue
             try:
-                book_resp = requests.get(f'{PRODUCT_SVC}/api/books/{item["book_id"]}/', timeout=5)
-                if book_resp.status_code == 200:
-                    current_stock = book_resp.json().get('stock', 0)
-                    new_stock = max(0, current_stock - item['quantity'])
-                    requests.patch(
-                        f'{PRODUCT_SVC}/api/books/{item["book_id"]}/update_stock/',
-                        json={'stock': new_stock}, timeout=5,
-                    )
-            except Exception:
-                pass
+                resp = _post(
+                    f'{PRODUCT_SVC}/internal/products/{product_id}/reduce-stock/',
+                    {'quantity': item['quantity']},
+                )
+                if resp.status_code >= 400:
+                    raise SagaException('update_stock', f'Stock update failed: {resp.text}')
+            except SagaException:
+                raise
+            except Exception as exc:
+                raise SagaException('update_stock', f'Stock update failed: {exc}')
         self.steps.append({'step': 'update_stock', 'status': 'ok'})
 
     # ── compensation ──────────────────────────────────────────────────────────
 
     def _compensate(self, failed_step):
         logger.warning('Compensating saga from step: %s', failed_step)
-        from .models import OrderStatus
-        self.order.status = OrderStatus.CANCELED
-        self.order.save(update_fields=['status'])
+        self.order.current_status = 'cancelled'
+        self.order.save(update_fields=['current_status'])
         self.steps.append({'step': 'compensate_order', 'status': 'ok'})
 
         if failed_step in ('reserve_shipping', 'confirm_order', 'clear_cart', 'update_stock'):
             if self.payment_id:
                 try:
-                    _post(f'{PAY_SVC}/api/payments/{self.payment_id}/refund/', {})
+                    _post(f'{PAY_SVC}/internal/payments/{self.order.id}/refund/', {'reason': 'Saga compensation'})
                     self.steps.append({'step': 'compensate_payment', 'status': 'ok'})
                 except Exception as e:
                     self.steps.append({'step': 'compensate_payment', 'status': 'failed', 'error': str(e)})
@@ -141,7 +149,7 @@ class OrderSaga:
         if failed_step in ('confirm_order', 'clear_cart', 'update_stock'):
             if self.shipment_id:
                 try:
-                    _patch(f'{SHIP_SVC}/api/shipments/{self.shipment_id}/', {'status': 'cancelled'})
+                    _post(f'{SHIP_SVC}/internal/shipments/{self.order.id}/cancel/', {'location': 'Saga compensation'})
                     self.steps.append({'step': 'compensate_shipping', 'status': 'ok'})
                 except Exception as e:
                     self.steps.append({'step': 'compensate_shipping', 'status': 'failed', 'error': str(e)})

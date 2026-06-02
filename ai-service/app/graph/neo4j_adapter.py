@@ -22,9 +22,10 @@ class Neo4jAdapter:
         self.password = os.getenv("NEO4J_PASSWORD", "neo4j_password")
         self.driver = None
         self.available = False
-        self._connect()
+        self._connect_attempted = False
 
     def _connect(self) -> None:
+        self._connect_attempted = True
         try:
             from neo4j import GraphDatabase
 
@@ -39,8 +40,13 @@ class Neo4jAdapter:
             self.driver = None
             self.available = False
 
+    def _ensure_connected(self) -> None:
+        if not self.available and not self._connect_attempted:
+            self._connect()
+
     @contextmanager
     def session(self):
+        self._ensure_connected()
         if not self.available or not self.driver:
             yield None
             return
@@ -51,6 +57,7 @@ class Neo4jAdapter:
             s.close()
 
     def run(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        self._ensure_connected()
         if not self.available:
             return []
         with self.session() as s:
@@ -60,6 +67,7 @@ class Neo4jAdapter:
             return [dict(r) for r in records]
 
     def run_write(self, query: str, params: dict[str, Any] | None = None) -> None:
+        self._ensure_connected()
         if not self.available:
             return
         with self.session() as s:

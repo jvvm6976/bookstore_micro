@@ -1,0 +1,50 @@
+[
+  {
+    "category": "faq",
+    "title": "Hướng dẫn đặt hàng trên ShopSphere",
+    "content": "Để đặt hàng: đăng nhập tài khoản, tìm sản phẩm cần mua, thêm vào giỏ hàng, kiểm tra số lượng, nhập địa chỉ giao hàng, chọn phương thức thanh toán và xác nhận đơn. Sau khi thanh toán thành công, hệ thống tự động tạo vận đơn và gửi thông báo trạng thái cho khách hàng.",
+    "keywords": ["đặt hàng", "dat hang", "mua hàng", "checkout", "giỏ hàng", "order", "shopsphere"]
+  },
+  {
+    "category": "policy",
+    "title": "Chính sách đổi trả ShopSphere",
+    "content": "ShopSphere chấp nhận đổi trả trong vòng 7 ngày kể từ ngày nhận hàng nếu sản phẩm còn nguyên vẹn, chưa qua sử dụng sai hướng dẫn và còn đầy đủ bao bì, phụ kiện, hóa đơn. Khách hàng gửi yêu cầu đổi trả kèm mã đơn hàng để bộ phận hỗ trợ kiểm tra điều kiện xử lý.",
+    "keywords": ["đổi trả", "doi tra", "hoàn tiền", "refund", "return", "chính sách", "policy"]
+  },
+  {
+    "category": "policy",
+    "title": "Phương thức thanh toán ShopSphere",
+    "content": "ShopSphere hỗ trợ COD, chuyển khoản ngân hàng và các cổng thanh toán điện tử tùy cấu hình triển khai. Hệ thống chỉ ghi nhận một thanh toán hợp lệ cho mỗi đơn hàng, kiểm tra đúng tổng tiền đơn hàng và cập nhật trạng thái đơn sang paid sau khi thanh toán thành công.",
+    "keywords": ["thanh toán", "thanh toan", "payment", "cod", "chuyển khoản", "paid"]
+  },
+  {
+    "category": "policy",
+    "title": "Giao hàng và theo dõi vận chuyển",
+    "content": "Sau khi đơn hàng được thanh toán, Shipping Service tạo vận đơn ở trạng thái processing. Nhân viên vận hành cập nhật lần lượt processing, shipping và delivered. Khi giao thành công, Order Service chuyển đơn sang completed và Notification Service gửi thông báo cho khách hàng.",
+    "keywords": ["giao hàng", "shipping", "delivery", "tracking", "vận chuyển", "delivered", "completed"]
+  },
+  {
+    "category": "faq",
+    "title": "Điều kiện đánh giá sản phẩm",
+    "content": "Khách hàng chỉ được bình luận và đánh giá sản phẩm đã nằm trong đơn hàng của chính mình. Đơn hàng phải ở trạng thái paid hoặc completed tùy luồng kiểm thử, và hệ thống chặn đánh giá trùng cho cùng sản phẩm trong cùng một đơn hàng.",
+    "keywords": ["đánh giá", "rating", "review", "comment", "đơn hàng", "completed", "paid"]
+  },
+  {
+    "category": "faq",
+    "title": "Danh mục sản phẩm ShopSphere",
+    "content": "ShopSphere là hệ thống e-commerce đa danh mục, không chỉ bán sách. Catalog hiện được seed theo 10 domain: Books, Electronics, Fashion, Home & Kitchen, Beauty, Sports, Toys, Grocery, Automotive và Office & Stationery. Mỗi sản phẩm có domain, category, SKU, giá, tồn kho và ảnh thật riêng.",
+    "keywords": ["danh mục", "catalog", "domain", "sản phẩm", "đa danh mục", "electronics", "fashion", "grocery"]
+  },
+  {
+    "category": "faq",
+    "title": "Gợi ý sản phẩm bằng AI",
+    "content": "AI Service kết hợp mô hình dự đoán chuỗi hành vi, đồ thị Neo4j, nội dung sản phẩm và tín hiệu đánh giá để tạo gợi ý sản phẩm cá nhân hóa. Best model hiện tại là BiLSTM, được chọn sau khi so sánh RNN, LSTM, GRU, BiGRU và BiLSTM trên các tập dữ liệu hành vi e-commerce.",
+    "keywords": ["ai", "gợi ý", "recommendation", "bilstm", "neo4j", "hybrid", "behavior"]
+  },
+  {
+    "category": "faq",
+    "title": "Chatbot ShopSphere",
+    "content": "Chatbot ShopSphere trả lời câu hỏi về sản phẩm, giá, tồn kho, chính sách đổi trả, thanh toán, vận chuyển và trạng thái đơn hàng. Chatbot lấy dữ liệu từ các microservice qua API Gateway và RAG, không dùng tên cửa hàng cũ hoặc dữ liệu chỉ dành cho sách.",
+    "keywords": ["chatbot", "rag", "hỏi đáp", "shopsphere", "sản phẩm", "đơn hàng"]
+  }
+]

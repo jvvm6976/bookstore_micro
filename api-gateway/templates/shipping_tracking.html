@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--p:#C2182B;--pl:#EF9A9A;--pll:#FFEBEE;--pd:#8E1120;--pdd:#650B16;--bg:#FFF6F6;--s:#ffffff;--t:#2E1114;--tm:#7C3A42;--b:#F0C8CE;--rs:8px;--r:12px;--sh:0 8px 24px rgba(194,24,43,.12)}
+{% include "_shared_theme_tokens.css" %}
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
 nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:grid;grid-template-columns:auto 1fr auto;gap:1rem;position:sticky;top:0;z-index:300}
 .logo{font-size:1.3rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
@@ -140,7 +140,7 @@ async function loadShipping() {
     });
     const data = res.ok ? await res.json() : [];
 
-    const updates = Array.isArray(data) ? data : [];
+    const updates = ShopUI.safeList(data);
     const status = shipment.current_status || 'processing';
     const latest = updates.length ? updates[0] : null;
     const location = latest?.location || 'Trong kho';

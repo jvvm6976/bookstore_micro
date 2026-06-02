@@ -1,4 +1,5 @@
 import logging
+import os
 import requests
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
@@ -11,7 +12,7 @@ from .serializers import CartSerializer, CartItemSerializer, WishlistSerializer,
 
 logger = logging.getLogger(__name__)
 
-PRODUCT_SERVICE_URL = 'http://product-service:8000'
+PRODUCT_SERVICE_URL = os.environ.get('PRODUCT_SERVICE_URL', 'http://product-service:8000')
 
 
 class CartDetailView(generics.RetrieveAPIView):
@@ -55,8 +56,21 @@ class CartAddItemView(generics.CreateAPIView):
         except (ValueError, TypeError):
             raise ValidationError({'error': 'Invalid quantity'})
         
-        # Get product price from Product Service
+        # Validate product stock and price from Product Service.
         try:
+            stock_resp = requests.get(
+                f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/stock/",
+                timeout=5
+            )
+            if stock_resp.status_code != 200:
+                raise ValidationError({'error': 'Product not found'})
+
+            stock = int(stock_resp.json().get('stock', 0) or 0)
+            if stock < quantity:
+                raise ValidationError({
+                    'error': f'Insufficient stock. Available: {stock}, Requested: {quantity}'
+                })
+
             prod_resp = requests.get(
                 f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/price/",
                 timeout=5
@@ -80,7 +94,12 @@ class CartAddItemView(generics.CreateAPIView):
         )
         
         if not created:
-            cart_item.quantity += quantity
+            next_quantity = cart_item.quantity + quantity
+            if stock < next_quantity:
+                raise ValidationError({
+                    'error': f'Insufficient stock. Available: {stock}, Requested in cart: {next_quantity}'
+                })
+            cart_item.quantity = next_quantity
             cart_item.unit_price = unit_price  # Update to latest price
             cart_item.save()
         
@@ -113,6 +132,23 @@ class CartUpdateItemView(generics.UpdateAPIView):
             quantity = int(quantity)
         except (ValueError, TypeError):
             raise ValidationError({'error': 'Invalid quantity'})
+
+        if quantity > 0:
+            try:
+                stock_resp = requests.get(
+                    f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/stock/",
+                    timeout=5
+                )
+                if stock_resp.status_code != 200:
+                    raise ValidationError({'error': 'Product not found'})
+                stock = int(stock_resp.json().get('stock', 0) or 0)
+                if stock < quantity:
+                    raise ValidationError({
+                        'error': f'Insufficient stock. Available: {stock}, Requested: {quantity}'
+                    })
+            except requests.RequestException as e:
+                logger.error(f"Error calling product service: {str(e)}")
+                raise ValidationError({'error': 'Failed to validate product stock'})
         
         try:
             cart = Cart.objects.get(user_id=user_id)
@@ -252,8 +288,18 @@ class WishlistMoveToCartView(generics.GenericAPIView):
         except (Wishlist.DoesNotExist, WishlistItem.DoesNotExist):
             raise ValidationError({'error': 'Item not found in wishlist'})
         
-        # Get product price
+        # Validate product stock and price.
         try:
+            stock_resp = requests.get(
+                f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/stock/",
+                timeout=5
+            )
+            if stock_resp.status_code != 200:
+                raise ValidationError({'error': 'Product not found'})
+            stock = int(stock_resp.json().get('stock', 0) or 0)
+            if stock < 1:
+                raise ValidationError({'error': 'Product is out of stock'})
+
             prod_resp = requests.get(
                 f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/price/",
                 timeout=5
@@ -275,7 +321,12 @@ class WishlistMoveToCartView(generics.GenericAPIView):
         )
         
         if not created:
-            cart_item.quantity += 1
+            next_quantity = cart_item.quantity + 1
+            if stock < next_quantity:
+                raise ValidationError({
+                    'error': f'Insufficient stock. Available: {stock}, Requested in cart: {next_quantity}'
+                })
+            cart_item.quantity = next_quantity
             cart_item.unit_price = unit_price
             cart_item.save()
         

@@ -1,13 +1,65 @@
 import logging
+from django.db.models import Q
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import ValidationError
-from .models import Notification, NotificationLog
+from .models import Notification, NotificationLog, NotificationReadState
 from .serializers import NotificationSerializer, NotificationLogSerializer
 
 logger = logging.getLogger(__name__)
+
+STAFF_ROLES = {'admin', 'manager', 'staff'}
+RECIPIENT_TYPES = {'customer', 'staff', 'admin', 'manager', 'all'}
+NOTIFICATION_TYPES = {'order', 'payment', 'shipping', 'review', 'system'}
+NOTIFICATION_STATUSES = {'unread', 'read'}
+PRIORITIES = {'low', 'normal', 'high'}
+
+
+def _role_name(user):
+    return getattr(user, 'role', None)
+
+
+def _recipient_types_for_role(role):
+    if role == 'admin':
+        return {'admin', 'manager', 'staff', 'all'}
+    if role == 'manager':
+        return {'manager', 'staff', 'all'}
+    if role == 'staff':
+        return {'staff', 'all'}
+    return {'all'}
+
+
+def _visible_notification_query(user):
+    role = _role_name(user)
+    direct_query = Q(user_id=user.id)
+    role_query = Q(recipient_type__in=_recipient_types_for_role(role)) & (
+        Q(target_role__isnull=True) | Q(target_role='') | Q(target_role=role)
+    )
+    return direct_query | role_query
+
+
+def _visible_notifications(user):
+    return (
+        Notification.objects
+        .filter(_visible_notification_query(user))
+        .prefetch_related('read_states')
+        .distinct()
+    )
+
+
+def _mark_notification_read(notification, user):
+    if notification.user_id == user.id:
+        notification.status = 'read'
+        notification.save(update_fields=['status', 'updated_at'])
+        return
+
+    NotificationReadState.objects.update_or_create(
+        notification=notification,
+        user_id=user.id,
+        defaults={'status': 'read'},
+    )
 
 
 class NotificationListView(generics.ListAPIView):
@@ -19,7 +71,7 @@ class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     
     def get_queryset(self):
-        return Notification.objects.filter(user_id=self.request.user.id).order_by('-created_at')
+        return _visible_notifications(self.request.user).order_by('-created_at')
 
 
 class NotificationDetailView(generics.RetrieveAPIView):
@@ -29,7 +81,9 @@ class NotificationDetailView(generics.RetrieveAPIView):
     """
     permission_classes = (IsAuthenticated,)
     serializer_class = NotificationSerializer
-    queryset = Notification.objects.all()
+
+    def get_queryset(self):
+        return _visible_notifications(self.request.user)
 
 
 class NotificationUnreadListView(generics.ListAPIView):
@@ -41,10 +95,16 @@ class NotificationUnreadListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     
     def get_queryset(self):
-        return Notification.objects.filter(
-            user_id=self.request.user.id,
-            status='unread'
-        ).order_by('-created_at')
+        user = self.request.user
+        return (
+            _visible_notifications(user)
+            .filter(
+                Q(user_id=user.id, status='unread') |
+                (~Q(user_id=user.id) & ~Q(read_states__user_id=user.id, read_states__status='read'))
+            )
+            .order_by('-created_at')
+            .distinct()
+        )
 
 
 class NotificationMarkReadView(generics.UpdateAPIView):
@@ -54,12 +114,13 @@ class NotificationMarkReadView(generics.UpdateAPIView):
     """
     permission_classes = (IsAuthenticated,)
     serializer_class = NotificationSerializer
-    queryset = Notification.objects.all()
+
+    def get_queryset(self):
+        return _visible_notifications(self.request.user)
     
     def update(self, request, *args, **kwargs):
         notification = self.get_object()
-        notification.status = 'read'
-        notification.save()
+        _mark_notification_read(notification, request.user)
         
         serializer = self.get_serializer(notification)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -73,10 +134,16 @@ class NotificationMarkAllReadView(generics.GenericAPIView):
     permission_classes = (IsAuthenticated,)
     
     def put(self, request, *args, **kwargs):
-        Notification.objects.filter(
-            user_id=request.user.id,
-            status='unread'
-        ).update(status='read')
+        user = request.user
+        visible = _visible_notifications(user)
+        visible.filter(user_id=user.id, status='unread').update(status='read')
+
+        role_notifications = visible.exclude(user_id=user.id)
+        for notification in role_notifications.exclude(
+            read_states__user_id=user.id,
+            read_states__status='read'
+        ):
+            _mark_notification_read(notification, user)
         
         return Response(
             {'message': 'All notifications marked as read'},
@@ -91,37 +158,59 @@ class InternalNotificationCreateView(generics.CreateAPIView):
     Internal API - Create notification (called from other services)
     POST /internal/notifications/
     
-    Request: {user_id, title, content, type, status}
-    Response: {id, user_id, title, content, type, status, created_at, updated_at}
+    Request: {user_id?, recipient_type, target_role?, title, content, type, status}
+    Response: {id, user_id, recipient_type, title, content, type, status, created_at, updated_at}
     """
     permission_classes = (AllowAny,)
     serializer_class = NotificationSerializer
     
     def create(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
+        recipient_type = request.data.get('recipient_type', 'customer')
+        target_role = request.data.get('target_role')
         title = request.data.get('title')
         content = request.data.get('content')
         notif_type = request.data.get('type')
         notif_status = request.data.get('status', 'unread')
+        entity_type = request.data.get('entity_type')
+        entity_id = request.data.get('entity_id')
+        priority = request.data.get('priority', 'normal')
         
         # Validation
-        if not all([user_id, title, content, notif_type]):
+        if not all([title, content, notif_type]):
             raise ValidationError({
-                'error': 'user_id, title, content, type are required'
+                'error': 'title, content, type are required'
             })
+
+        if recipient_type not in RECIPIENT_TYPES:
+            raise ValidationError({'error': 'Invalid recipient_type'})
+
+        if recipient_type == 'customer' and not user_id:
+            raise ValidationError({'error': 'user_id is required for customer notifications'})
         
-        if notif_status not in ['unread', 'read']:
+        if notif_status not in NOTIFICATION_STATUSES:
             raise ValidationError({'error': 'Invalid status'})
         
-        if notif_type not in ['order', 'payment', 'shipping', 'system']:
+        if notif_type not in NOTIFICATION_TYPES:
             raise ValidationError({'error': 'Invalid type'})
+
+        if priority not in PRIORITIES:
+            raise ValidationError({'error': 'Invalid priority'})
+
+        if user_id in ['', None]:
+            user_id = None
         
         try:
             notification = Notification.objects.create(
                 user_id=user_id,
+                recipient_type=recipient_type,
+                target_role=target_role,
                 title=title,
                 content=content,
                 type=notif_type,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                priority=priority,
                 status=notif_status
             )
             

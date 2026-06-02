@@ -5,7 +5,6 @@ echo "Waiting for database..."
 migrate_ok=0
 for i in {1..30}; do
     set +e
-    python manage.py makemigrations app
     python manage.py migrate --noinput 2>&1
     rc=$?
     set -e

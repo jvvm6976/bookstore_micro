@@ -13,16 +13,12 @@ logger = logging.getLogger(__name__)
 
 
 def _fmt_price(p: float) -> str:
-    value = float(p or 0)
-    if value.is_integer():
-        return f"{int(value):,}đ".replace(",", ".")
-    return f"{value:,.2f}đ".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"{int(p):,}đ"
 
 
-def _fmt_product(b: dict) -> str:
+def _fmt_book(b: dict) -> str:
     title  = b.get("title", "N/A")
     author = b.get("author", "")
-    brand  = b.get("brand", "")
     price  = float(b.get("price", 0))
     cat    = b.get("category", "")
     rating = b.get("avg_rating", 0)
@@ -30,8 +26,6 @@ def _fmt_product(b: dict) -> str:
     line   = f"🛍️ **{title}**"
     if author:
         line += f" — {author}"
-    elif brand:
-        line += f" — {brand}"
     if cat:
         line += f" [{cat}]"
     line += f"\n   💰 {_fmt_price(price)}"
@@ -40,11 +34,6 @@ def _fmt_product(b: dict) -> str:
     if reason:
         line += f"\n   💡 {reason}"
     return line
-
-
-def _fmt_book(b: dict) -> str:
-    # Backward-compatible alias for older composer branches.
-    return _fmt_product(b)
 
 
 def compose(
@@ -93,7 +82,7 @@ def _compose_return_policy(entities: dict, data: dict, customer_id: int | None) 
     return (
         "**Chính sách đổi trả ShopSphere**\n\n"
         "ShopSphere chấp nhận đổi trả trong vòng 7 ngày kể từ ngày nhận hàng.\n"
-        "Điều kiện: sản phẩm còn nguyên vẹn, chưa qua sử dụng và còn đầy đủ bao bì/phụ kiện.\n"
+        "Điều kiện: sản phẩm còn nguyên vẹn, chưa qua sử dụng.\n"
         "Liên hệ: support@shopsphere.vn hoặc hotline 1800-xxxx."
     )
 
@@ -139,19 +128,19 @@ def _compose_product_advice(entities: dict, data: dict, customer_id: int | None)
         if not_found_title:
             return (
                 f"Mình chưa tìm thấy sản phẩm tên '{not_found_title}' trong kho hiện tại. "
-                "Bạn có thể thử tên đầy đủ hơn hoặc cho mình biết thương hiệu/danh mục để tìm chính xác hơn."
+                "Bạn có thể thử tên đầy đủ hơn hoặc mô tả thêm để tìm chính xác hơn."
             )
         context = data.get("rag_context", "")
         if context:
             return f"Dựa trên thông tin tôi có:\n\n{context}\n\nBạn muốn tìm hiểu thêm về sản phẩm nào?"
         return (
             "Tôi chưa tìm thấy sản phẩm phù hợp với yêu cầu của bạn. "
-            "Hãy thử mô tả rõ hơn về danh mục, thương hiệu hoặc tầm giá bạn quan tâm."
+            "Hãy thử mô tả rõ hơn về thể loại hoặc chủ đề bạn quan tâm! 🛍️"
         )
 
     header_parts = ["💡 **Gợi ý sản phẩm dành cho bạn**"]
     if category:
-        header_parts.append(f"danh mục: {category}")
+        header_parts.append(f"thể loại: {category}")
     if budget_max:
         header_parts.append(f"dưới {_fmt_price(budget_max)}")
     if keywords:
@@ -160,7 +149,7 @@ def _compose_product_advice(entities: dict, data: dict, customer_id: int | None)
     header = " | ".join(header_parts)
     lines  = [header, ""]
     for b in recs[:5]:
-        lines.append(_fmt_product(b))
+        lines.append(_fmt_book(b))
         lines.append("")
 
     lines.append("Bạn muốn biết thêm về sản phẩm nào? 😊")
@@ -218,8 +207,7 @@ def _compose_order_support(entities: dict, data: dict, customer_id: int | None) 
     orders = order_data.get("orders", [])
     lines  = [f"📦 **{order_data['count']} đơn hàng gần đây của bạn:**", ""]
     for o in orders:
-        lines.append(
-            f"• Đơn #{o['order_id']} | {o['status']} | "
+        lines.append(f"• Đơn #{o['order_id']} | {o['status']} | "
             f"{_fmt_price(o['total'])} | {o['items']} sản phẩm | {o['created']}"
         )
     lines.append("\nNhập mã đơn hàng để xem chi tiết (ví dụ: 'đơn hàng #123')")
@@ -272,7 +260,7 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
             return (
                 "⚠️ **Chưa tìm thấy dữ liệu để so sánh giá**\n"
                 f"Yêu cầu: {expected}.\n"
-                "Bạn thử nhập đúng tên sản phẩm hoặc đặt trong dấu nháy, ví dụ: \"iPhone 15 Pro\" và \"Samsung Galaxy S24\"."
+                "Bạn thử nhập đúng tên sản phẩm hoặc đặt trong dấu nháy, ví dụ: \"Dune\" và \"Cosmos\"."
             )
 
         if ask_best_price:
@@ -293,8 +281,13 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
             return "\n".join(lines)
 
         if ask_stock:
+            stock_recs = recs
+            if book_title:
+                q = str(book_title).lower()
+                exact = [b for b in recs if q in str(b.get("title", "")).lower()]
+                stock_recs = exact or recs[:1]
             lines = []
-            for b in recs[:3]:
+            for b in stock_recs[:3]:
                 raw_stock = b.get("stock")
                 if raw_stock is None:
                     status = "ℹ️ Chưa có dữ liệu tồn kho"
@@ -303,7 +296,7 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
                     status = f"✅ Còn {stock} sản phẩm" if stock > 0 else "⚠️ Tạm hết hàng"
                 lines.append(f"📦 **{b.get('title', 'Sản phẩm')}**: {status}")
             if book_title and lines:
-                lines.insert(0, f"Tình trạng kho cho '{book_title}':")
+                lines.insert(0, f"Tình trạng kho cho sản phẩm '{book_title}':")
             return "\n".join(lines)
 
         if ask_price:
@@ -315,50 +308,54 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
                     )
                 return "\n".join(lines)
 
+            price_recs = recs
+            if book_title:
+                q = str(book_title).lower()
+                exact = [b for b in recs if q in str(b.get("title", "")).lower()]
+                price_recs = exact or recs[:1]
             lines = []
-            for b in recs[:3]:
+            for b in price_recs[:3]:
                 lines.append(
                     f"💰 **{b.get('title', 'Sản phẩm')}** hiện có giá {_fmt_price(float(b.get('price', 0) or 0))}"
                 )
             if book_title and lines:
-                lines.insert(0, f"Thông tin giá cho '{book_title}':")
+                lines.insert(0, f"Thông tin giá cho sản phẩm '{book_title}':")
             return "\n".join(lines)
 
         if ask_next_book:
-            lines = ["🛍️ **Bạn có thể xem tiếp các sản phẩm này**", ""]
+            lines = ["🛍️ **Bạn có thể xem/mua tiếp các sản phẩm này**", ""]
             for b in recs[:5]:
-                lines.append(_fmt_product(b))
+                lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         if ask_bestseller:
             lines = ["🔥 **Sản phẩm bán chạy / phổ biến**", ""]
             for b in recs[:5]:
-                lines.append(_fmt_product(b))
+                lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         if ask_new_books:
             lines = ["🆕 **Sản phẩm mới trong kho**", ""]
             for b in recs[:5]:
-                lines.append(_fmt_product(b))
+                lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         if ask_same_author:
-            head = f"✍️ **Sản phẩm cùng tác giả {resolved_author}**" if resolved_author else "✍️ **Sản phẩm cùng tác giả/thương hiệu**"
+            head = f"✍️ **Các sản phẩm cùng tác giả {resolved_author}**" if resolved_author else "✍️ **Các sản phẩm cùng tác giả**"
             lines = [head, ""]
             for b in recs[:6]:
-                lines.append(_fmt_product(b))
+                lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         kw_str = ", ".join(keywords[:3]) if keywords else "từ khóa của bạn"
         lines  = [f"🔍 **Kết quả tìm kiếm: '{kw_str}'**", ""]
         for b in recs[:5]:
-            lines.append(_fmt_product(b))
+            lines.append(_fmt_book(b))
             lines.append("")
-
         if graph_insights:
             top_graph = [g for g in graph_insights if g.get("title") == "graph_category_interest"][:2]
             if top_graph:
@@ -379,15 +376,15 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
         return f"🔍 **Thông tin tìm thấy:**\n\n{sources[0]['content']}"
 
     if ask_stock and book_title:
-        return f"Mình chưa thấy dữ liệu tồn kho cho '{book_title}' lúc này. Bạn thử lại sau ít phút nhé."
+        return f"Mình chưa thấy dữ liệu tồn kho cho sản phẩm '{book_title}' lúc này. Bạn thử lại sau ít phút nhé."
     if ask_best_price and book_titles:
         return "Mình chưa tìm được thông tin giá để so sánh giữa các sản phẩm bạn vừa quan tâm."
     if ask_compare_price and book_titles:
-        return "Mình chưa đủ dữ liệu để so sánh giá giữa các sản phẩm bạn nêu. Bạn thử ghi rõ từng tên sản phẩm trong dấu nháy nhé."
+        return "Mình chưa đủ dữ liệu để so sánh giá giữa các sản phẩm bạn nêu. Bạn thử ghi rõ tên từng sản phẩm trong dấu nháy nhé."
     if ask_next_book:
-        return "Mình chưa có đủ ngữ cảnh để gợi ý sản phẩm tiếp theo. Bạn có thể nêu sản phẩm bạn vừa xem."
+        return "Mình chưa có đủ ngữ cảnh để gợi ý sản phẩm tiếp theo. Bạn có thể nêu sản phẩm bạn vừa xem hoặc vừa mua."
     if ask_same_author:
-        return "Mình chưa tìm thấy sản phẩm cùng tác giả/thương hiệu theo yêu cầu. Bạn thử cho mình tên cụ thể hơn nhé."
+        return "Mình chưa tìm thấy sản phẩm cùng tác giả theo yêu cầu. Bạn thử cho mình tên tác giả cụ thể nhé."
     if ask_price:
         bmin = entities.get("budget_min")
         bmax = entities.get("budget_max")
@@ -406,7 +403,7 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
     kw_str = ", ".join(keywords[:3]) if keywords else "từ khóa"
     return (
         f"Không tìm thấy kết quả cho '{kw_str}'. "
-        "Thử tìm với từ khóa khác hoặc hỏi tôi về danh mục sản phẩm bạn quan tâm! 🔍"
+        "Thử tìm với từ khóa khác hoặc hỏi tôi về thể loại sản phẩm bạn quan tâm! 🔍"
     )
 
 
@@ -421,8 +418,8 @@ def _compose_fallback(entities: dict, data: dict, customer_id: int | None) -> st
     return (
         "Xin lỗi, tôi chưa hiểu rõ câu hỏi của bạn. 🤔\n\n"
         "Tôi có thể giúp bạn:\n"
-        "• 💡 **Gợi ý sản phẩm** — 'Gợi ý điện thoại cho tôi'\n"
-        "• 🔍 **Tìm sản phẩm** — 'Tìm laptop Apple'\n"
+        "• 💡 **Gợi ý sản phẩm** — 'Gợi ý sản phẩm cho tôi'\n"
+        "• 🔍 **Tìm sản phẩm** — 'Tìm điện thoại dưới 5000000' hoặc 'So sánh giá sản phẩm A và B'\n"
         "• 📦 **Đơn hàng** — 'Đơn hàng của tôi'\n"
         "• 🔄 **Đổi trả** — 'Chính sách đổi trả'\n"
         "• 💳 **Thanh toán** — 'Phương thức thanh toán'"

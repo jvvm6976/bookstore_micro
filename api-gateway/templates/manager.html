@@ -9,21 +9,21 @@
 </head>
 <body>
 {% include "_customer_header.html" %}
-<main class="page">
+<main id="managerApp" class="page">
   <section class="page-head">
     <div>
       <div class="eyebrow">Operations</div>
       <h1 class="page-title">Manager Portal</h1>
-      <p class="page-subtitle">Trang tổng quan vận hành cho catalog, đơn hàng, thanh toán, vận chuyển và dữ liệu AI. Các thao tác quản trị sâu có thể nối API role-based sau.</p>
+      <p class="page-subtitle">Trang tổng quan vận hành cho catalog, đơn hàng, thanh toán, vận chuyển, thông báo và dữ liệu gợi ý.</p>
     </div>
-    <span class="pill amber">UI shell</span>
+    <span class="pill amber">Đang vận hành</span>
   </section>
 
   <section class="quick-grid">
     <a class="quick-card" href="/products/"><span class="quick-icon">P</span><span><span class="quick-title">Catalog</span><span class="quick-meta" id="productCount">Đang tải</span></span></a>
     <a class="quick-card" href="/orders/"><span class="quick-icon">O</span><span><span class="quick-title">Đơn hàng</span><span class="quick-meta">Theo dõi trạng thái</span></span></a>
     <a class="quick-card" href="/reviews/"><span class="quick-icon">R</span><span><span class="quick-title">Đánh giá</span><span class="quick-meta">Duyệt phản hồi khách hàng</span></span></a>
-    <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">AI service</span><span class="quick-meta" id="aiState">Đang kiểm tra</span></span></a>
+    <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">Trợ lý tư vấn</span><span class="quick-meta" id="aiState">Đang kiểm tra</span></span></a>
   </section>
 
   <section class="drawer-grid section">
@@ -34,28 +34,328 @@
     <aside class="panel pad">
       <h2 class="section-title">Liên kết nhanh</h2>
       <div style="display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem">
-        <a class="btn block" href="/coupons/">Quản lý ưu đãi UI</a>
+        <a class="btn block" href="/coupons/">Quản lý ưu đãi</a>
         <a class="btn block" href="/returns/">Yêu cầu đổi trả</a>
         <a class="btn block" href="/notifications/">Trung tâm thông báo</a>
       </div>
     </aside>
   </section>
+
+  <section class="section panel pad">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Catalog Management</h2>
+        <div class="section-note">Tạo ngành hàng, danh mục, sản phẩm, cập nhật tồn kho và ngưng bán khi cần.</div>
+      </div>
+      <button class="btn small" onclick="loadCatalogAdmin()">Tải lại</button>
+    </div>
+
+    <div class="toolbar" style="margin:.9rem 0">
+      <div class="field" style="min-width:180px">
+        <label>Domain mới</label>
+        <input id="newDomainName" placeholder="Ví dụ: Health">
+      </div>
+      <div class="field" style="min-width:260px">
+        <label>Mô tả domain</label>
+        <input id="newDomainDesc" placeholder="Mô tả ngắn">
+      </div>
+      <button class="btn primary small" style="align-self:end" onclick="createDomain()">Tạo domain</button>
+    </div>
+
+    <div class="toolbar" style="margin:.9rem 0">
+      <div class="field" style="min-width:180px">
+        <label>Domain</label>
+        <select id="adminDomainSelect" onchange="renderCategorySelects()"></select>
+      </div>
+      <div class="field" style="min-width:180px">
+        <label>Category mới</label>
+        <input id="newCategoryName" placeholder="Ví dụ: Vitamins">
+      </div>
+      <div class="field" style="min-width:260px">
+        <label>Mô tả category</label>
+        <input id="newCategoryDesc" placeholder="Mô tả ngắn">
+      </div>
+      <button class="btn primary small" style="align-self:end" onclick="createCategory()">Tạo category</button>
+    </div>
+
+    <div class="auth-grid" style="margin:.9rem 0">
+      <div class="field">
+        <label>Tên sản phẩm</label>
+        <input id="newProductName" placeholder="Tên sản phẩm">
+      </div>
+      <div class="field">
+        <label>SKU</label>
+        <input id="newProductSku" placeholder="SKU duy nhất">
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="adminCategorySelect"></select>
+      </div>
+      <div class="field">
+        <label>Giá</label>
+        <input id="newProductPrice" type="number" min="1000" step="1000" value="199000">
+      </div>
+      <div class="field">
+        <label>Tồn kho</label>
+        <input id="newProductStock" type="number" min="0" value="20">
+      </div>
+      <div class="field">
+        <label>Ảnh URL</label>
+        <input id="newProductImage" placeholder="http://localhost:8002/static/images/products/product_1.jpg">
+      </div>
+      <div class="field full">
+        <label>Mô tả</label>
+        <input id="newProductDesc" placeholder="Mô tả sản phẩm">
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn primary block" onclick="createProduct()">Tạo sản phẩm</button>
+      </div>
+    </div>
+
+    <div id="catalogAdminPanel" class="empty-state"><strong>Đang tải catalog</strong>Dữ liệu catalog mới nhất đang được đồng bộ.</div>
+  </section>
 </main>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
+const STAFF_ROLES = ['admin', 'manager', 'staff'];
+
+function hasManagerAccess(){
+  return STAFF_ROLES.includes((ShopUI.role() || '').toLowerCase());
+}
+
+function renderManagerAccessDenied(){
+  document.getElementById('managerApp').innerHTML = `
+    <section class="panel pad">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Access control</div>
+          <h1 class="page-title">Cần quyền vận hành</h1>
+          <p class="page-subtitle">Đăng nhập bằng tài khoản staff, manager hoặc admin để truy cập Manager Portal.</p>
+        </div>
+        <a class="btn primary" href="/login/?next=/manager/">Đăng nhập</a>
+      </div>
+    </section>
+  `;
+}
+
 function goSearch(){
   const q = document.getElementById('globalSearch').value.trim();
   window.location.href = q ? `/search/?q=${encodeURIComponent(q)}` : '/products/';
 }
 const services = ['user-service','product-service','cart-service','order-service','payment-service','shipping-service','comment-rate-service','notification-service','ai-service'];
-document.getElementById('serviceMap').innerHTML = services.map(s => `<div class="spec"><span>${s}</span><strong>Connected through gateway</strong></div>`).join('');
-ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`).then(d => {
-  document.getElementById('productCount').textContent = `${ShopUI.safeList(d).length} sản phẩm active`;
-}).catch(() => document.getElementById('productCount').textContent = 'Chưa có dữ liệu');
-ShopUI.fetchJson(`${ShopUI.API_BASE}/api/v1/kb/status`).then(d => {
-  document.getElementById('aiState').textContent = d.status || 'Sẵn sàng';
-}).catch(() => document.getElementById('aiState').textContent = 'Sẵn sàng');
+
+let adminDomains = [];
+let adminCategories = [];
+let adminProducts = [];
+
+function renderCategorySelects(){
+  const domainId = Number(document.getElementById('adminDomainSelect').value || adminDomains[0]?.id || 0);
+  const rows = adminCategories.filter(c => Number(c.domain_id) === domainId);
+  document.getElementById('adminCategorySelect').innerHTML = rows.map(c => `<option value="${c.id}">${ShopUI.escapeHtml(c.name)}</option>`).join('');
+}
+
+function renderCatalogAdmin(){
+  const panel = document.getElementById('catalogAdminPanel');
+  if(!adminProducts.length){
+    panel.className = 'empty-state';
+    panel.innerHTML = '<strong>Chưa có sản phẩm</strong>Hãy seed hoặc tạo sản phẩm mới.';
+    return;
+  }
+  panel.className = '';
+  panel.innerHTML = `
+    <div style="display:grid;gap:.7rem">
+      ${adminProducts.slice(0, 30).map(p => `
+        <div class="cart-row" style="align-items:center">
+          <a class="product-media" href="/products/${p.id}/" style="border-radius:8px;aspect-ratio:1/1">
+            <img src="${ShopUI.imageFor(p)}" alt="${ShopUI.escapeHtml(p.name)}">
+          </a>
+          <div>
+            <a class="product-title" href="/products/${p.id}/">${ShopUI.escapeHtml(p.name)}</a>
+            <div class="product-desc">${ShopUI.escapeHtml(p.description || '')}</div>
+            <div class="product-meta">
+              <span class="pill teal">${ShopUI.escapeHtml(p.domain_name || '')}</span>
+              <span class="pill">${ShopUI.escapeHtml(p.category_name || '')}</span>
+              <span class="pill">${ShopUI.escapeHtml(p.sku || '')}</span>
+              <span class="pill amber">${ShopUI.escapeHtml(p.status || 'active')}</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:.45rem;align-items:center;justify-content:flex-end;flex-wrap:wrap">
+            <input id="stock_${p.id}" type="number" min="0" value="${Number(p.stock || 0)}" style="width:88px;padding:.45rem;border:1px solid var(--line);border-radius:8px">
+            <button class="btn small" onclick="updateProductStock(${p.id})">Lưu kho</button>
+            <button class="btn small" onclick="toggleProductStatus(${p.id}, '${p.status === 'active' ? 'inactive' : 'active'}')">${p.status === 'active' ? 'Ngưng bán' : 'Bán lại'}</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function loadCatalogAdmin(){
+  const panel = document.getElementById('catalogAdminPanel');
+  panel.className = 'empty-state';
+  panel.innerHTML = '<strong>Đang tải catalog</strong>Dữ liệu catalog mới nhất đang được đồng bộ.';
+  try{
+    const authOptions = {headers: ShopUI.authHeaders(false)};
+    [adminDomains, adminCategories, adminProducts] = await Promise.all([
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/domains/`, authOptions),
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/categories/`, authOptions),
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`, authOptions)
+    ]);
+    document.getElementById('adminDomainSelect').innerHTML = adminDomains.map(d => `<option value="${d.id}">${ShopUI.escapeHtml(d.name)}</option>`).join('');
+    renderCategorySelects();
+    renderCatalogAdmin();
+  }catch(err){
+    panel.innerHTML = `<strong>Không tải được catalog</strong>${ShopUI.escapeHtml(err.message || '')}`;
+  }
+}
+
+async function createDomain(){
+  const name = document.getElementById('newDomainName').value.trim();
+  const description = document.getElementById('newDomainDesc').value.trim();
+  if(!name){ ShopUI.toast('Nhập tên domain', 'err'); return; }
+  try{
+    const created = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/domains/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({name, description})
+    });
+    ShopUI.toast('Đã tạo domain');
+    document.getElementById('newDomainName').value = '';
+    document.getElementById('newDomainDesc').value = '';
+    await loadCatalogAdmin();
+    document.getElementById('adminDomainSelect').value = String(created.id);
+    renderCategorySelects();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không tạo được domain', 'err');
+  }
+}
+
+async function createCategory(){
+  const name = document.getElementById('newCategoryName').value.trim();
+  const description = document.getElementById('newCategoryDesc').value.trim();
+  const domain_id = Number(document.getElementById('adminDomainSelect').value);
+  if(!name || !domain_id){ ShopUI.toast('Nhập đủ category và domain', 'err'); return; }
+  try{
+    const created = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/categories/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({name, description, domain_id})
+    });
+    ShopUI.toast('Đã tạo category');
+    document.getElementById('newCategoryName').value = '';
+    document.getElementById('newCategoryDesc').value = '';
+    await loadCatalogAdmin();
+    document.getElementById('adminDomainSelect').value = String(domain_id);
+    renderCategorySelects();
+    document.getElementById('adminCategorySelect').value = String(created.id);
+  }catch(err){
+    ShopUI.toast(err.message || 'Không tạo được category', 'err');
+  }
+}
+
+async function createProduct(){
+  const payload = {
+    name: document.getElementById('newProductName').value.trim(),
+    sku: document.getElementById('newProductSku').value.trim(),
+    category_id: Number(document.getElementById('adminCategorySelect').value),
+    price: document.getElementById('newProductPrice').value,
+    stock: Number(document.getElementById('newProductStock').value || 0),
+    status: 'active',
+    image_url: document.getElementById('newProductImage').value.trim(),
+    description: document.getElementById('newProductDesc').value.trim()
+  };
+  if(!payload.name || !payload.sku || !payload.category_id || !payload.image_url){
+    ShopUI.toast('Nhập tên, SKU, category và ảnh URL', 'err');
+    return;
+  }
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`, {
+      method:'POST',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify(payload)
+    });
+    ShopUI.toast('Đã tạo sản phẩm');
+    ['newProductName','newProductSku','newProductImage','newProductDesc'].forEach(id => document.getElementById(id).value = '');
+    await loadCatalogAdmin();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không tạo được sản phẩm', 'err');
+  }
+}
+
+async function updateProductStock(productId){
+  const product = adminProducts.find(p => Number(p.id) === Number(productId));
+  const stock = Number(document.getElementById(`stock_${productId}`).value || 0);
+  const payload = {
+    name: product.name,
+    description: product.description || '',
+    sku: product.sku,
+    price: product.price,
+    stock,
+    status: product.status || 'active',
+    image_url: product.image_url || '',
+    category_id: product.category_id
+  };
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${productId}/`, {
+      method:'PATCH',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify(payload)
+    });
+    ShopUI.toast('Đã cập nhật tồn kho');
+    await loadCatalogAdmin();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không cập nhật được tồn kho', 'err');
+  }
+}
+
+async function toggleProductStatus(productId, status){
+  const product = adminProducts.find(p => Number(p.id) === Number(productId));
+  const payload = {
+    name: product.name,
+    description: product.description || '',
+    sku: product.sku,
+    price: product.price,
+    stock: product.stock,
+    status,
+    image_url: product.image_url || '',
+    category_id: product.category_id
+  };
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/${productId}/`, {
+      method:'PATCH',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify(payload)
+    });
+    ShopUI.toast(status === 'active' ? 'Đã bán lại' : 'Đã ngưng bán');
+    await loadCatalogAdmin();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không cập nhật được trạng thái', 'err');
+  }
+}
+
+function initManagerPage(){
+  if(!ShopUI.token()){
+    window.location.replace('/login/?next=/manager/');
+    return;
+  }
+  if(!hasManagerAccess()){
+    renderManagerAccessDenied();
+    return;
+  }
+  document.getElementById('serviceMap').innerHTML = services.map(s => `<div class="spec"><span>${s}</span><strong>Connected through gateway</strong></div>`).join('');
+  ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`).then(d => {
+    const count = d.count ?? ShopUI.safeList(d).length;
+    document.getElementById('productCount').textContent = `${count} sản phẩm active`;
+  }).catch(() => document.getElementById('productCount').textContent = 'Chưa có dữ liệu');
+  ShopUI.fetchJson(`${ShopUI.API_BASE}/api/v1/kb/status`).then(d => {
+    document.getElementById('aiState').textContent = d.status || 'Sẵn sàng';
+  }).catch(() => document.getElementById('aiState').textContent = 'Sẵn sàng');
+  loadCatalogAdmin();
+}
+
+initManagerPage();
 </script>
 </body>
 </html>

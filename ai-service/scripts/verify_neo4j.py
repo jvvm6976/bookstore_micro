@@ -39,7 +39,7 @@ def _try_connect(uri: str, user: str, password: str):
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Verify Neo4j runtime and optional ingest from data_user500.csv")
+    parser = argparse.ArgumentParser(description="Verify Neo4j runtime and optional ingest from a real interaction CSV")
     parser.add_argument("--uri", default=os.getenv("NEO4J_URI", ""), help="Neo4j bolt URI")
     parser.add_argument("--user", default=os.getenv("NEO4J_USER", "neo4j"), help="Neo4j username")
     parser.add_argument("--password", default=os.getenv("NEO4J_PASSWORD", "neo4j_password"), help="Neo4j password")

@@ -10,8 +10,8 @@ from app.graph.graph_builder import build_from_csv
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Load data_user500.csv into the AI-service02 KB graph")
-    parser.add_argument("--data", default="data/data_user500.csv", help="Path to dataset CSV")
+    parser = argparse.ArgumentParser(description="Load an explicit interaction CSV into the AI-service02 KB graph")
+    parser.add_argument("--data", required=True, help="Path to the real interaction dataset CSV")
     parser.add_argument("--clear", action="store_true", help="Delete existing graph before load")
     args = parser.parse_args()
 
