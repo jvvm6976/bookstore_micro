@@ -4,279 +4,303 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hồ sơ cá nhân - ShopSphere</title>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-{% include "_shared_theme_tokens.css" %}
-body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
-nav{background:var(--s);padding:.7rem 2rem;box-shadow:0 2px 10px rgba(194,24,43,.1);display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--p)}
-.logo{font-size:1.3rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
-.main-wrap{max-width:1100px;margin:0 auto;padding:2rem;display:grid;grid-template-columns:280px 1fr;gap:2rem}
-.sidebar{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.5rem;height:fit-content;box-shadow:0 2px 10px rgba(194,24,43,.05)}
-.profile-header{text-align:center;padding-bottom:1rem;border-bottom:1px solid var(--b);margin-bottom:1rem}
-.avatar-lg{width:80px;height:80px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;margin:0 auto .5rem}
-.sidebar-menu{list-style:none;padding:0}
-.sidebar-menu li{margin-bottom:.8rem}
-.sidebar-menu a{display:block;padding:.6rem .8rem;border-radius:var(--rs);background:transparent;color:var(--t);text-decoration:none;cursor:pointer;transition:all .2s;border-left:3px solid transparent}
-.sidebar-menu a:hover,.sidebar-menu a.active{background:var(--pll);border-left-color:var(--p);color:var(--p);font-weight:700}
-.content{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:2rem;box-shadow:0 2px 10px rgba(194,24,43,.05)}
-.section-title{font-size:1.15rem;font-weight:800;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem;color:var(--pd)}
-.section-title::before{content:'';width:3px;height:1.15rem;background:var(--p)}
-.form-group{margin-bottom:1.2rem}
-.form-group label{font-weight:700;color:var(--pd);display:block;margin-bottom:.4rem;font-size:.9rem}
-.form-group input,.form-group select{width:100%;padding:.6rem;border:1.5px solid var(--b);border-radius:var(--rs);background:#FFF7F8;font-family:inherit;font-size:.9rem}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--p);background:#fff}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-.btn{padding:.6rem 1.2rem;background:var(--p);color:#fff;border:none;border-radius:var(--rs);font-weight:700;cursor:pointer;transition:all .2s}
-.btn:hover{background:var(--pd)}
-.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem}
-.info-box{background:var(--pll);padding:1rem;border-radius:var(--rs);border-left:3px solid var(--p)}
-.info-label{font-size:.8rem;font-weight:700;color:var(--pd);text-transform:uppercase}
-.info-value{font-size:1.05rem;font-weight:700;color:var(--t);margin-top:.3rem}
-footer{background:var(--pdd);color:#fff;padding:1.5rem;text-align:center;margin-top:2rem;grid-column:1/-1}
-@media (max-width:768px){
-  .main-wrap{grid-template-columns:1fr;padding:1rem;gap:1rem;max-width:100%;overflow-x:hidden}
-  .sidebar{display:none}
-  .content{padding:1rem;min-width:0}
-  .info-grid,.form-row{grid-template-columns:1fr}
-  .info-value,.form-group input{overflow-wrap:anywhere;min-width:0}
-  .btn{max-width:100%;white-space:normal}
-  footer{margin-top:1rem}
-}
-</style>
-<style>{% include "_customer_header.css" %}</style>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
 </head>
 <body>
-
 {% include "_customer_header.html" %}
-<div class="main-wrap">
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="profile-header">
-      <div class="avatar-lg" id="avatarLg">👤</div>
-      <div style="font-weight:700;margin-top:.5rem" id="profileName">Người dùng</div>
-      <div style="font-size:.8rem;color:var(--tm)">Thành viên từ 2026</div>
+
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Hồ sơ</div>
+      <h1 class="page-title">Thông tin tài khoản</h1>
+      <p class="page-subtitle">Cập nhật thông tin cá nhân và quản lý địa chỉ mặc định dùng cho checkout.</p>
     </div>
-    <ul class="sidebar-menu">
-      <li><a href="#personal" class="active">👤 Thông tin cá nhân</a></li>
-      <li><a href="#addresses">📍 Địa chỉ của tôi</a></li>
-      <li><a href="#security">🔒 Bảo mật</a></li>
-      <li><a href="#preferences">⚙️ Cài đặt</a></li>
-      <li><a href="#logout" onclick="logout()">🚪 Đăng xuất</a></li>
-    </ul>
-  </aside>
+    <span class="pill teal" data-auth-user>Khách</span>
+  </section>
 
-  <!-- CONTENT -->
-  <div class="content">
-    <!-- PERSONAL INFO -->
-    <div id="personal" class="section">
-      <div class="section-title">👤 Thông tin cá nhân</div>
-      
-      <div class="info-grid">
-        <div class="info-box">
-          <div class="info-label">📧 Email</div>
-          <div class="info-value" id="emailDisplay">user@example.com</div>
-        </div>
-        <div class="info-box">
-          <div class="info-label">🎂 Ngày sinh</div>
-          <div class="info-value" id="dobDisplay">Không hỗ trợ</div>
-        </div>
-        <div class="info-box">
-          <div class="info-label">☎️ Số điện thoại</div>
-          <div class="info-value" id="phoneDisplay">Chưa cập nhật</div>
-        </div>
-        <div class="info-box">
-          <div class="info-label">👥 Giới tính</div>
-          <div class="info-value" id="genderDisplay">Không hỗ trợ</div>
-        </div>
+  <section class="profile-layout">
+    <aside class="profile-sidebar">
+      <div class="profile-header">
+        <div class="avatar-lg" id="avatarLg">SS</div>
+        <div class="product-title" id="profileName">Người dùng</div>
+        <div class="section-note" id="memberSince">Thành viên ShopSphere</div>
       </div>
+      <nav class="sidebar-menu" aria-label="Hồ sơ">
+        <a href="#personal" class="active">Thông tin cá nhân</a>
+        <a href="#addresses">Địa chỉ giao hàng</a>
+        <a href="#logout" onclick="ShopUI.logout()">Đăng xuất</a>
+      </nav>
+    </aside>
 
-      <hr style="border:none;border-top:1px solid var(--b);margin:1.5rem 0">
+    <div class="content-panel">
+      <section id="personal">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Thông tin cá nhân</h2>
+            <div class="section-note">Email không chỉnh sửa tại màn này để giữ đồng bộ tài khoản đăng nhập.</div>
+          </div>
+        </div>
 
-      <div style="font-weight:700;margin-bottom:1rem">✏️ Chỉnh sửa thông tin</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Họ</label>
-          <input type="text" id="firstName" placeholder="Họ">
+        <div class="info-grid">
+          <div class="info-box info-box-wide">
+            <div class="data-label">Email</div>
+            <div class="data-value" id="emailDisplay">Chưa cập nhật</div>
+          </div>
+          <div class="info-box">
+            <div class="data-label">Số điện thoại</div>
+            <div class="data-value" id="phoneDisplay">Chưa cập nhật</div>
+          </div>
+          <div class="info-box">
+            <div class="data-label">Vai trò</div>
+            <div class="data-value" data-auth-role>customer</div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Tên</label>
-          <input type="text" id="lastName" placeholder="Tên">
+
+        <div class="auth-grid">
+          <div class="field">
+            <label>Họ</label>
+            <input type="text" id="firstName" placeholder="Họ">
+          </div>
+          <div class="field">
+            <label>Tên</label>
+            <input type="text" id="lastName" placeholder="Tên">
+          </div>
+          <div class="field">
+            <label>Số điện thoại</label>
+            <input type="tel" id="phone" placeholder="Số điện thoại">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn primary block" onclick="saveProfile()">Lưu thay đổi</button>
+          </div>
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Số điện thoại</label>
-          <input type="tel" id="phone" placeholder="Số điện thoại">
+      </section>
+
+      <section id="addresses" class="section" style="border-top:1px solid var(--line);padding-top:1rem">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Địa chỉ giao hàng</h2>
+            <div class="section-note">Checkout sẽ tự lấy địa chỉ đang được đặt mặc định.</div>
+          </div>
+          <button class="btn small" onclick="openAddressForm()">Thêm địa chỉ</button>
         </div>
-      </div>
-      <button class="btn" onclick="saveProfile()">💾 Lưu thay đổi</button>
-      <span id="profileMsg" style="font-size:.85rem;color:var(--tm);margin-left:1rem"></span>
+
+        <div id="addressesList" class="record-list"></div>
+
+        <div id="addressForm" class="panel pad" style="display:none;margin-top:1rem">
+          <div class="section-head">
+            <h3 class="section-title" id="addressFormTitle">Thêm địa chỉ</h3>
+            <button class="btn small" onclick="closeAddressForm()">Đóng</button>
+          </div>
+          <div class="auth-grid">
+            <div class="field">
+              <label>Người nhận</label>
+              <input id="addrReceiver">
+            </div>
+            <div class="field">
+              <label>Số điện thoại</label>
+              <input id="addrPhone">
+            </div>
+            <div class="field full">
+              <label>Địa chỉ</label>
+              <input id="addrStreet">
+            </div>
+            <div class="field">
+              <label>Thành phố</label>
+              <input id="addrCity">
+            </div>
+            <label class="pill" style="align-self:end;cursor:pointer">
+              <input id="addrDefault" type="checkbox" style="accent-color:var(--brand)"> Đặt làm mặc định
+            </label>
+            <div class="field">
+              <label>&nbsp;</label>
+              <button class="btn primary block" onclick="submitAddress()">Lưu địa chỉ</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
-
-    <!-- ADDRESSES -->
-    <div id="addresses" class="section" style="margin-top:2rem;padding-top:2rem;border-top:2px solid var(--b)">
-      <div class="section-title">📍 Địa chỉ của tôi</div>
-      
-      <div id="addressesList" style="margin-bottom:1rem"></div>
-      
-      <button class="btn" onclick="addAddress()">+ Thêm địa chỉ</button>
-    </div>
-
-    <!-- SECURITY -->
-    <div id="security" class="section" style="margin-top:2rem;padding-top:2rem;border-top:2px solid var(--b)">
-      <div class="section-title">🔒 Bảo mật</div>
-      
-      <div class="form-group">
-        <label>Mật khẩu hiện tại</label>
-        <input type="password" id="currentPass" placeholder="Mật khẩu hiện tại">
-      </div>
-      <div class="form-group">
-        <label>Mật khẩu mới</label>
-        <input type="password" id="newPass" placeholder="Mật khẩu mới">
-      </div>
-      <div class="form-group">
-        <label>Xác nhận mật khẩu</label>
-        <input type="password" id="confirmPass" placeholder="Xác nhận mật khẩu">
-      </div>
-      <button class="btn" onclick="changePassword()">🔄 Đổi mật khẩu</button>
-    </div>
-  </div>
-</div>
-
-<footer>
-  © 2026 ShopSphere | Quản lý hồ sơ cá nhân của bạn
-</footer>
+  </section>
+</main>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
 const API_BASE = window.location.origin;
 let token = localStorage.getItem('token');
 let currentProfile = null;
+let currentAddresses = [];
+let editingAddressId = null;
 
 if (!token) {
   window.location.replace('/login/?next=/profile/');
 }
 
+function initials(profile) {
+  const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim() || profile?.username || 'SS';
+  return name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+}
+
 async function loadProfile() {
   try {
-    const res = await fetch(`${API_BASE}/api/users/profile/`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const profile = await res.json();
+    const profile = await ShopUI.fetchJson(`${API_BASE}/api/users/profile/`, {headers: ShopUI.authHeaders(false)});
     currentProfile = profile;
-    
-    document.getElementById('profileName').textContent = `${profile.first_name || 'Người dùng'} ${profile.last_name || ''}`.trim();
+
+    const displayName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username || 'Người dùng';
+    document.getElementById('profileName').textContent = displayName;
+    document.getElementById('avatarLg').textContent = initials(profile);
     document.getElementById('emailDisplay').textContent = profile.email || 'Chưa cập nhật';
     document.getElementById('firstName').value = profile.first_name || '';
     document.getElementById('lastName').value = profile.last_name || '';
     document.getElementById('phone').value = profile.phone || '';
     document.getElementById('phoneDisplay').textContent = profile.phone || 'Chưa cập nhật';
-    
-    // Load addresses
-    const addrRes = await fetch(`${API_BASE}/api/users/addresses/`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const addrs = await addrRes.json();
-    const addresses = addrs.results || addrs || [];
-    
-    let html = '';
-    addresses.forEach(addr => {
-      html += `
-        <div style="background:var(--pll);padding:1rem;border-radius:var(--rs);margin-bottom:.8rem;border-left:3px solid var(--p)">
-          <div style="font-weight:700">${addr.receiver_name}</div>
-          <div style="font-size:.9rem;color:var(--tm);margin-top:.3rem">
-            ${addr.street}, ${addr.city}<br>
-            📞 ${addr.phone} ${addr.is_default ? '<span style="background:var(--p);color:#fff;padding:.2rem .6rem;border-radius:4px;font-size:.75rem;font-weight:700;margin-left:.4rem">Mặc định</span>' : ''}
-          </div>
-        </div>
-      `;
-    });
-    
-    if (html) {
-      document.getElementById('addressesList').innerHTML = html;
-    }
+
+    const addrs = await ShopUI.fetchJson(`${API_BASE}/api/users/addresses/`, {headers: ShopUI.authHeaders(false)});
+    currentAddresses = ShopUI.safeList(addrs);
+    renderAddresses();
   } catch (err) {
-    console.error('Lỗi tải profile:', err);
+    ShopUI.toast(err.message || 'Không tải được hồ sơ', 'err');
   }
+}
+
+function renderAddresses() {
+  const box = document.getElementById('addressesList');
+  if (!currentAddresses.length) {
+    box.innerHTML = '<div class="empty-state"><strong>Chưa có địa chỉ</strong>Thêm địa chỉ để checkout có thể lấy địa chỉ giao hàng.</div>';
+    return;
+  }
+
+  box.innerHTML = currentAddresses.map(addr => `
+    <article class="address-card">
+      <div class="order-top">
+        <div>
+          <div class="product-title">${ShopUI.escapeHtml(addr.receiver_name || '')}</div>
+          <div class="section-note">${ShopUI.escapeHtml(addr.street || '')}, ${ShopUI.escapeHtml(addr.city || '')}</div>
+          <div class="section-note">${ShopUI.escapeHtml(addr.phone || '')}</div>
+        </div>
+        ${addr.is_default ? '<span class="status-pill success">Mặc định</span>' : ''}
+      </div>
+      <div class="order-actions">
+        ${addr.is_default ? '' : `<button class="btn small" onclick="setDefaultAddress(${Number(addr.id)})">Đặt mặc định</button>`}
+        <button class="btn small" onclick="openAddressForm(${Number(addr.id)})">Sửa</button>
+        <button class="btn small" onclick="deleteAddress(${Number(addr.id)})">Xóa</button>
+      </div>
+    </article>
+  `).join('');
 }
 
 async function saveProfile() {
   try {
-    const res = await fetch(`${API_BASE}/api/users/profile/`, {
+    await ShopUI.fetchJson(`${API_BASE}/api/users/profile/`, {
       method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
+      headers: ShopUI.authHeaders(),
       body: JSON.stringify({
         username: currentProfile?.username || '',
         email: currentProfile?.email || document.getElementById('emailDisplay').textContent,
-        first_name: document.getElementById('firstName').value,
-        last_name: document.getElementById('lastName').value,
-        phone: document.getElementById('phone').value
+        first_name: document.getElementById('firstName').value.trim(),
+        last_name: document.getElementById('lastName').value.trim(),
+        phone: document.getElementById('phone').value.trim()
       })
     });
-    
-    if (res.ok) {
-      document.getElementById('profileMsg').textContent = '✓ Đã lưu thay đổi';
-      setTimeout(() => loadProfile(), 500);
-    } else {
-      document.getElementById('profileMsg').textContent = '✗ Lỗi cập nhật';
-    }
+    ShopUI.toast('Đã lưu hồ sơ');
+    await loadProfile();
   } catch (err) {
-    document.getElementById('profileMsg').textContent = '✗ Lỗi: ' + err.message;
+    ShopUI.toast(err.message || 'Không lưu được hồ sơ', 'err');
   }
 }
 
-async function changePassword() {
-  const current = document.getElementById('currentPass').value;
-  const newPwd = document.getElementById('newPass').value;
-  const confirm = document.getElementById('confirmPass').value;
-  
-  if (!current || !newPwd || !confirm) {
-    alert('Vui lòng điền đầy đủ');
+function clearAddressForm() {
+  editingAddressId = null;
+  document.getElementById('addressFormTitle').textContent = 'Thêm địa chỉ';
+  ['addrReceiver', 'addrPhone', 'addrStreet', 'addrCity'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('addrDefault').checked = !currentAddresses.length;
+}
+
+function openAddressForm(addressId = null) {
+  clearAddressForm();
+  if (addressId) {
+    const addr = currentAddresses.find(a => Number(a.id) === Number(addressId));
+    if (!addr) return;
+    editingAddressId = addressId;
+    document.getElementById('addressFormTitle').textContent = 'Sửa địa chỉ';
+    document.getElementById('addrReceiver').value = addr.receiver_name || '';
+    document.getElementById('addrPhone').value = addr.phone || '';
+    document.getElementById('addrStreet').value = addr.street || '';
+    document.getElementById('addrCity').value = addr.city || '';
+    document.getElementById('addrDefault').checked = Boolean(addr.is_default);
+  }
+  document.getElementById('addressForm').style.display = 'block';
+  document.getElementById('addrReceiver').focus();
+}
+
+function closeAddressForm() {
+  document.getElementById('addressForm').style.display = 'none';
+  clearAddressForm();
+}
+
+function addressPayloadFromForm(base = {}) {
+  return {
+    receiver_name: document.getElementById('addrReceiver').value.trim(),
+    street: document.getElementById('addrStreet').value.trim(),
+    city: document.getElementById('addrCity').value.trim(),
+    phone: document.getElementById('addrPhone').value.trim(),
+    is_default: document.getElementById('addrDefault').checked,
+    ...base
+  };
+}
+
+async function submitAddress() {
+  const payload = addressPayloadFromForm();
+  if (!payload.receiver_name || !payload.street || !payload.city || !payload.phone) {
+    ShopUI.toast('Vui lòng nhập đủ thông tin địa chỉ', 'err');
     return;
   }
-  
-  if (newPwd !== confirm) {
-    alert('Mật khẩu mới không trùng khớp');
-    return;
+  try {
+    const url = editingAddressId
+      ? `${API_BASE}/api/users/addresses/${editingAddressId}/`
+      : `${API_BASE}/api/users/addresses/`;
+    await ShopUI.fetchJson(url, {
+      method: editingAddressId ? 'PATCH' : 'POST',
+      headers: ShopUI.authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    ShopUI.toast('Đã lưu địa chỉ');
+    closeAddressForm();
+    await loadProfile();
+  } catch (err) {
+    ShopUI.toast(err.message || 'Không lưu được địa chỉ', 'err');
   }
-  
-  alert('Tính năng đổi mật khẩu sẽ được cập nhật sớm');
 }
 
-function addAddress() {
-  const receiver_name = prompt('Ten nguoi nhan');
-  if (!receiver_name) return;
-  const street = prompt('Dia chi');
-  if (!street) return;
-  const city = prompt('Thanh pho');
-  if (!city) return;
-  const phone = prompt('So dien thoai');
-  if (!phone) return;
-  fetch(`${API_BASE}/api/users/addresses/`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ receiver_name, street, city, phone, is_default: true })
-  }).then(res => {
-    if (!res.ok) throw new Error('create address failed');
-    return loadProfile();
-  }).catch(() => alert('Khong tao duoc dia chi'));
+async function setDefaultAddress(addressId) {
+  const addr = currentAddresses.find(a => Number(a.id) === Number(addressId));
+  if (!addr) return;
+  try {
+    await ShopUI.fetchJson(`${API_BASE}/api/users/addresses/${addressId}/`, {
+      method: 'PATCH',
+      headers: ShopUI.authHeaders(),
+      body: JSON.stringify({...addr, is_default: true})
+    });
+    ShopUI.toast('Đã đặt địa chỉ mặc định');
+    await loadProfile();
+  } catch (err) {
+    ShopUI.toast(err.message || 'Không đặt được mặc định', 'err');
+  }
 }
 
-
-function logout() {
-  if (confirm('Bạn chắc chắn muốn đăng xuất?')) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh');
-    localStorage.removeItem('user_id');
-    localStorage.removeItem('username');
-    window.location = '/home/';
+async function deleteAddress(addressId) {
+  if (!confirm('Xóa địa chỉ này?')) return;
+  try {
+    const res = await fetch(`${API_BASE}/api/users/addresses/${addressId}/`, {
+      method: 'DELETE',
+      headers: ShopUI.authHeaders(false)
+    });
+    if (!res.ok && res.status !== 204) throw new Error('delete address failed');
+    ShopUI.toast('Đã xóa địa chỉ');
+    await loadProfile();
+  } catch (err) {
+    ShopUI.toast('Không xóa được địa chỉ', 'err');
   }
 }
 
@@ -284,6 +308,5 @@ if (token) {
   loadProfile();
 }
 </script>
-
 </body>
 </html>

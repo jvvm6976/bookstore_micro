@@ -152,10 +152,19 @@ class ReviewListView(generics.ListCreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = ReviewSerializer
     def get_queryset(self):
-        queryset = Review.objects.filter(status='approved')
+        if _is_staff_user(self.request.user):
+            queryset = Review.objects.all()
+        else:
+            queryset = Review.objects.filter(status='approved')
         product_id = self.request.query_params.get('product_id')
         if product_id:
             queryset = queryset.filter(product_id=product_id)
+        order_id = self.request.query_params.get('order_id')
+        if order_id:
+            queryset = queryset.filter(order_id=order_id)
+        review_status = self.request.query_params.get('status')
+        if review_status:
+            queryset = queryset.filter(status=review_status)
         return queryset.order_by('-created_at')
 
     def get_permissions(self):
@@ -300,7 +309,7 @@ class ReviewByOrderView(generics.ListAPIView):
             if order_resp.status_code != 200:
                 return Review.objects.none()
             order_data = order_resp.json()
-            if int(order_data.get('user_id') or 0) != int(self.request.user.id):
+            if int(order_data.get('user_id') or 0) != int(self.request.user.id) and not _is_staff_user(self.request.user):
                 raise PermissionDenied('You can only view reviews for your own orders')
         except requests.RequestException:
             return Review.objects.none()

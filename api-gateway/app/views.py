@@ -95,10 +95,6 @@ def product_detail_page(request, product_id=None):
     """Product detail page"""
     return render(request, 'product_detail.html', {'product_id': product_id})
 
-def coupons_page(request):
-    """Coupons and promotions"""
-    return render(request, 'coupons.html')
-
 def wishlist_page(request):
     """User wishlist/favorites"""
     return render(request, 'wishlist.html')
@@ -122,10 +118,6 @@ def reviews_page(request):
 def shipping_tracking_page(request, order_id=None):
     """Shipment tracking in detail"""
     return render(request, 'shipping_tracking.html', {'order_id': order_id})
-
-def returns_page(request):
-    """Returns and refunds management"""
-    return render(request, 'returns.html')
 
 def chatbot_page(request):
     """AI Chatbot assistant"""

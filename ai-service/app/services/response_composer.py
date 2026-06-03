@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def _fmt_price(p: float) -> str:
-    return f"{int(p):,}đ"
+    return f"{int(p):,}".replace(",", ".") + "đ"
 
 
 def _fmt_book(b: dict) -> str:
@@ -23,17 +23,25 @@ def _fmt_book(b: dict) -> str:
     cat    = b.get("category", "")
     rating = b.get("avg_rating", 0)
     reason = b.get("reason", "")
-    line   = f"🛍️ **{title}**"
+    line   = f"• **{title}**"
     if author:
         line += f" — {author}"
     if cat:
-        line += f" [{cat}]"
-    line += f"\n   💰 {_fmt_price(price)}"
+        line += f" ({cat})"
+    line += f"\n  Giá: {_fmt_price(price)}"
     if rating:
-        line += f" | ⭐ {rating:.1f}"
+        line += f" | Đánh giá: {rating:.1f}/5"
     if reason:
-        line += f"\n   💡 {reason}"
+        line += f"\n  Phù hợp vì {reason}."
     return line
+
+
+def _source_matching(sources: list[dict], keywords: tuple[str, ...]) -> dict | None:
+    for source in sources:
+        text = f"{source.get('title', '')} {source.get('content', '')}".lower()
+        if any(keyword in text for keyword in keywords):
+            return source
+    return None
 
 
 def compose(
@@ -76,8 +84,8 @@ def _compose_faq(entities: dict, data: dict, customer_id: int | None) -> str:
 
 def _compose_return_policy(entities: dict, data: dict, customer_id: int | None) -> str:
     sources = data.get("sources", [])
-    if sources:
-        top = sources[0]
+    top = _source_matching(sources, ("đổi trả", "doi tra", "hoàn tiền", "refund", "return"))
+    if top:
         return f"**Chính sách đổi trả ShopSphere**\n\n{top['content']}"
     return (
         "**Chính sách đổi trả ShopSphere**\n\n"
@@ -89,8 +97,8 @@ def _compose_return_policy(entities: dict, data: dict, customer_id: int | None) 
 
 def _compose_payment_support(entities: dict, data: dict, customer_id: int | None) -> str:
     sources = data.get("sources", [])
-    if sources:
-        top = sources[0]
+    top = _source_matching(sources, ("thanh toán", "payment", "cod", "vnpay", "momo", "thẻ"))
+    if top:
         return f"**Thanh toán tại ShopSphere**\n\n{top['content']}"
     return (
         "**Phương thức thanh toán ShopSphere**\n\n"
@@ -103,8 +111,8 @@ def _compose_payment_support(entities: dict, data: dict, customer_id: int | None
 
 def _compose_shipping_support(entities: dict, data: dict, customer_id: int | None) -> str:
     sources = data.get("sources", [])
-    if sources:
-        top = sources[0]
+    top = _source_matching(sources, ("giao hàng", "vận chuyển", "shipping", "delivery", "tracking", "vận đơn"))
+    if top:
         return f"**Giao hàng tại ShopSphere**\n\n{top['content']}"
     return (
         "**Thông tin giao hàng ShopSphere**\n\n"
@@ -117,8 +125,6 @@ def _compose_shipping_support(entities: dict, data: dict, customer_id: int | Non
 
 def _compose_product_advice(entities: dict, data: dict, customer_id: int | None) -> str:
     recs = data.get("recommendations", [])
-    graph_insights = data.get("graph_insights", [])
-    model_best = data.get("model_best_prediction")
     budget_max = entities.get("budget_max")
     category   = entities.get("category")
     keywords   = entities.get("product_keywords", [])
@@ -138,7 +144,7 @@ def _compose_product_advice(entities: dict, data: dict, customer_id: int | None)
             "Hãy thử mô tả rõ hơn về thể loại hoặc chủ đề bạn quan tâm! 🛍️"
         )
 
-    header_parts = ["💡 **Gợi ý sản phẩm dành cho bạn**"]
+    header_parts = ["**Gợi ý sản phẩm dành cho bạn**"]
     if category:
         header_parts.append(f"thể loại: {category}")
     if budget_max:
@@ -152,22 +158,7 @@ def _compose_product_advice(entities: dict, data: dict, customer_id: int | None)
         lines.append(_fmt_book(b))
         lines.append("")
 
-    lines.append("Bạn muốn biết thêm về sản phẩm nào? 😊")
-
-    if graph_insights:
-        top_graph = [g for g in graph_insights if g.get("title") == "graph_category_interest"][:2]
-        if top_graph:
-            lines.append("")
-            lines.append("Nguồn KB_Graph:")
-            for g in top_graph:
-                lines.append(f"- {g.get('content', '')}")
-
-    if model_best:
-        lines.append("")
-        lines.append(
-            f"Dự đoán model_best: hành vi kế tiếp có thể là '{model_best.get('predicted_action')}' "
-            f"(confidence={model_best.get('confidence')})."
-        )
+    lines.append("Bạn muốn mình lọc tiếp theo mức giá, thương hiệu hoặc nhu cầu sử dụng nào?")
 
     return "\n".join(lines)
 
@@ -217,8 +208,6 @@ def _compose_order_support(entities: dict, data: dict, customer_id: int | None) 
 def _compose_general_search(entities: dict, data: dict, customer_id: int | None) -> str:
     recs    = data.get("recommendations", [])
     sources = data.get("sources", [])
-    graph_insights = data.get("graph_insights", [])
-    model_best = data.get("model_best_prediction")
     keywords = entities.get("product_keywords", [])
     ask_price = entities.get("ask_price", False)
     ask_stock = entities.get("ask_stock", False)
@@ -238,19 +227,19 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
                 sorted_by_price = sorted(recs, key=lambda x: float(x.get("price", 0) or 0))
                 cheapest = sorted_by_price[0]
                 expensive = sorted_by_price[-1]
-                lines = ["⚖️ **So sánh giá sản phẩm**"]
+                lines = ["**So sánh giá sản phẩm**"]
                 for b in sorted_by_price[:4]:
                     lines.append(f"• **{b.get('title', 'Sản phẩm')}**: {_fmt_price(float(b.get('price', 0) or 0))}")
                 lines.append("")
-                lines.append(f"✅ Rẻ hơn: **{cheapest.get('title', 'Sản phẩm')}**")
-                lines.append(f"💸 Đắt hơn: **{expensive.get('title', 'Sản phẩm')}**")
+                lines.append(f"Rẻ hơn: **{cheapest.get('title', 'Sản phẩm')}**")
+                lines.append(f"Cao hơn: **{expensive.get('title', 'Sản phẩm')}**")
                 return "\n".join(lines)
 
             if len(recs) == 1:
                 only = recs[0]
                 expected = ", ".join(book_titles[:2]) if book_titles else "2 sản phẩm"
                 return (
-                    "⚠️ **Chưa đủ dữ liệu để so sánh giá**\n"
+                    "**Chưa đủ dữ liệu để so sánh giá**\n"
                     f"Mình mới tìm thấy 1 sản phẩm trong yêu cầu ({expected}):\n"
                     f"• **{only.get('title', 'Sản phẩm')}**: {_fmt_price(float(only.get('price', 0) or 0))}\n"
                     "Bạn kiểm tra lại tên sản phẩm còn lại giúp mình nhé."
@@ -258,7 +247,7 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
 
             expected = ", ".join(book_titles[:2]) if book_titles else "2 sản phẩm"
             return (
-                "⚠️ **Chưa tìm thấy dữ liệu để so sánh giá**\n"
+                "**Chưa tìm thấy dữ liệu để so sánh giá**\n"
                 f"Yêu cầu: {expected}.\n"
                 "Bạn thử nhập đúng tên sản phẩm hoặc đặt trong dấu nháy, ví dụ: \"Dune\" và \"Cosmos\"."
             )
@@ -267,12 +256,12 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
             sorted_by_price = sorted(recs, key=lambda x: float(x.get("price", 0) or 0))
             best = sorted_by_price[0]
             lines = [
-                "💸 **Sản phẩm có giá tốt nhất hiện tại**",
-                f"🛍️ **{best.get('title', 'Sản phẩm')}** — {_fmt_price(float(best.get('price', 0) or 0))}",
+                "**Sản phẩm có giá tốt nhất hiện tại**",
+                f"**{best.get('title', 'Sản phẩm')}** — {_fmt_price(float(best.get('price', 0) or 0))}",
             ]
             if isinstance(best.get("stock"), int):
                 stock = int(best.get("stock", 0) or 0)
-                lines.append("✅ Còn hàng" if stock > 0 else "⚠️ Tạm hết hàng")
+                lines.append("Còn hàng" if stock > 0 else "Tạm hết hàng")
 
             if len(sorted_by_price) > 1:
                 lines.append("\nMột vài lựa chọn giá tốt khác:")
@@ -290,18 +279,18 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
             for b in stock_recs[:3]:
                 raw_stock = b.get("stock")
                 if raw_stock is None:
-                    status = "ℹ️ Chưa có dữ liệu tồn kho"
+                    status = "Chưa có dữ liệu tồn kho"
                 else:
                     stock = int(raw_stock or 0)
-                    status = f"✅ Còn {stock} sản phẩm" if stock > 0 else "⚠️ Tạm hết hàng"
-                lines.append(f"📦 **{b.get('title', 'Sản phẩm')}**: {status}")
+                    status = f"Còn {stock} sản phẩm" if stock > 0 else "Tạm hết hàng"
+                lines.append(f"**{b.get('title', 'Sản phẩm')}**: {status}")
             if book_title and lines:
                 lines.insert(0, f"Tình trạng kho cho sản phẩm '{book_title}':")
             return "\n".join(lines)
 
         if ask_price:
             if entities.get("budget_min") is not None or entities.get("budget_max") is not None:
-                lines = ["💰 **Các sản phẩm trong tầm giá bạn yêu cầu**"]
+                lines = ["**Các sản phẩm trong tầm giá bạn yêu cầu**"]
                 for b in sorted(recs[:5], key=lambda x: float(x.get("price", 0) or 0)):
                     lines.append(
                         f"• **{b.get('title', 'Sản phẩm')}**: {_fmt_price(float(b.get('price', 0) or 0))}"
@@ -316,35 +305,35 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
             lines = []
             for b in price_recs[:3]:
                 lines.append(
-                    f"💰 **{b.get('title', 'Sản phẩm')}** hiện có giá {_fmt_price(float(b.get('price', 0) or 0))}"
+                    f"**{b.get('title', 'Sản phẩm')}** hiện có giá {_fmt_price(float(b.get('price', 0) or 0))}"
                 )
             if book_title and lines:
                 lines.insert(0, f"Thông tin giá cho sản phẩm '{book_title}':")
             return "\n".join(lines)
 
         if ask_next_book:
-            lines = ["🛍️ **Bạn có thể xem/mua tiếp các sản phẩm này**", ""]
+            lines = ["**Bạn có thể xem tiếp các sản phẩm này**", ""]
             for b in recs[:5]:
                 lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         if ask_bestseller:
-            lines = ["🔥 **Sản phẩm bán chạy / phổ biến**", ""]
+            lines = ["**Sản phẩm bán chạy / phổ biến**", ""]
             for b in recs[:5]:
                 lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         if ask_new_books:
-            lines = ["🆕 **Sản phẩm mới trong kho**", ""]
+            lines = ["**Sản phẩm mới trong kho**", ""]
             for b in recs[:5]:
                 lines.append(_fmt_book(b))
                 lines.append("")
             return "\n".join(lines)
 
         if ask_same_author:
-            head = f"✍️ **Các sản phẩm cùng tác giả {resolved_author}**" if resolved_author else "✍️ **Các sản phẩm cùng tác giả**"
+            head = f"**Các sản phẩm cùng tác giả {resolved_author}**" if resolved_author else "**Các sản phẩm cùng tác giả**"
             lines = [head, ""]
             for b in recs[:6]:
                 lines.append(_fmt_book(b))
@@ -352,24 +341,10 @@ def _compose_general_search(entities: dict, data: dict, customer_id: int | None)
             return "\n".join(lines)
 
         kw_str = ", ".join(keywords[:3]) if keywords else "từ khóa của bạn"
-        lines  = [f"🔍 **Kết quả tìm kiếm: '{kw_str}'**", ""]
+        lines  = [f"**Kết quả tìm kiếm: '{kw_str}'**", ""]
         for b in recs[:5]:
             lines.append(_fmt_book(b))
             lines.append("")
-        if graph_insights:
-            top_graph = [g for g in graph_insights if g.get("title") == "graph_category_interest"][:2]
-            if top_graph:
-                lines.append("KB_Graph category quan tâm:")
-                for g in top_graph:
-                    lines.append(f"- {g.get('content', '')}")
-                lines.append("")
-
-        if model_best:
-            lines.append(
-                f"model_best dự đoán hành vi tiếp theo: {model_best.get('predicted_action')} "
-                f"(confidence={model_best.get('confidence')})."
-            )
-
         return "\n".join(lines)
 
     if sources:

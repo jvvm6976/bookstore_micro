@@ -322,4 +322,5 @@ const ShopUI = (() => {
   };
 })();
 
+window.ShopUI = ShopUI;
 document.addEventListener('DOMContentLoaded', ShopUI.init);

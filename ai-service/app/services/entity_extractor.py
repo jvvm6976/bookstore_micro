@@ -65,33 +65,39 @@ _POLICY_MAP: dict[str, list[str]] = {
 }
 
 
+def _money_value(raw_value: str, raw_unit: str | None = None) -> float:
+    value = float(raw_value.replace(",", "."))
+    unit = (raw_unit or "").lower()
+    if unit in {"m", "tr", "triệu", "trieu", "million"}:
+        return value * 1_000_000
+    if unit in {"k", "nghìn", "nghin"}:
+        return value * 1_000
+    return value * 1_000 if value < 10_000 else value
+
+
 def _extract_budget(text: str) -> tuple[float | None, float | None]:
     """Extract budget_min and budget_max from text."""
     budget_min: float | None = None
     budget_max: float | None = None
 
     # Pattern: "dưới 300k", "under 300000", "< 500k"
-    under = re.search(r"(?:dưới|duoi|under|<|tầm|tam)\s*(\d+(?:[.,]\d+)?)\s*(?:k|nghìn|nghin|đồng|dong|vnd)?", text, re.I)
+    under = re.search(r"(?:dưới|duoi|under|<|tầm|tam)\s*(\d+(?:[.,]\d+)?)\s*(m|tr|triệu|trieu|million|k|nghìn|nghin|đồng|dong|vnd)?", text, re.I)
     if under:
-        val = float(under.group(1).replace(",", "."))
-        budget_max = val * 1000 if val < 10000 else val
+        budget_max = _money_value(under.group(1), under.group(2))
 
     # Pattern: "từ 100k đến 300k", "100k-300k"
     range_match = re.search(
-        r"(?:từ|tu|from)?\s*(\d+(?:[.,]\d+)?)\s*(?:k|nghìn)?\s*(?:đến|den|to|-)\s*(\d+(?:[.,]\d+)?)\s*(?:k|nghìn)?",
+        r"(?:từ|tu|from)?\s*(\d+(?:[.,]\d+)?)\s*(m|tr|triệu|trieu|million|k|nghìn|nghin)?\s*(?:đến|den|to|-)\s*(\d+(?:[.,]\d+)?)\s*(m|tr|triệu|trieu|million|k|nghìn|nghin)?",
         text, re.I
     )
     if range_match:
-        lo = float(range_match.group(1).replace(",", "."))
-        hi = float(range_match.group(2).replace(",", "."))
-        budget_min = lo * 1000 if lo < 10000 else lo
-        budget_max = hi * 1000 if hi < 10000 else hi
+        budget_min = _money_value(range_match.group(1), range_match.group(2) or range_match.group(4))
+        budget_max = _money_value(range_match.group(3), range_match.group(4) or range_match.group(2))
 
     # Pattern: "trên 200k", "above 200k", "> 200000"
-    above = re.search(r"(?:trên|tren|above|>)\s*(\d+(?:[.,]\d+)?)\s*(?:k|nghìn|nghin|đồng|dong|vnd)?", text, re.I)
+    above = re.search(r"(?:trên|tren|above|>)\s*(\d+(?:[.,]\d+)?)\s*(m|tr|triệu|trieu|million|k|nghìn|nghin|đồng|dong|vnd)?", text, re.I)
     if above and not range_match:
-        val = float(above.group(1).replace(",", "."))
-        budget_min = val * 1000 if val < 10000 else val
+        budget_min = _money_value(above.group(1), above.group(2))
 
     return budget_min, budget_max
 

@@ -28,6 +28,19 @@
     </div>
     <div id="relatedGrid" class="product-grid"></div>
   </section>
+
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Đánh giá sản phẩm</h2>
+        <div class="section-note">Lấy từ comment-rate-service, chỉ hiển thị đánh giá đã duyệt.</div>
+      </div>
+      <a class="btn subtle" href="/reviews/">Đánh giá của tôi</a>
+    </div>
+    <div id="productReviews" class="panel pad">
+      <div class="empty-state"><strong>Đang tải đánh giá</strong></div>
+    </div>
+  </section>
 </main>
 
 <script>{% include "_customer_ui.js" %}</script>
@@ -122,6 +135,35 @@ async function loadRelated(product){
   }
 }
 
+async function loadProductReviews(){
+  const box = document.getElementById('productReviews');
+  try{
+    const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/reviews/products/${productId}/`);
+    const reviews = ShopUI.safeList(data);
+    if(!reviews.length){
+      box.innerHTML = '<div class="empty-state"><strong>Chưa có đánh giá đã duyệt</strong>Sản phẩm này chưa có phản hồi công khai.</div>';
+      return;
+    }
+    box.innerHTML = reviews.slice(0, 6).map(review => {
+      const rating = Number(review.rating || 0);
+      const replies = Array.isArray(review.replies) ? review.replies : [];
+      return `
+        <div class="summary-row" style="align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:.75rem">
+          <span>
+            <strong>${rating}/5 sao</strong><br>
+            <small>${new Date(review.created_at || Date.now()).toLocaleDateString('vi-VN')}</small><br>
+            ${ShopUI.escapeHtml(review.comment || '')}
+            ${replies.length ? `<br><small style="display:block;margin-top:.45rem;color:var(--teal)">Phản hồi: ${ShopUI.escapeHtml(replies[0].content || '')}</small>` : ''}
+          </span>
+          <strong>${rating}/5</strong>
+        </div>
+      `;
+    }).join('');
+  }catch(_){
+    box.innerHTML = '<div class="empty-state"><strong>Không tải được đánh giá</strong></div>';
+  }
+}
+
 async function loadDetail(){
   if(!productId){
     document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tìm thấy mã sản phẩm</strong></div>';
@@ -132,6 +174,7 @@ async function loadDetail(){
     renderDetail(product);
     ShopUI.track('view_detail', Number(product.id || productId));
     loadRelated(product);
+    loadProductReviews();
   }catch(_){
     document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm</strong>Sản phẩm có thể đã ngừng bán hoặc service chưa sẵn sàng.</div>';
   }

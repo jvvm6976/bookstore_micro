@@ -45,6 +45,8 @@ W_LSTM    = 0.40   # LSTM behavior propensity
 W_GRAPH   = 0.25   # Neo4j graph collaborative score
 W_CONTENT = 0.25   # Content-based affinity (category/brand)
 W_RATING  = 0.10   # Community rating popularity
+REPLENISHABLE_DOMAINS = {"Grocery", "Beauty & Personal Care", "Office & Stationery"}
+REPLENISHABLE_CATEGORIES = {"Coffee & Tea", "Snacks", "Pantry", "Skincare", "Haircare", "Notebooks", "Writing"}
 
 
 def _get_purchased_ids(customer_id: int) -> set[int]:
@@ -156,9 +158,9 @@ def get_personalized(
         intent_boost = 1.0 + max(0.0, action_boost_map.get(predicted_action, 1.0) - 1.0) * predicted_confidence
 
     purchased = _get_purchased_ids(customer_id)
+    # Viewed/cart/wishlist products are still useful as recent-interest signals.
+    # Completed purchases are skipped except for replenishable categories.
     directly_consumed = set(purchased)
-    for itype in ("view", "view_detail", "cart", "add_to_cart", "wishlist"):
-        directly_consumed.update(int(pid) for pid in interactions.get(itype, {}).keys() if pid)
 
     # Category/domain/author affinity from high-score products. Search terms can be
     # noisy, so later scoring preserves magnitude instead of treating every top
@@ -224,8 +226,13 @@ def get_personalized(
     }
     for book in all_books:
         bid = book.get("id")
-        if not bid or bid in directly_consumed or book.get("stock", 0) <= 0:
+        if not bid or book.get("stock", 0) <= 0:
             continue
+        if bid in directly_consumed:
+            domain = book.get("domain_name")
+            cat = book.get("category") or book.get("category_name")
+            if domain not in REPLENISHABLE_DOMAINS and cat not in REPLENISHABLE_CATEGORIES:
+                continue
 
         if bid in customer_ratings:
             if customer_ratings[bid] < 3:
@@ -246,15 +253,13 @@ def get_personalized(
         lstm_component = 0.0
         if bscore >= PURCHASE_THRESHOLD:
             lstm_component = min(bscore / 20.0, 1.0)
-            reasons.append(f"bạn đã tương tác {int(bscore)} lần")
+            reasons.append("phù hợp với sản phẩm bạn quan tâm gần đây")
             if predicted_action in {"purchase", "add_to_cart", "wishlist", "rate_product"} and predicted_confidence > 0:
                 lstm_component *= intent_boost
-                if predicted_confidence >= 0.5:
-                    reasons.append(f"model_best dự đoán {predicted_action}")
         # Boost highly-rated by customer
         if bid in customer_ratings and customer_ratings[bid] >= 4:
             lstm_component += 0.3
-            reasons.append(f"bạn đánh giá cao ⭐{customer_ratings[bid]}")
+            reasons.append("phù hợp với đánh giá tốt của bạn")
         # Propensity boost
         lstm_component *= (1.0 + max(0.0, min(propensity, 1.0)) * 0.25)
 
@@ -274,7 +279,7 @@ def get_personalized(
             content_component += 0.2 + (0.75 * min(cat_score, 1.0))
             if book.get("category") in high_intent_cats:
                 content_component += 0.12
-            reasons.append(f"thể loại {book['category']} bạn yêu thích")
+            reasons.append(f"cùng nhóm {book['category']} bạn hay quan tâm")
         elif book.get("category") in profile_pref_cats:
             content_component += 0.35
         domain_score = 0.0
@@ -283,7 +288,7 @@ def get_personalized(
         if domain_score > 0 and cat_score < 0.5:
             content_component += 0.18 * min(domain_score, 1.0)
             if book.get("domain_name") in high_intent_domains:
-                reasons.append(f"cùng ngành {book['domain_name']} bạn quan tâm")
+                reasons.append(f"cùng ngành {book['domain_name']} bạn hay xem")
         if book.get("author") in top_authors:
             content_component += 0.4
             reasons.append(f"tác giả {book['author']} bạn quan tâm")
@@ -292,7 +297,7 @@ def get_personalized(
         pop = _popularity_score(bid, ratings)
         rm  = ratings.get(bid, {})
         if rm.get("avg", 0) >= 4.0:
-            reasons.append(f"đánh giá cao ({rm['avg']:.1f}★/{rm['count']} lượt)")
+            reasons.append("được khách hàng đánh giá tốt")
 
         # ── Hybrid final score ────────────────────────────────────────────────
         final_score = (
@@ -308,11 +313,7 @@ def get_personalized(
                 **_product_payload(book, bid),
                 "author":           book.get("author", ""),
                 "score":            round(final_score, 3),
-                "lstm_score":       round(lstm_component, 3),
-                "graph_score":      round(graph_component, 3),
-                "content_score":    round(content_component, 3),
-                "rating_score":     round(pop, 3),
-                "reason":           ", ".join(reasons) if reasons else "phổ biến trong cộng đồng",
+                "reason":           ", ".join(dict.fromkeys(reasons)) if reasons else "được nhiều khách hàng quan tâm",
                 "avg_rating":       round(rm.get("avg", 0), 2),
             })
 
@@ -381,7 +382,7 @@ def get_similar(
             cust_rating = customer_ratings[bid]
             if cust_rating >= 4:
                 score += 3.5
-                reasons.append(f"bạn đánh giá cao ⭐{cust_rating}")
+                reasons.append("phù hợp với đánh giá tốt của bạn")
 
         pop = _popularity_score(bid, ratings)
         score += pop
@@ -418,7 +419,7 @@ def get_popular(limit: int = 10) -> list[dict[str, Any]]:
                 **_product_payload(book, bid),
                 "author":     book.get("author", ""),
                 "score":      round(score, 3),
-                "reason":     f"phổ biến ({rm.get('count', 0)} đánh giá)",
+                "reason":     "được khách hàng đánh giá tốt",
                 "avg_rating": round(rm.get("avg", 0), 2),
             })
 

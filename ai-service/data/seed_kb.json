@@ -14,13 +14,13 @@
   {
     "category": "policy",
     "title": "Phương thức thanh toán ShopSphere",
-    "content": "ShopSphere hỗ trợ COD, chuyển khoản ngân hàng và các cổng thanh toán điện tử tùy cấu hình triển khai. Hệ thống chỉ ghi nhận một thanh toán hợp lệ cho mỗi đơn hàng, kiểm tra đúng tổng tiền đơn hàng và cập nhật trạng thái đơn sang paid sau khi thanh toán thành công.",
+    "content": "ShopSphere hỗ trợ COD, VNPAY, MoMo và thẻ quốc tế tùy cấu hình thanh toán đang bật. Khách hàng chỉ cần chọn phương thức ở bước thanh toán; sau khi giao dịch thành công, đơn hàng được xác nhận và chuyển sang bước chuẩn bị giao.",
     "keywords": ["thanh toán", "thanh toan", "payment", "cod", "chuyển khoản", "paid"]
   },
   {
     "category": "policy",
     "title": "Giao hàng và theo dõi vận chuyển",
-    "content": "Sau khi đơn hàng được thanh toán, Shipping Service tạo vận đơn ở trạng thái processing. Nhân viên vận hành cập nhật lần lượt processing, shipping và delivered. Khi giao thành công, Order Service chuyển đơn sang completed và Notification Service gửi thông báo cho khách hàng.",
+    "content": "Sau khi đơn hàng được xác nhận, ShopSphere chuẩn bị hàng và cập nhật trạng thái vận chuyển trên trang theo dõi đơn. Khách hàng có thể xem mã vận đơn, trạng thái đang xử lý, đang giao hoặc đã giao. Thời gian giao phụ thuộc địa chỉ nhận hàng và phương thức vận chuyển.",
     "keywords": ["giao hàng", "shipping", "delivery", "tracking", "vận chuyển", "delivered", "completed"]
   },
   {
@@ -38,7 +38,7 @@
   {
     "category": "faq",
     "title": "Gợi ý sản phẩm bằng AI",
-    "content": "AI Service kết hợp mô hình dự đoán chuỗi hành vi, đồ thị Neo4j, nội dung sản phẩm và tín hiệu đánh giá để tạo gợi ý sản phẩm cá nhân hóa. Best model hiện tại là BiLSTM, được chọn sau khi so sánh RNN, LSTM, GRU, BiGRU và BiLSTM trên các tập dữ liệu hành vi e-commerce.",
+    "content": "ShopSphere cá nhân hóa gợi ý dựa trên sản phẩm khách hàng đã xem, tìm kiếm, thêm vào giỏ, yêu thích, đánh giá và mua trước đó. Vì mỗi khách hàng có hành vi khác nhau, danh sách gợi ý trên trang chủ, giỏ hàng và chatbot cũng sẽ khác nhau.",
     "keywords": ["ai", "gợi ý", "recommendation", "bilstm", "neo4j", "hybrid", "behavior"]
   },
   {

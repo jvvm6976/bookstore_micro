@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Assistant - ShopSphere</title>
+<title>Trợ lý mua sắm - ShopSphere</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>{% include "_customer_ui.css" %}</style>
 </head>
@@ -12,9 +12,9 @@
 <main class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">ShopSphere Assistant</div>
+      <div class="eyebrow">Trợ lý mua sắm</div>
       <h1 class="page-title">Trợ lý mua sắm ShopSphere</h1>
-      <p class="page-subtitle">Hỏi về gợi ý sản phẩm, theo dõi đơn hàng, thanh toán, vận chuyển hoặc chính sách đổi trả.</p>
+      <p class="page-subtitle">Hỏi về gợi ý sản phẩm, theo dõi đơn hàng, thanh toán, vận chuyển hoặc chính sách mua hàng.</p>
     </div>
     <span class="pill teal" id="aiStatus">Đang kiểm tra AI</span>
   </section>
@@ -27,10 +27,10 @@
         <button class="btn block" onclick="quick('Gợi ý sản phẩm phù hợp với tôi')">Gợi ý sản phẩm</button>
         <button class="btn block" onclick="quick('Tôi muốn xem đơn hàng gần đây')">Đơn hàng gần đây</button>
         <button class="btn block" onclick="quick('Phương thức thanh toán hiện có là gì?')">Thanh toán</button>
-        <button class="btn block" onclick="quick('Chính sách đổi trả như thế nào?')">Đổi trả</button>
+        <button class="btn block" onclick="quick('Chính sách mua hàng và giao nhận như thế nào?')">Chính sách mua hàng</button>
         <button class="btn block" onclick="quick('Có sản phẩm nào giá tốt hôm nay?')">Giá tốt</button>
       </div>
-      <div class="notice" style="margin-top:1rem">AI dùng `customer_id` từ phiên đăng nhập để cá nhân hóa khi có token.</div>
+      <div class="notice" style="margin-top:1rem">Trợ lý dùng phiên đăng nhập để cá nhân hóa gợi ý khi có dữ liệu hành vi.</div>
     </aside>
 
     <section class="panel chat-panel">
@@ -126,7 +126,7 @@ async function checkHealth(){
   }
 }
 
-addMessage('Xin chào, tôi là trợ lý ShopSphere. Bạn có thể hỏi tôi về sản phẩm, đơn hàng, thanh toán hoặc đổi trả.');
+addMessage('Xin chào, tôi là trợ lý ShopSphere. Bạn có thể hỏi tôi về sản phẩm, đơn hàng, thanh toán hoặc chính sách mua hàng.');
 checkHealth();
 </script>
 </body>

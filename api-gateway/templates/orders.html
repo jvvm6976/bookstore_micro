@@ -4,68 +4,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Đơn hàng của tôi - ShopSphere</title>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-{% include "_shared_theme_tokens.css" %}
-body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t)}
-nav{background:var(--s);padding:.7rem 2rem;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:300}
-.logo{font-size:1.35rem;font-weight:800;color:var(--pdd)}.logo em{color:var(--p)}
-.main-wrap{max-width:1000px;margin:0 auto;padding:2rem}
-.title{font-size:1.3rem;font-weight:800;margin-bottom:1.5rem;display:flex;align-items:center;gap:.5rem}
-.title::before{content:'';width:4px;height:1.3rem;background:var(--p)}
-.order-filters{display:flex;gap:.8rem;margin-bottom:1.5rem;flex-wrap:wrap}
-.filter-btn{padding:.5rem 1rem;border:1.5px solid var(--b);border-radius:var(--rs);background:var(--s);cursor:pointer;transition:all .2s;font-weight:600}
-.filter-btn.active{background:var(--p);color:#fff;border-color:var(--p)}
-.orders-list{display:flex;flex-direction:column;gap:1rem}
-.order-card{background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:1.2rem;box-shadow:var(--sh);cursor:pointer;transition:all .2s}
-.order-card:hover{border-color:var(--pl);box-shadow:var(--shl)}
-.order-header{display:grid;grid-template-columns:1fr auto;gap:1rem;margin-bottom:1rem}
-.order-info{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;font-size:.9rem;margin-top:.8rem}
-.order-info-item{display:flex;flex-direction:column}
-.order-label{font-weight:700;color:var(--pd)}.order-value{color:var(--t);margin-top:.2rem}
-.order-status{display:inline-block;padding:.3rem .8rem;border-radius:20px;font-weight:700;font-size:.8rem}
-.status-pending{background:#FEF3C7;color:#B45309}
-.status-confirmed{background:#DBEAFE;color:#0C4A6E}
-.status-shipped{background:#DCFCE7;color:#166534}
-.status-delivered{background:#E0E7FF;color:#3730A3}
-.status-cancelled{background:#FEE2E2;color:#991B1B}
-.order-items{font-size:.9rem;color:var(--tm);margin:0;padding-left:1.2rem}
-.btn{padding:.4rem .8rem;border:none;border-radius:var(--rs);font-weight:600;font-size:.8rem;cursor:pointer;transition:all .2s}
-.btn-p{background:var(--p);color:#fff;margin-right:.4rem}
-.btn-p:hover{background:var(--pd)}
-.empty-state{text-align:center;padding:2rem;color:var(--tm)}
-.empty-icon{font-size:2rem;margin-bottom:1rem}
-footer{background:var(--pdd);color:#fff;padding:2rem;margin-top:2rem;text-align:center}
-</style>
-<style>{% include "_customer_header.css" %}</style>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>{% include "_customer_ui.css" %}</style>
 </head>
 <body>
-
 {% include "_customer_header.html" with active_nav="orders" %}
-<div class="main-wrap">
-  <div class="title">📦 Đơn hàng của tôi</div>
-  
-  <div class="order-filters">
-    <span class="filter-btn active" onclick="filterOrders('all', this)">Tất cả</span>
-    <span class="filter-btn" onclick="filterOrders('pending', this)">⏳ Chờ xử lý</span>
-    <span class="filter-btn" onclick="filterOrders('paid', this)">💳 Đã thanh toán</span>
-    <span class="filter-btn" onclick="filterOrders('shipping', this)">🚚 Đang giao</span>
-    <span class="filter-btn" onclick="filterOrders('completed', this)">✓ Hoàn tất</span>
-    <span class="filter-btn" onclick="filterOrders('cancelled', this)">✕ Đã hủy</span>
-  </div>
 
-  <div class="orders-list" id="ordersList">
-    <div class="empty-state">
-      <div class="empty-icon">🔒</div>
-      <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem đơn hàng</p>
+<main class="page">
+  <section class="page-head">
+    <div>
+      <div class="eyebrow">Đơn hàng</div>
+      <h1 class="page-title">Đơn hàng của tôi</h1>
+      <p class="page-subtitle">Theo dõi trạng thái xử lý, thanh toán, vận chuyển và mở đánh giá cho các đơn đủ điều kiện.</p>
     </div>
-  </div>
-</div>
+    <a class="btn subtle" href="/products/">Tiếp tục mua sắm</a>
+  </section>
 
-<footer>
-  © 2026 ShopSphere | Quản lý đơn hàng của bạn
-</footer>
+  <section class="filter-row" aria-label="Lọc đơn hàng">
+    <button class="filter-chip active" type="button" onclick="filterOrders('all', this)">Tất cả</button>
+    <button class="filter-chip" type="button" onclick="filterOrders('pending', this)">Chờ xử lý</button>
+    <button class="filter-chip" type="button" onclick="filterOrders('paid', this)">Đã thanh toán</button>
+    <button class="filter-chip" type="button" onclick="filterOrders('shipping', this)">Đang giao</button>
+    <button class="filter-chip" type="button" onclick="filterOrders('completed', this)">Hoàn tất</button>
+    <button class="filter-chip" type="button" onclick="filterOrders('cancelled', this)">Đã hủy</button>
+  </section>
+
+  <section class="record-list" id="ordersList">
+    <div class="empty-state"><strong>Cần đăng nhập</strong>Vui lòng đăng nhập để xem đơn hàng.</div>
+  </section>
+</main>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
@@ -75,119 +42,117 @@ let allOrders = [];
 let currentFilter = 'all';
 
 const statusLabels = {
-  'pending': 'Chờ xác nhận',
-  'paid': 'Đã thanh toán',
-  'processing': 'Đang chuẩn bị',
-  'shipping': 'Đang giao',
-  'shipped': 'Đã gửi',
-  'delivered': 'Đã giao',
-  'completed': 'Hoàn tất',
-  'cancelled': 'Đã hủy'
+  pending: 'Chờ xác nhận',
+  paid: 'Đã thanh toán',
+  processing: 'Đang chuẩn bị',
+  shipping: 'Đang giao',
+  shipped: 'Đã gửi',
+  delivered: 'Đã giao',
+  completed: 'Hoàn tất',
+  cancelled: 'Đã hủy',
+  failed: 'Thất bại'
 };
 
-const statusClasses = {
-  'pending': 'status-pending',
-  'paid': 'status-confirmed',
-  'processing': 'status-confirmed',
-  'shipping': 'status-shipped',
-  'shipped': 'status-shipped',
-  'delivered': 'status-delivered',
-  'completed': 'status-delivered',
-  'cancelled': 'status-cancelled'
-};
+function statusClass(status){
+  return `status-pill ${String(status || 'pending').toLowerCase()}`;
+}
 
 async function loadOrders() {
+  token = localStorage.getItem('token');
   if (!token) {
     document.getElementById('ordersList').innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon">🔒</div>
-        <p>Vui lòng <a href="/login/" style="color:var(--p);font-weight:700">đăng nhập</a> để xem đơn hàng</p>
+        <strong>Cần đăng nhập</strong>
+        <a class="btn primary" href="/login/?next=/orders/" style="margin-top:.8rem">Đăng nhập</a>
       </div>
     `;
     return;
   }
 
   try {
-    const res = await fetch(`${API_BASE}/api/orders/`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('load orders failed');
-    const data = await res.json();
-    const rows = Array.isArray(data) ? data : (data.results || data.orders || []);
-    allOrders = rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    
-    if (allOrders.length === 0) {
-      document.getElementById('ordersList').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Bạn chưa có đơn hàng nào</p></div>`;
-      return;
-    }
-
+    const data = await ShopUI.fetchJson(`${API_BASE}/api/orders/`, {headers: ShopUI.authHeaders(false)});
+    const rows = ShopUI.safeList(data);
+    allOrders = rows.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     renderOrders();
   } catch (err) {
-    document.getElementById('ordersList').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Lỗi tải đơn hàng</p></div>`;
+    document.getElementById('ordersList').innerHTML = '<div class="empty-state"><strong>Không tải được đơn hàng</strong>Vui lòng thử lại sau.</div>';
   }
 }
 
 function renderOrders() {
   let filtered = allOrders;
   if (currentFilter !== 'all') {
-    filtered = allOrders.filter(o => ((o.current_status || o.status || '').toLowerCase() === currentFilter));
+    filtered = allOrders.filter(o => String(o.current_status || o.status || '').toLowerCase() === currentFilter);
   }
 
-  if (filtered.length === 0) {
-    document.getElementById('ordersList').innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><p>Không có đơn hàng nào</p></div>`;
+  if (!filtered.length) {
+    document.getElementById('ordersList').innerHTML = '<div class="empty-state"><strong>Không có đơn hàng</strong>Không tìm thấy đơn phù hợp với bộ lọc hiện tại.</div>';
     return;
   }
 
-  let html = '';
-  filtered.forEach(order => {
-      const status = (order.current_status || order.status || 'pending').toLowerCase();
-      const itemCount = Array.isArray(order.items) ? order.items.length : (order.items_count || order.item_count || 0);
-      const fullAddress = order.address?.full_address || order.shipping_address || 'Chưa xác định';
-      const canReview = ['paid', 'delivered', 'completed'].includes(status);
-    html += `
-      <div class="order-card" onclick="window.location='/orders/${order.id}/tracking/'">
-        <div class="order-header">
+  document.getElementById('ordersList').innerHTML = filtered.map(order => {
+    const status = String(order.current_status || order.status || 'pending').toLowerCase();
+    const itemCount = Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) : (order.items_count || order.item_count || 0);
+    const fullAddress = order.address?.full_address || order.shipping_address || 'Chưa xác định';
+    const canReview = ['paid', 'delivered', 'completed'].includes(status);
+    const canCancel = ['pending', 'paid'].includes(status);
+    return `
+      <article class="order-card" onclick="window.location='/orders/${order.id}/tracking/'">
+        <div class="order-top">
           <div>
-            <div style="font-weight:700;font-size:1rem">Đơn hàng #${order.id}</div>
-            <div style="font-size:.85rem;color:var(--tm);margin-top:.2rem">${new Date(order.created_at).toLocaleString('vi-VN')}</div>
+            <div class="product-title">Đơn hàng #${order.id}</div>
+            <div class="section-note">${new Date(order.created_at || Date.now()).toLocaleString('vi-VN')}</div>
           </div>
-          <div><span class="order-status ${statusClasses[status] || 'status-pending'}">${statusLabels[status] || status}</span></div>
+          <span class="${statusClass(status)}">${ShopUI.escapeHtml(statusLabels[status] || status)}</span>
         </div>
-        <div class="order-info">
-          <div class="order-info-item">
-            <span class="order-label">💰 Tổng tiền</span>
-            <span class="order-value" style="font-size:1.1rem;font-weight:800;color:var(--p)">${(order.total_price || 0).toLocaleString('vi-VN')}₫</span>
+        <div class="order-stats">
+          <div class="data-tile">
+            <div class="data-label">Tổng tiền</div>
+            <div class="data-value price">${ShopUI.money(order.total_price || 0)}</div>
           </div>
-          <div class="order-info-item">
-            <span class="order-label">📦 Số lượng</span>
-            <span class="order-value">${itemCount} sản phẩm</span>
+          <div class="data-tile">
+            <div class="data-label">Số lượng</div>
+            <div class="data-value">${itemCount} sản phẩm</div>
           </div>
-          <div class="order-info-item">
-            <span class="order-label">📍 Địa chỉ</span>
-            <span class="order-value">${fullAddress}</span>
+          <div class="data-tile">
+            <div class="data-label">Địa chỉ</div>
+            <div class="data-value">${ShopUI.escapeHtml(fullAddress)}</div>
           </div>
         </div>
-        <div style="margin-top:1rem">
-          <button class="btn btn-p" onclick="event.stopPropagation(); window.location='/orders/${order.id}/tracking/'">🔍 Chi tiết</button>
-          <button class="btn" style="background:#EEF6FF;color:#0C4A6E;border:1px solid #BFD7FF" onclick="event.stopPropagation(); window.location='/shipping/${order.id}/tracking/'">🚚 Vận chuyển</button>
-          ${canReview ? `<button class="btn" style="background:#FFF4F5;color:var(--p);border:1px solid var(--b)" onclick="event.stopPropagation(); window.location='/reviews/?order_id=${order.id}'">💬 Đánh giá</button>` : ''}
+        <div class="order-actions">
+          <button class="btn primary small" onclick="event.stopPropagation(); window.location='/orders/${order.id}/tracking/'">Chi tiết</button>
+          <button class="btn small" onclick="event.stopPropagation(); window.location='/shipping/${order.id}/tracking/'">Vận chuyển</button>
+          ${canReview ? `<button class="btn small" onclick="event.stopPropagation(); window.location='/reviews/?order_id=${order.id}'">Đánh giá</button>` : ''}
+          ${canCancel ? `<button class="btn small" onclick="event.stopPropagation(); cancelOrder(${order.id})">Hủy đơn</button>` : ''}
         </div>
-      </div>
+      </article>
     `;
-  });
+  }).join('');
+}
 
-  document.getElementById('ordersList').innerHTML = html;
+async function cancelOrder(orderId) {
+  if (!confirm(`Hủy đơn #${orderId}?`)) return;
+  try {
+    await ShopUI.fetchJson(`${API_BASE}/api/orders/${orderId}/cancel/`, {
+      method: 'PUT',
+      headers: ShopUI.authHeaders(),
+      body: JSON.stringify({})
+    });
+    ShopUI.toast('Đã hủy đơn hàng');
+    await loadOrders();
+  } catch (err) {
+    ShopUI.toast(err.message || 'Không hủy được đơn hàng', 'err');
+  }
 }
 
 function filterOrders(status, el) {
   currentFilter = status;
-  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
   if (el) el.classList.add('active');
   renderOrders();
 }
 
 loadOrders();
 </script>
-
 </body>
 </html>

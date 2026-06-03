@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Manager Portal - ShopSphere</title>
+<title>Bảng vận hành - ShopSphere</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>{% include "_customer_ui.css" %}</style>
 </head>
@@ -12,31 +12,30 @@
 <main id="managerApp" class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">Operations</div>
-      <h1 class="page-title">Manager Portal</h1>
+      <div class="eyebrow">Vận hành</div>
+      <h1 class="page-title">Bảng vận hành</h1>
       <p class="page-subtitle">Trang tổng quan vận hành cho catalog, đơn hàng, thanh toán, vận chuyển, thông báo và dữ liệu gợi ý.</p>
     </div>
     <span class="pill amber">Đang vận hành</span>
   </section>
 
   <section class="quick-grid">
-    <a class="quick-card" href="/products/"><span class="quick-icon">P</span><span><span class="quick-title">Catalog</span><span class="quick-meta" id="productCount">Đang tải</span></span></a>
-    <a class="quick-card" href="/orders/"><span class="quick-icon">O</span><span><span class="quick-title">Đơn hàng</span><span class="quick-meta">Theo dõi trạng thái</span></span></a>
-    <a class="quick-card" href="/reviews/"><span class="quick-icon">R</span><span><span class="quick-title">Đánh giá</span><span class="quick-meta">Duyệt phản hồi khách hàng</span></span></a>
+    <a class="quick-card" href="/products/"><span class="quick-icon">SP</span><span><span class="quick-title">Catalog</span><span class="quick-meta" id="productCount">Đang tải</span></span></a>
+    <a class="quick-card" href="/orders/"><span class="quick-icon">DH</span><span><span class="quick-title">Đơn hàng</span><span class="quick-meta">Theo dõi trạng thái</span></span></a>
+    <a class="quick-card" href="/reviews/"><span class="quick-icon">DG</span><span><span class="quick-title">Đánh giá</span><span class="quick-meta">Duyệt phản hồi khách hàng</span></span></a>
     <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">Trợ lý tư vấn</span><span class="quick-meta" id="aiState">Đang kiểm tra</span></span></a>
   </section>
 
   <section class="drawer-grid section">
     <div class="panel pad">
-      <h2 class="section-title">Service Map</h2>
+      <h2 class="section-title">Tình trạng service</h2>
       <div id="serviceMap" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.7rem;margin-top:.8rem"></div>
     </div>
     <aside class="panel pad">
       <h2 class="section-title">Liên kết nhanh</h2>
       <div style="display:flex;flex-direction:column;gap:.55rem;margin-top:.8rem">
-        <a class="btn block" href="/coupons/">Quản lý ưu đãi</a>
-        <a class="btn block" href="/returns/">Yêu cầu đổi trả</a>
         <a class="btn block" href="/notifications/">Trung tâm thông báo</a>
+        <a class="btn block" href="/staff/">Vận hành giao hàng</a>
       </div>
     </aside>
   </section>
@@ -44,7 +43,7 @@
   <section class="section panel pad">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Catalog Management</h2>
+        <h2 class="section-title">Quản lý catalog</h2>
         <div class="section-note">Tạo ngành hàng, danh mục, sản phẩm, cập nhật tồn kho và ngưng bán khi cần.</div>
       </div>
       <button class="btn small" onclick="loadCatalogAdmin()">Tải lại</button>
@@ -52,30 +51,30 @@
 
     <div class="toolbar" style="margin:.9rem 0">
       <div class="field" style="min-width:180px">
-        <label>Domain mới</label>
-        <input id="newDomainName" placeholder="Ví dụ: Health">
+        <label>Ngành hàng mới</label>
+        <input id="newDomainName" placeholder="Ví dụ: Chăm sóc sức khỏe">
       </div>
       <div class="field" style="min-width:260px">
-        <label>Mô tả domain</label>
+        <label>Mô tả ngành hàng</label>
         <input id="newDomainDesc" placeholder="Mô tả ngắn">
       </div>
-      <button class="btn primary small" style="align-self:end" onclick="createDomain()">Tạo domain</button>
+      <button class="btn primary small" style="align-self:end" onclick="createDomain()">Tạo ngành hàng</button>
     </div>
 
     <div class="toolbar" style="margin:.9rem 0">
       <div class="field" style="min-width:180px">
-        <label>Domain</label>
+        <label>Ngành hàng</label>
         <select id="adminDomainSelect" onchange="renderCategorySelects()"></select>
       </div>
       <div class="field" style="min-width:180px">
-        <label>Category mới</label>
-        <input id="newCategoryName" placeholder="Ví dụ: Vitamins">
+        <label>Danh mục mới</label>
+        <input id="newCategoryName" placeholder="Ví dụ: Vitamin">
       </div>
       <div class="field" style="min-width:260px">
-        <label>Mô tả category</label>
+        <label>Mô tả danh mục</label>
         <input id="newCategoryDesc" placeholder="Mô tả ngắn">
       </div>
-      <button class="btn primary small" style="align-self:end" onclick="createCategory()">Tạo category</button>
+      <button class="btn primary small" style="align-self:end" onclick="createCategory()">Tạo danh mục</button>
     </div>
 
     <div class="auth-grid" style="margin:.9rem 0">
@@ -88,7 +87,7 @@
         <input id="newProductSku" placeholder="SKU duy nhất">
       </div>
       <div class="field">
-        <label>Category</label>
+        <label>Danh mục</label>
         <select id="adminCategorySelect"></select>
       </div>
       <div class="field">
@@ -130,9 +129,9 @@ function renderManagerAccessDenied(){
     <section class="panel pad">
       <div class="section-head">
         <div>
-          <div class="eyebrow">Access control</div>
+          <div class="eyebrow">Phân quyền</div>
           <h1 class="page-title">Cần quyền vận hành</h1>
-          <p class="page-subtitle">Đăng nhập bằng tài khoản staff, manager hoặc admin để truy cập Manager Portal.</p>
+          <p class="page-subtitle">Đăng nhập bằng tài khoản staff, manager hoặc admin để truy cập bảng vận hành.</p>
         </div>
         <a class="btn primary" href="/login/?next=/manager/">Đăng nhập</a>
       </div>
@@ -214,21 +213,21 @@ async function loadCatalogAdmin(){
 async function createDomain(){
   const name = document.getElementById('newDomainName').value.trim();
   const description = document.getElementById('newDomainDesc').value.trim();
-  if(!name){ ShopUI.toast('Nhập tên domain', 'err'); return; }
+  if(!name){ ShopUI.toast('Nhập tên ngành hàng', 'err'); return; }
   try{
     const created = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/domains/`, {
       method:'POST',
       headers:ShopUI.authHeaders(),
       body:JSON.stringify({name, description})
     });
-    ShopUI.toast('Đã tạo domain');
+    ShopUI.toast('Đã tạo ngành hàng');
     document.getElementById('newDomainName').value = '';
     document.getElementById('newDomainDesc').value = '';
     await loadCatalogAdmin();
     document.getElementById('adminDomainSelect').value = String(created.id);
     renderCategorySelects();
   }catch(err){
-    ShopUI.toast(err.message || 'Không tạo được domain', 'err');
+    ShopUI.toast(err.message || 'Không tạo được ngành hàng', 'err');
   }
 }
 
@@ -236,14 +235,14 @@ async function createCategory(){
   const name = document.getElementById('newCategoryName').value.trim();
   const description = document.getElementById('newCategoryDesc').value.trim();
   const domain_id = Number(document.getElementById('adminDomainSelect').value);
-  if(!name || !domain_id){ ShopUI.toast('Nhập đủ category và domain', 'err'); return; }
+  if(!name || !domain_id){ ShopUI.toast('Nhập đủ danh mục và ngành hàng', 'err'); return; }
   try{
     const created = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/categories/`, {
       method:'POST',
       headers:ShopUI.authHeaders(),
       body:JSON.stringify({name, description, domain_id})
     });
-    ShopUI.toast('Đã tạo category');
+    ShopUI.toast('Đã tạo danh mục');
     document.getElementById('newCategoryName').value = '';
     document.getElementById('newCategoryDesc').value = '';
     await loadCatalogAdmin();
@@ -251,7 +250,7 @@ async function createCategory(){
     renderCategorySelects();
     document.getElementById('adminCategorySelect').value = String(created.id);
   }catch(err){
-    ShopUI.toast(err.message || 'Không tạo được category', 'err');
+    ShopUI.toast(err.message || 'Không tạo được danh mục', 'err');
   }
 }
 
@@ -267,7 +266,7 @@ async function createProduct(){
     description: document.getElementById('newProductDesc').value.trim()
   };
   if(!payload.name || !payload.sku || !payload.category_id || !payload.image_url){
-    ShopUI.toast('Nhập tên, SKU, category và ảnh URL', 'err');
+    ShopUI.toast('Nhập tên, SKU, danh mục và ảnh URL', 'err');
     return;
   }
   try{
@@ -344,7 +343,7 @@ function initManagerPage(){
     renderManagerAccessDenied();
     return;
   }
-  document.getElementById('serviceMap').innerHTML = services.map(s => `<div class="spec"><span>${s}</span><strong>Connected through gateway</strong></div>`).join('');
+  document.getElementById('serviceMap').innerHTML = services.map(s => `<div class="spec"><span>${s}</span><strong>Kết nối qua gateway</strong></div>`).join('');
   ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`).then(d => {
     const count = d.count ?? ShopUI.safeList(d).length;
     document.getElementById('productCount').textContent = `${count} sản phẩm active`;

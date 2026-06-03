@@ -324,6 +324,53 @@ def _graph_hints_for_customer(customer_id: int | None) -> list[str]:
     return [hint for hint in hints if hint]
 
 
+_TITLE_STOPWORDS = {
+    "san", "pham", "sản", "phẩm", "product", "item", "mat", "hang", "mặt", "hàng",
+    "cuon", "cuốn", "quyen", "quyển", "sach", "sách", "gia", "giá", "price",
+    "bao", "nhieu", "nhiêu", "con", "còn", "hang", "hàng", "khong", "không",
+}
+
+
+def _title_tokens(value: str) -> list[str]:
+    tokens = re.findall(r"[a-zA-Z0-9À-ỹ]+", str(value or "").lower())
+    return [t for t in tokens if len(t) >= 2 and t not in _TITLE_STOPWORDS]
+
+
+def _catalog_title_matches(query: str, limit: int = 8, strict: bool = True) -> list[dict]:
+    """Find catalog products by title without accepting unrelated keyword-search noise."""
+    from .clients.catalog_client import catalog_client
+
+    q = str(query or "").strip()
+    q_lower = q.lower()
+    q_tokens = _title_tokens(q)
+    if not q_tokens:
+        return []
+
+    min_score = 0.72 if strict and len(q_tokens) >= 3 else (0.55 if strict else 0.35)
+    scored: list[tuple[float, dict]] = []
+    for product in catalog_client.get_all_products(limit=500):
+        title = str(product.get("title") or product.get("name") or "")
+        title_lower = title.lower()
+        title_tokens = set(_title_tokens(title))
+        if not title_tokens:
+            continue
+
+        overlap = len([t for t in q_tokens if t in title_tokens])
+        score = overlap / max(len(q_tokens), 1)
+        if q_lower and q_lower in title_lower:
+            score = 1.0
+        elif overlap == len(q_tokens):
+            score = 0.96
+        elif q_tokens and q_tokens[0] in title_tokens:
+            score += 0.08
+
+        if score >= min_score:
+            scored.append((score, product))
+
+    scored.sort(key=lambda item: (item[0], int(item[1].get("id", 0) or 0)), reverse=True)
+    return [product for _, product in scored[:limit]]
+
+
 class ChatOrchestrator:
     def process(
         self,
@@ -419,8 +466,7 @@ class ChatOrchestrator:
                 "faq":              None,
             }
             kb_cat = category_map.get(intent)
-            graph_hints = _graph_hints_for_customer(customer_id)
-            entries = retrieve_with_graph_hints(message, graph_hints=graph_hints, top_k=3, category=kb_cat)
+            entries = retrieve_with_graph_hints(message, graph_hints=[], top_k=3, category=kb_cat)
             sources = entries
             data["sources"] = entries
 
@@ -445,16 +491,13 @@ class ChatOrchestrator:
                 from .clients.catalog_client import catalog_client
                 from .clients.comment_client import comment_client as cc
 
-                direct_books = catalog_client.search_products(
-                    query=direct_title,
-                    category_slug=entities.get("category"),
-                    min_price=entities.get("budget_min"),
-                    max_price=entities.get("budget_max"),
-                )
-                if not direct_books:
-                    ql = str(direct_title).lower().strip()
-                    all_books = catalog_client.get_all_products(limit=500)
-                    direct_books = [b for b in all_books if ql and ql in str(b.get("title", "")).lower()]
+                direct_books = _catalog_title_matches(str(direct_title), limit=6, strict=True)
+                if entities.get("budget_min") is not None:
+                    direct_books = [b for b in direct_books if float(b.get("price", 0) or 0) >= float(entities.get("budget_min") or 0)]
+                if entities.get("budget_max") is not None:
+                    direct_books = [b for b in direct_books if float(b.get("price", 0) or 0) <= float(entities.get("budget_max") or 0)]
+                if entities.get("category"):
+                    direct_books = [b for b in direct_books if b.get("category") == entities.get("category")]
                 if direct_books:
                     # Boost books whose titles contain the requested phrase.
                     ql = str(direct_title).lower()
@@ -545,7 +588,7 @@ class ChatOrchestrator:
                                     "category": b.get("category", ""),
                                     "price": float(b.get("price", 0) or 0),
                                     "score": float(g.get("score", 0) or 0),
-                                    "reason": "goi y tu KB_Graph theo category da quan tam",
+                                    "reason": "phù hợp với nhóm sản phẩm bạn hay quan tâm",
                                     "avg_rating": 0,
                                 }
                             )
@@ -666,7 +709,7 @@ class ChatOrchestrator:
             elif entities.get("ask_same_author"):
                 author = entities.get("author")
                 if not author and entities.get("book_title"):
-                    found = catalog_client.search_products(query=str(entities.get("book_title")))
+                    found = _catalog_title_matches(str(entities.get("book_title")), limit=1, strict=True)
                     if found:
                         author = found[0].get("author")
                 if author:
@@ -698,7 +741,7 @@ class ChatOrchestrator:
                 if recent_recs:
                     base_id = recent_recs[0].get("product_id")
                 if not base_id and entities.get("book_title"):
-                    found = catalog_client.search_products(query=str(entities.get("book_title")))
+                    found = _catalog_title_matches(str(entities.get("book_title")), limit=1, strict=True)
                     if found:
                         base_id = found[0].get("id")
                 if base_id:
@@ -709,10 +752,8 @@ class ChatOrchestrator:
             elif entities.get("ask_compare_price") and entities.get("book_titles"):
                 books_map: dict[int, dict] = {}
                 for t in entities.get("book_titles", [])[:3]:
-                    matches = catalog_client.search_products(query=str(t))
+                    matches = _catalog_title_matches(str(t), limit=3, strict=True)
                     if matches:
-                        ql = str(t).lower()
-                        matches.sort(key=lambda b: (ql in str(b.get("title", "")).lower(), int(b.get("id", 0) or 0)), reverse=True)
                         b = matches[0]
                         bid = b.get("id")
                         if bid and bid not in books_map:
@@ -742,41 +783,36 @@ class ChatOrchestrator:
                 if entities.get("book_titles"):
                     books_map: dict[int, dict] = {}
                     for t in entities.get("book_titles", []):
-                        found = catalog_client.search_products(
-                            query=str(t),
-                            category_slug=category,
-                            min_price=entities.get("budget_min"),
-                            max_price=entities.get("budget_max"),
-                        )
-                        if not found:
-                            ql = str(t).lower().strip()
-                            all_books = catalog_client.get_all_products(limit=500)
-                            found = [b for b in all_books if ql and ql in str(b.get("title", "")).lower()]
-                        ql = str(t).lower()
-                        found.sort(
-                            key=lambda b: (ql in str(b.get("title", "")).lower(), int(b.get("id", 0) or 0)),
-                            reverse=True,
-                        )
+                        found = _catalog_title_matches(str(t), limit=8, strict=True)
+                        if category:
+                            found = [b for b in found if b.get("category") == category]
+                        if entities.get("budget_min") is not None:
+                            found = [b for b in found if float(b.get("price", 0) or 0) >= float(entities.get("budget_min") or 0)]
+                        if entities.get("budget_max") is not None:
+                            found = [b for b in found if float(b.get("price", 0) or 0) <= float(entities.get("budget_max") or 0)]
                         for b in found:
                             bid = b.get("id")
                             if bid and bid not in books_map:
                                 books_map[bid] = b
                     books = list(books_map.values())
                 elif entities.get("book_title"):
-                    books = catalog_client.search_products(
-                        query=str(entities.get("book_title")),
-                        category_slug=category,
-                        min_price=entities.get("budget_min"),
-                        max_price=entities.get("budget_max"),
-                    )
-                    ql = str(entities.get("book_title")).lower().strip()
-                    if not books or not any(ql in str(b.get("title", "")).lower() for b in books[:2]):
+                    books = _catalog_title_matches(str(entities.get("book_title")), limit=8, strict=True)
+                    if category:
+                        books = [b for b in books if b.get("category") == category]
+                    if entities.get("budget_min") is not None:
+                        books = [b for b in books if float(b.get("price", 0) or 0) >= float(entities.get("budget_min") or 0)]
+                    if entities.get("budget_max") is not None:
+                        books = [b for b in books if float(b.get("price", 0) or 0) <= float(entities.get("budget_max") or 0)]
+                    if not books and category:
                         all_books = catalog_client.get_all_products(limit=500)
-                        books = [b for b in all_books if ql and ql in str(b.get("title", "")).lower()]
-                    books.sort(
-                        key=lambda b: (ql in str(b.get("title", "")).lower(), int(b.get("id", 0) or 0)),
-                        reverse=True,
-                    )
+                        books = [
+                            b for b in all_books
+                            if b.get("category") == category and int(b.get("stock", 0) or 0) > 0
+                        ]
+                        if entities.get("budget_min") is not None:
+                            books = [b for b in books if float(b.get("price", 0) or 0) >= float(entities.get("budget_min") or 0)]
+                        if entities.get("budget_max") is not None:
+                            books = [b for b in books if float(b.get("price", 0) or 0) <= float(entities.get("budget_max") or 0)]
                 elif (
                     (entities.get("ask_price") or entities.get("ask_best_price"))
                     and (entities.get("budget_min") is not None or entities.get("budget_max") is not None)
@@ -793,6 +829,16 @@ class ChatOrchestrator:
                         if category and b.get("category") != category:
                             continue
                         books.append(b)
+                elif category:
+                    all_books = catalog_client.get_all_products(limit=500)
+                    books = [
+                        b for b in all_books
+                        if b.get("category") == category and int(b.get("stock", 0) or 0) > 0
+                    ]
+                    if entities.get("budget_min") is not None:
+                        books = [b for b in books if float(b.get("price", 0) or 0) >= float(entities.get("budget_min") or 0)]
+                    if entities.get("budget_max") is not None:
+                        books = [b for b in books if float(b.get("price", 0) or 0) <= float(entities.get("budget_max") or 0)]
                 else:
                     books = catalog_client.search_products(
                         query=query,
@@ -883,18 +929,8 @@ class ChatOrchestrator:
                         model_best_prediction = _best_model_predictor.predict_next_action(seq)
                 if model_best_prediction:
                     data["model_best_prediction"] = model_best_prediction
-                    graph_sources.append(
-                        {
-                            "title": "model_best_inference",
-                            "content": f"predicted_action={model_best_prediction['predicted_action']}, confidence={model_best_prediction['confidence']}",
-                            "source_type": "model_best",
-                        }
-                    )
             except Exception as exc:
                 logger.debug("model_best inference unavailable: %s", exc)
-
-        if graph_sources:
-            data["graph_insights"] = graph_sources
 
         recommendations = _enrich_recommendations_with_catalog(recommendations)
         if data.get("recommendations"):
@@ -930,11 +966,10 @@ class ChatOrchestrator:
             "recommendations": recommendations,
             "products":        products_payload,
             "items":           products_payload,
-            "sources":         [{"title": s["title"], "snippet": s["content"][:150]} for s in (sources + graph_sources)],
+            "sources":         [{"title": s["title"], "snippet": s["content"][:150]} for s in sources],
             "meta": {
                 "entities":    entities,
                 "customer_id": customer_id,
-                "model_best": data.get("model_best_prediction"),
             },
         }
 

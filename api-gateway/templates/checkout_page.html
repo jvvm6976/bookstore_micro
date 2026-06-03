@@ -12,7 +12,7 @@
 <main class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">Checkout</div>
+      <div class="eyebrow">Thanh toán</div>
       <h1 class="page-title">Hoàn tất đơn hàng</h1>
       <p class="page-subtitle">Chọn địa chỉ, phương thức thanh toán và xác nhận đơn hàng qua order-service/payment-service.</p>
     </div>
@@ -68,10 +68,6 @@
               <option value="stripe">Stripe</option>
             </select>
           </div>
-          <div class="field">
-            <label>Mã ưu đãi</label>
-            <input id="couponCode" placeholder="Chọn tại trang Ưu đãi">
-          </div>
           <div class="field full">
             <label>Ghi chú</label>
             <textarea id="orderNote" rows="3" placeholder="Ghi chú cho đơn hàng"></textarea>
@@ -86,7 +82,6 @@
       <div style="margin-top:.8rem">
         <div class="summary-row"><span>Số lượng</span><strong id="sumQty">0</strong></div>
         <div class="summary-row"><span>Tạm tính</span><strong id="sumTotal">0₫</strong></div>
-        <div class="summary-row"><span>Coupon</span><strong id="couponPreview">Chưa áp dụng</strong></div>
         <div class="summary-row summary-total"><span>Tổng thanh toán</span><strong id="grandTotal">0₫</strong></div>
       </div>
       <button id="checkoutBtn" class="btn primary block" onclick="checkout()" style="margin-top:.9rem">Đặt hàng và thanh toán</button>
@@ -172,11 +167,9 @@ function cartTotal(){
 function updateSummary(){
   const qty = cartItems.reduce((sum,item) => sum + Number(item.quantity || 0), 0);
   const total = cartTotal();
-  const coupon = document.getElementById('couponCode').value.trim();
   document.getElementById('sumQty').textContent = String(qty);
   document.getElementById('sumTotal').textContent = ShopUI.money(total);
   document.getElementById('grandTotal').textContent = ShopUI.money(total);
-  document.getElementById('couponPreview').textContent = coupon || 'Chưa áp dụng';
 }
 
 function renderAddresses(){
@@ -254,8 +247,7 @@ async function checkout(){
       headers:ShopUI.authHeaders(),
       body:JSON.stringify({
         shipping_address: `${selectedAddress.street}, ${selectedAddress.city}`,
-        note: document.getElementById('orderNote').value.trim(),
-        coupon_code: document.getElementById('couponCode').value.trim()
+        note: document.getElementById('orderNote').value.trim()
       })
     });
     const orderId = order.id;
@@ -271,7 +263,6 @@ async function checkout(){
       })
     });
     ShopUI.toast(`Thanh toán ${payment.overall_status || 'success'}`);
-    localStorage.removeItem('selected_coupon');
     window.location.href = `/orders/${orderId}/tracking/`;
   }catch(err){
     setMsg(err.message || 'Checkout thất bại.', true);
@@ -284,8 +275,6 @@ async function initCheckout(){
     window.location.href = '/login/';
     return;
   }
-  document.getElementById('couponCode').value = localStorage.getItem('selected_coupon') || '';
-  document.getElementById('couponCode').addEventListener('input', updateSummary);
   try{
     await Promise.all([loadCart(), loadAddresses()]);
   }catch(err){
@@ -297,4 +286,3 @@ initCheckout();
 </script>
 </body>
 </html>
-

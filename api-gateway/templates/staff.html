@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Staff Workspace - ShopSphere</title>
+<title>Không gian nhân viên - ShopSphere</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>{% include "_customer_ui.css" %}</style>
 </head>
@@ -12,17 +12,16 @@
 <main id="staffApp" class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">Support workspace</div>
-      <h1 class="page-title">Staff Workspace</h1>
-      <p class="page-subtitle">Không gian tác nghiệp cho nhân viên hỗ trợ khách hàng: kiểm tra đơn, vận chuyển, đánh giá và yêu cầu đổi trả.</p>
+      <div class="eyebrow">Nhân viên</div>
+      <h1 class="page-title">Không gian nhân viên</h1>
+      <p class="page-subtitle">Không gian tác nghiệp cho nhân viên hỗ trợ khách hàng: kiểm tra đơn, vận chuyển và đánh giá.</p>
     </div>
     <span class="pill teal">Đang trực</span>
   </section>
 
   <section class="quick-grid">
-    <a class="quick-card" href="/orders/"><span class="quick-icon">O</span><span><span class="quick-title">Tra đơn</span><span class="quick-meta">Danh sách và chi tiết đơn hàng</span></span></a>
-    <a class="quick-card" href="/returns/"><span class="quick-icon">R</span><span><span class="quick-title">Đổi trả</span><span class="quick-meta">Quy trình hoàn tiền</span></span></a>
-    <a class="quick-card" href="/reviews/"><span class="quick-icon">V</span><span><span class="quick-title">Review</span><span class="quick-meta">Phản hồi sản phẩm</span></span></a>
+    <a class="quick-card" href="/orders/"><span class="quick-icon">DH</span><span><span class="quick-title">Tra đơn</span><span class="quick-meta">Danh sách và chi tiết đơn hàng</span></span></a>
+    <a class="quick-card" href="/reviews/"><span class="quick-icon">DG</span><span><span class="quick-title">Đánh giá</span><span class="quick-meta">Phản hồi sản phẩm</span></span></a>
     <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">AI hỗ trợ</span><span class="quick-meta">Tư vấn câu trả lời</span></span></a>
   </section>
 
@@ -90,7 +89,7 @@ function renderStaffAccessDenied(){
     <section class="panel pad">
       <div class="section-head">
         <div>
-          <div class="eyebrow">Access control</div>
+          <div class="eyebrow">Phân quyền</div>
           <h1 class="page-title">Cần tài khoản nhân viên</h1>
           <p class="page-subtitle">Đăng nhập bằng tài khoản staff, manager hoặc admin để vận hành giao hàng và đối soát review.</p>
         </div>
@@ -109,6 +108,7 @@ let shipments = [];
 let orderCache = new Map();
 let paymentCache = new Map();
 let userOrderMap = new Map();
+const SHIPMENT_RENDER_LIMIT = 25;
 
 async function loadUserOrders(){
   try{
@@ -163,18 +163,22 @@ async function renderShipments(){
     panel.innerHTML = '<strong>Không có vận đơn</strong>Không tìm thấy vận đơn theo bộ lọc hiện tại.';
     return;
   }
-  const enriched = [];
-  for(const shipment of rows){
+  const visibleRows = rows.slice(0, SHIPMENT_RENDER_LIMIT);
+  const enriched = await Promise.all(visibleRows.map(async shipment => {
     const order = await loadOrder(shipment.order_id);
     const orderStatus = String(order?.current_status || '').toLowerCase();
     const payment = ['paid', 'processing', 'shipping', 'delivered', 'completed'].includes(orderStatus)
       ? await loadPayment(shipment.order_id)
       : null;
-    enriched.push({shipment, order, payment});
-  }
+    return {shipment, order, payment};
+  }));
+  const truncatedNote = rows.length > visibleRows.length
+    ? `<div class="notice">Đang hiển thị ${visibleRows.length}/${rows.length} vận đơn gần nhất. Dùng bộ lọc trạng thái để thu hẹp danh sách.</div>`
+    : '';
   panel.className = '';
   panel.innerHTML = `
     <div style="display:grid;gap:.7rem">
+      ${truncatedNote}
       ${enriched.map(({shipment, order, payment}) => {
         const status = shipment.current_status || 'processing';
         const next = nextShipmentStatus(status);
@@ -194,6 +198,7 @@ async function renderShipments(){
               <a class="btn small" href="/shipping/${shipment.order_id}/tracking/">Tracking</a>
               ${next ? `<button class="btn primary small" onclick="advanceShipment(${shipment.order_id}, '${next}')">${nextStatusLabel(status)}</button>` : ''}
               <button class="btn small" onclick="addTracking(${shipment.order_id})">Thêm tracking</button>
+              ${status === 'processing' ? `<button class="btn small" onclick="deleteShipment(${shipment.order_id})">Hủy vận đơn</button>` : ''}
             </div>
           </div>
         `;
@@ -255,6 +260,25 @@ async function addTracking(orderId){
     ShopUI.toast('Đã thêm tracking');
   }catch(err){
     ShopUI.toast(err.message || 'Không thêm được tracking', 'err');
+  }
+}
+
+async function deleteShipment(orderId){
+  if(!confirm(`Hủy vận đơn của đơn #${orderId}?`)) return;
+  try{
+    const res = await fetch(`${ShopUI.API_BASE}/api/shipping/${orderId}/delete/`, {
+      method:'DELETE',
+      headers:ShopUI.authHeaders(false)
+    });
+    if(!res.ok && res.status !== 204){
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || data.detail || 'Không hủy được vận đơn');
+    }
+    ShopUI.toast('Đã hủy vận đơn');
+    shipments = shipments.filter(s => Number(s.order_id) !== Number(orderId));
+    await renderShipments();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không hủy được vận đơn', 'err');
   }
 }
 
