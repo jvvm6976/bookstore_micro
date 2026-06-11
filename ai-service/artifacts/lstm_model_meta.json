@@ -1,0 +1,137 @@
+{
+  "category_to_id": {
+    "unknown": 1
+  },
+  "max_product_id": 1800,
+  "max_price": 0.0,
+  "max_cart_value": 0.0,
+  "seq_len": 12,
+  "feature_dim": 6,
+  "num_classes": 8,
+  "actions": [
+    "search",
+    "view",
+    "add_to_cart",
+    "purchase",
+    "rate_product",
+    "wishlist",
+    "remove_from_cart",
+    "click"
+  ],
+  "model_name": "lstm",
+  "model_type": "lstm",
+  "hidden_dim": 64,
+  "num_layers": 1,
+  "class_balance": {
+    "class_counts": [
+      214,
+      713,
+      526,
+      347,
+      222,
+      406,
+      222,
+      487
+    ],
+    "class_weights": [
+      1.265114,
+      0.693093,
+      0.806944,
+      0.993509,
+      1.24211,
+      0.918488,
+      1.24211,
+      0.838633
+    ],
+    "sampler": "none",
+    "loss": "cross_entropy_weighted"
+  },
+  "metrics": {
+    "accuracy": 0.263235,
+    "precision": 0.15472,
+    "recall": 0.237159,
+    "f1_score": 0.175914,
+    "confusion_matrix": [
+      [
+        0,
+        14,
+        18,
+        3,
+        7,
+        1,
+        0,
+        4
+      ],
+      [
+        0,
+        75,
+        47,
+        10,
+        15,
+        0,
+        0,
+        7
+      ],
+      [
+        0,
+        39,
+        41,
+        15,
+        11,
+        0,
+        0,
+        8
+      ],
+      [
+        0,
+        16,
+        13,
+        24,
+        20,
+        1,
+        0,
+        1
+      ],
+      [
+        0,
+        2,
+        4,
+        9,
+        33,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        31,
+        24,
+        14,
+        12,
+        0,
+        0,
+        6
+      ],
+      [
+        0,
+        13,
+        11,
+        12,
+        13,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        50,
+        29,
+        6,
+        13,
+        1,
+        0,
+        6
+      ]
+    ]
+  }
+}
