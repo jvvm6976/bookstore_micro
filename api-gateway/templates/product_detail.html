@@ -11,7 +11,7 @@
 {% include "_customer_header.html" with active_nav="products" %}
 <main class="page">
   <div style="margin:.8rem 0">
-    <a class="btn ghost" href="/products/">← Quay lại catalog</a>
+    <a class="btn ghost" href="/products/">← Quay lại sản phẩm</a>
   </div>
 
   <section id="detailWrap" class="detail-grid">
@@ -108,7 +108,7 @@ function renderDetail(product){
   document.title = `${p.name} - ShopSphere`;
   document.getElementById('detailWrap').innerHTML = `
     <div class="detail-media panel">
-      <img src="${ShopUI.imageFor(p)}" alt="${ShopUI.escapeHtml(p.name)}">
+      <img src="${ShopUI.imageFor(p)}" data-fallback-src="${ShopUI.escapeHtml(ShopUI.fallbackImage(p))}" alt="${ShopUI.escapeHtml(p.name)}" loading="eager" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc||ShopUI.fallbackImage()">
     </div>
     <article class="panel pad">
       <div class="eyebrow">${ShopUI.escapeHtml(p.domain_name || 'ShopSphere')}</div>
@@ -168,7 +168,7 @@ async function loadRelated(product){
     }
     grid.innerHTML = items.length
       ? items.slice(0,4).map(p => ShopUI.productCard(p)).join('')
-      : '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm liên quan</strong>Hãy quay lại catalog để xem ngành hàng khác.</div>';
+      : '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm liên quan</strong>Hãy quay lại danh sách sản phẩm để xem ngành hàng khác.</div>';
   }catch(_){
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm liên quan</strong></div>';
   }

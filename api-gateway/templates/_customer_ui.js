@@ -12,24 +12,31 @@ const ShopUI = (() => {
   let notificationsLoaded = false;
   let notificationLoading = false;
   let notificationError = '';
+  let tokenRefreshPromise = null;
+  const PRODUCT_IMAGE_BASE = 'http://localhost:8002/static/images/products';
   const images = {
-    books: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=700&q=80',
-    fiction: 'https://images.unsplash.com/photo-1519682337058-a94d519337bc?auto=format&fit=crop&w=700&q=80',
-    science: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=700&q=80',
-    phones: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=700&q=80',
-    electronics: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80',
-    laptops: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=700&q=80',
-    fashion: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=700&q=80',
-    mens: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=700&q=80',
-    womens: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&w=700&q=80',
-    shoes: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=700&q=80',
-    default: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=700&q=80'
+    books: `${PRODUCT_IMAGE_BASE}/product_1.jpg`,
+    fiction: `${PRODUCT_IMAGE_BASE}/product_2.jpg`,
+    science: `${PRODUCT_IMAGE_BASE}/product_3.jpg`,
+    phones: `${PRODUCT_IMAGE_BASE}/product_9.jpg`,
+    electronics: `${PRODUCT_IMAGE_BASE}/product_13.jpg`,
+    laptops: `${PRODUCT_IMAGE_BASE}/product_11.jpg`,
+    fashion: `${PRODUCT_IMAGE_BASE}/product_16.jpg`,
+    mens: `${PRODUCT_IMAGE_BASE}/product_15.jpg`,
+    womens: `${PRODUCT_IMAGE_BASE}/product_17.jpg`,
+    shoes: `${PRODUCT_IMAGE_BASE}/product_19.jpg`,
+    default: `${PRODUCT_IMAGE_BASE}/product_30.jpg`
   };
 
   function token() { return localStorage.getItem('token') || ''; }
   function userId() { return localStorage.getItem('user_id') || ''; }
   function username() { return localStorage.getItem('username') || ''; }
   function role() { return localStorage.getItem('role') || ''; }
+
+  function roleLabel(value) {
+    const labels = { admin: 'Quản trị viên', manager: 'Quản lý', staff: 'Nhân viên', customer: 'Khách hàng' };
+    return labels[String(value || '').toLowerCase()] || value || 'Khách';
+  }
 
   function authHeaders(json = true) {
     const h = {};
@@ -93,7 +100,7 @@ const ShopUI = (() => {
       el.textContent = token() ? `Xin chào ${username() || 'bạn'}` : 'Khách';
     });
     document.querySelectorAll('[data-auth-role]').forEach(el => {
-      el.textContent = token() ? (role() || 'customer') : 'guest';
+      el.textContent = token() ? roleLabel(role()) : 'Khách';
     });
     document.querySelectorAll('[data-auth-only]').forEach(el => {
       el.style.display = token() ? 'inline-flex' : 'none';
@@ -331,9 +338,9 @@ const ShopUI = (() => {
     });
   }
 
-  function imageFor(product) {
-    if (product?.image_url || product?.image) return product.image_url || product.image;
+  function fallbackImage(product = null) {
     const text = `${product?.name || product?.title || ''} ${product?.category_name || product?.category || ''} ${product?.domain_name || product?.domain || ''}`.toLowerCase();
+    if (text.includes('headphone') || text.includes('audio')) return images.electronics;
     if (text.includes('shoe')) return images.shoes;
     if (text.includes('shirt') || text.includes('mens')) return images.mens;
     if (text.includes('dress') || text.includes('womens')) return images.womens;
@@ -346,8 +353,15 @@ const ShopUI = (() => {
     return images.default;
   }
 
-  function fallbackImage() {
-    return images.default;
+  function isLocalProductImage(src) {
+    if (!src) return false;
+    const value = String(src);
+    return value.startsWith(`${PRODUCT_IMAGE_BASE}/`) || value.startsWith('/static/images/products/');
+  }
+
+  function imageFor(product) {
+    const src = product?.image_url || product?.image || '';
+    return isLocalProductImage(src) ? src : fallbackImage(product);
   }
 
   function ratingMapFromReviews(reviews = []) {
@@ -408,13 +422,14 @@ const ShopUI = (() => {
       : (canBuy ? `ShopUI.addToCart(${Number(p.id)})` : 'return false');
     const rating = Number(p.rating_avg || 0);
     const ratingCount = Number(p.rating_count || 0);
+    const fallbackSrc = fallbackImage(p);
     const ratingHtml = ratingCount
       ? `<span class="pill amber">${rating.toFixed(1)}/5 (${ratingCount})</span>`
       : '<span class="pill">Chưa có đánh giá</span>';
     return `
       <article class="product-card" data-product-card="${escapeHtml(p.id)}">
         <a class="product-media" href="/products/${encodeURIComponent(p.id)}/" onclick="ShopUI.track('view_detail', ${Number(p.id)})" aria-label="${escapeHtml(p.name)}">
-          <img src="${imageFor(p)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.onerror=null;this.src=ShopUI.fallbackImage()">
+          <img src="${imageFor(p)}" data-fallback-src="${escapeHtml(fallbackSrc)}" alt="${escapeHtml(p.name)}" loading="eager" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc||ShopUI.fallbackImage()">
           <span class="product-badge">${escapeHtml(p.category_name || p.domain_name || 'Shop')}</span>
           <span class="product-stock">${escapeHtml(stockText)}</span>
         </a>
@@ -495,11 +510,67 @@ const ShopUI = (() => {
     }
   }
 
+  async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('refresh') || '';
+    if (!refreshToken) return false;
+    if (tokenRefreshPromise) return tokenRefreshPromise;
+    tokenRefreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/refresh/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh: refreshToken })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.access) return false;
+        const payload = decodeJwtPayload(data.access);
+        localStorage.setItem('token', data.access);
+        if (payload.user_id) localStorage.setItem('user_id', String(payload.user_id));
+        if (payload.username) localStorage.setItem('username', payload.username);
+        if (payload.role) localStorage.setItem('role', payload.role);
+        return true;
+      } catch (_) {
+        return false;
+      } finally {
+        tokenRefreshPromise = null;
+      }
+    })();
+    return tokenRefreshPromise;
+  }
+
+  function handleExpiredSession() {
+    clearSession();
+    if (/^\/(manager|staff)\//.test(window.location.pathname)) {
+      const next = `${window.location.pathname}${window.location.search}`;
+      window.setTimeout(() => {
+        window.location.href = `/login/?next=${encodeURIComponent(next)}`;
+      }, 250);
+    }
+  }
+
   async function fetchJson(url, options = {}) {
-    const res = await fetch(url, options);
-    const data = await res.json().catch(() => ({}));
+    const requestOptions = { ...options };
+    const skipAuthRefresh = Boolean(requestOptions.skipAuthRefresh);
+    delete requestOptions.skipAuthRefresh;
+    let res = await fetch(url, requestOptions);
+    let data = await res.json().catch(() => ({}));
+    const authMessage = String(data.detail || data.error || '').toLowerCase();
+    const expired = res.status === 401 || authMessage.includes('token has expired') || authMessage.includes('token is invalid or expired');
+    if (expired && !skipAuthRefresh && !String(url).includes('/api/auth/')) {
+      const refreshed = await refreshAccessToken();
+      if (refreshed) {
+        requestOptions.headers = { ...(requestOptions.headers || {}), Authorization: `Bearer ${token()}` };
+        res = await fetch(url, requestOptions);
+        data = await res.json().catch(() => ({}));
+      }
+    }
     if (!res.ok) {
-      const msg = data.detail || data.error || `HTTP ${res.status}`;
+      const finalAuthMessage = String(data.detail || data.error || '').toLowerCase();
+      if (res.status === 401 || finalAuthMessage.includes('token has expired') || finalAuthMessage.includes('token is invalid or expired')) {
+        handleExpiredSession();
+        throw new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+      const msg = data.detail || data.error || `Yêu cầu không thành công (${res.status})`;
       throw new Error(msg);
     }
     return data;

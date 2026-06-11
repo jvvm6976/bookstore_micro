@@ -26,10 +26,20 @@ def customer_login(request):
     return render(request, "login.html")
 
 def manager_page(request):
-    return render(request, "manager.html")
+    return render(request, "admin_dashboard.html", {
+        "portal_kind": "admin",
+        "portal_active": "dashboard",
+        "portal_title": "Tổng quan hệ thống",
+        "portal_subtitle": "Theo dõi người dùng, sản phẩm, đơn hàng và hoạt động vận hành.",
+    })
 
 def staff_page(request):
-    return render(request, "staff.html")
+    return render(request, "staff_dashboard.html", {
+        "portal_kind": "staff",
+        "portal_active": "dashboard",
+        "portal_title": "Tổng quan tác nghiệp",
+        "portal_subtitle": "Các công việc cần xử lý trong ca làm việc hiện tại.",
+    })
 
 def index_page(request):
     return redirect("/")

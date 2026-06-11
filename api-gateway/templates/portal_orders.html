@@ -1,0 +1,11 @@
+{% extends "_portal_base.html" %}
+{% block portal_content %}
+<section class="portal-panel">
+  <div class="portal-toolbar">
+    <label class="portal-field"><span>Tìm đơn hoặc khách hàng</span><input id="orderSearch" class="portal-input" placeholder="Mã đơn, mã khách hoặc tên khách" oninput="Portal.renderOrders()"></label>
+    <label class="portal-field compact"><span>Trạng thái</span><select id="orderStatusFilter" class="portal-select" onchange="Portal.renderOrders()"><option value="">Tất cả</option><option value="pending">Chờ xử lý</option><option value="paid">Đã thanh toán</option><option value="shipping">Đang giao</option><option value="completed">Hoàn tất</option><option value="cancelled">Đã hủy</option><option value="failed">Thất bại</option></select></label>
+    <button class="portal-btn" onclick="Portal.loadOrders()"><i data-lucide="refresh-cw"></i>Tải lại</button>
+  </div>
+  <div id="ordersTable"></div>
+</section>
+{% endblock %}

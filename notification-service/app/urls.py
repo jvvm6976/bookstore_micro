@@ -5,13 +5,15 @@ from .views import (
     NotificationUnreadListView,
     NotificationMarkReadView,
     NotificationMarkAllReadView,
-    InternalNotificationCreateView
+    InternalNotificationCreateView,
+    NotificationManageView
 )
 
 urlpatterns = [
     # Client APIs
     path('notifications/', NotificationListView.as_view(), name='notification-list'),
     path('notifications/<int:pk>/', NotificationDetailView.as_view(), name='notification-detail'),
+    path('notifications/<int:pk>/manage/', NotificationManageView.as_view(), name='notification-manage'),
     path('notifications/unread/', NotificationUnreadListView.as_view(), name='notification-unread'),
     path('notifications/<int:pk>/read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
     path('notifications/read-all/', NotificationMarkAllReadView.as_view(), name='notification-mark-all-read'),

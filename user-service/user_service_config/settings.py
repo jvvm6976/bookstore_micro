@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -85,4 +86,6 @@ JWT_REFRESH_DAYS = int(os.getenv('JWT_REFRESH_DAYS', 7))
 SIMPLE_JWT = {
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': os.getenv('JWT_SECRET', SECRET_KEY),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=JWT_ACCESS_MINUTES),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=JWT_REFRESH_DAYS),
 }

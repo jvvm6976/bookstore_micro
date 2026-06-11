@@ -148,8 +148,14 @@ def home_page(request):
     """Homepage with products and recommendations"""
     return render(request, 'home.html')
 
+def login_page(request):
+    return render(request, 'login.html')
+
+def register_page(request):
+    return render(request, 'register.html')
+
 def products_page(request):
-    """Product catalog"""
+    """Product listing"""
     query = request.GET.get('q', '')
     return render(request, 'search.html', {'query': query})
 
@@ -201,3 +207,60 @@ def checkout_page(request):
 def cart_page(request):
     """Shopping cart"""
     return render(request, 'cart_page.html')
+
+
+def _portal_page(request, template_name, portal_kind, portal_active, title, subtitle):
+    return render(request, template_name, {
+        'portal_kind': portal_kind,
+        'portal_active': portal_active,
+        'portal_title': title,
+        'portal_subtitle': subtitle,
+    })
+
+
+def staff_dashboard_page(request):
+    return _portal_page(request, 'staff_dashboard.html', 'staff', 'dashboard', 'Tổng quan tác nghiệp', 'Các công việc cần xử lý trong ca làm việc hiện tại.')
+
+
+def staff_orders_page(request):
+    return _portal_page(request, 'portal_orders.html', 'staff', 'orders', 'Hỗ trợ đơn hàng', 'Tra cứu đơn, đối chiếu thanh toán và xử lý yêu cầu khách hàng.')
+
+
+def staff_shipping_page(request):
+    return _portal_page(request, 'staff_shipping.html', 'staff', 'shipping', 'Vận hành giao hàng', 'Cập nhật trạng thái vận đơn và các mốc tracking thực tế.')
+
+
+def staff_reviews_page(request):
+    return _portal_page(request, 'portal_reviews.html', 'staff', 'reviews', 'Duyệt đánh giá', 'Kiểm duyệt nội dung và phản hồi khách hàng từ cửa hàng.')
+
+
+def staff_notifications_page(request):
+    return _portal_page(request, 'portal_notifications.html', 'staff', 'notifications', 'Thông báo vận hành', 'Theo dõi thông báo tự động và gửi thông tin bổ sung khi cần.')
+
+
+def admin_dashboard_page(request):
+    return _portal_page(request, 'admin_dashboard.html', 'admin', 'dashboard', 'Tổng quan hệ thống', 'Theo dõi người dùng, sản phẩm, đơn hàng và hoạt động vận hành.')
+
+
+def admin_users_page(request):
+    return _portal_page(request, 'admin_users.html', 'admin', 'users', 'Người dùng và vai trò', 'Quản lý tài khoản, trạng thái hoạt động và phân quyền hệ thống.')
+
+
+def admin_catalog_page(request):
+    return _portal_page(request, 'admin_catalog.html', 'admin', 'catalog', 'Sản phẩm & tồn kho', 'Quản lý ngành hàng, danh mục, sản phẩm, giá và tồn kho.')
+
+
+def admin_orders_page(request):
+    return _portal_page(request, 'portal_orders.html', 'admin', 'orders', 'Đơn hàng và thanh toán', 'Theo dõi chi tiết đơn hàng, thanh toán và tiến trình xử lý.')
+
+
+def admin_reviews_page(request):
+    return _portal_page(request, 'portal_reviews.html', 'admin', 'reviews', 'Quản lý đánh giá', 'Duyệt, phản hồi hoặc loại bỏ nội dung đánh giá không phù hợp.')
+
+
+def admin_notifications_page(request):
+    return _portal_page(request, 'portal_notifications.html', 'admin', 'notifications', 'Trung tâm thông báo', 'Tạo, sửa, xóa và theo dõi thông báo vận hành toàn hệ thống.')
+
+
+def admin_ai_page(request):
+    return _portal_page(request, 'admin_ai.html', 'admin', 'ai', 'AI và cá nhân hóa', 'Kiểm tra tri thức, phân tích khách hàng và gợi ý theo tài khoản.')

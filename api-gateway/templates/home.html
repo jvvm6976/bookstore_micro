@@ -13,11 +13,11 @@
   <section class="page-head commerce-hero">
     <div>
       <div class="eyebrow">Sàn thương mại ShopSphere</div>
-      <h1 class="page-title">Mua sắm theo giá VND, gợi ý đúng theo nhu cầu của bạn</h1>
-      <p class="page-subtitle">Catalog có ảnh riêng cho từng sản phẩm, quy trình giỏ hàng rõ ràng và gợi ý cá nhân hóa từ lịch sử xem, tìm kiếm, thêm giỏ và mua hàng.</p>
+      <h1 class="page-title">Tìm sản phẩm phù hợp, giá rõ ràng bằng VND</h1>
+      <p class="page-subtitle">Duyệt sản phẩm theo ngành hàng, lọc theo giá và đánh giá, nhận gợi ý dựa trên lịch sử xem, tìm kiếm, thêm giỏ và mua hàng.</p>
       <div class="toolbar">
         <span class="pill teal" data-auth-user>Khách</span>
-        <a class="btn primary" href="/products/">Duyệt catalog</a>
+        <a class="btn primary" href="/products/">Duyệt sản phẩm</a>
         <a class="btn subtle" href="/chatbot/">Hỏi AI tư vấn</a>
       </div>
     </div>
@@ -34,13 +34,13 @@
     </div>
   </section>
 
-  <section class="section panel pad" aria-label="Bộ lọc catalog">
+  <section class="section panel pad" aria-label="Bộ lọc sản phẩm">
     <div class="section-head">
       <div>
         <h2 class="section-title">Bộ lọc mua sắm</h2>
-        <div class="section-note">Dữ liệu ngành hàng, danh mục, giá và đánh giá được lấy từ catalog hiện tại.</div>
+        <div class="section-note">Lọc nhanh theo ngành hàng, danh mục, khoảng giá và đánh giá của khách hàng.</div>
       </div>
-      <a class="btn small" href="/products/">Mở catalog đầy đủ</a>
+      <a class="btn small" href="/products/">Mở danh sách đầy đủ</a>
     </div>
     <div class="auth-grid">
       <div class="field">
@@ -93,7 +93,7 @@
   <section class="section">
     <div class="section-head">
       <div>
-        <h2 class="section-title">Sản phẩm mới trong catalog</h2>
+        <h2 class="section-title">Sản phẩm mới</h2>
         <div id="productMeta" class="section-note">Đang tải dữ liệu...</div>
       </div>
       <button class="btn small" onclick="resetHomeFilters()">Đặt lại bộ lọc</button>
@@ -113,7 +113,7 @@
   </section>
 </main>
 
-<div class="footer-note">© 2026 ShopSphere. Giá hiển thị bằng VND, tồn kho và hình ảnh được đồng bộ từ catalog hiện tại.</div>
+<div class="footer-note">© 2026 ShopSphere. Giá, tồn kho và hình ảnh được cập nhật từ kho sản phẩm ShopSphere.</div>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
@@ -231,7 +231,7 @@ function renderProducts(){
 
 async function loadProducts(){
   const grid = document.getElementById('productGrid');
-  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Vui lòng chờ trong giây lát.</div>';
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải sản phẩm</strong>Vui lòng chờ trong giây lát.</div>';
   try{
     const [productData, reviewData] = await Promise.all([
       ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`),
@@ -245,7 +245,7 @@ async function loadProducts(){
     loadRecommendations();
   }catch(err){
     document.getElementById('productMeta').textContent = 'Không tải được sản phẩm';
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Lỗi tải dữ liệu</strong>Hệ thống catalog chưa sẵn sàng, vui lòng thử lại sau.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Lỗi tải dữ liệu</strong>Kho sản phẩm chưa sẵn sàng, vui lòng thử lại sau.</div>';
   }
 }
 
@@ -268,7 +268,7 @@ async function loadRecommendations(){
     }
     grid.innerHTML = items.slice(0,6).map(p => ShopUI.productCard(p)).join('');
   }catch(_){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được gợi ý</strong>Hệ thống gợi ý sẽ thử lại khi bạn mở trang sau.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được gợi ý</strong>Bạn có thể thử lại sau ít phút hoặc hỏi AI tư vấn.</div>';
   }
 }
 

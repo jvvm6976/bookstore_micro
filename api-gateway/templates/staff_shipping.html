@@ -1,0 +1,12 @@
+{% extends "_portal_base.html" %}
+{% block portal_content %}
+<section class="portal-panel">
+  <div class="portal-toolbar">
+    <label class="portal-field"><span>Tìm vận đơn</span><input id="shippingSearch" class="portal-input" placeholder="Mã đơn, người nhận, số điện thoại" oninput="Portal.renderShipping()"></label>
+    <label class="portal-field compact"><span>Trạng thái</span><select id="shippingStatusFilter" class="portal-select" onchange="Portal.renderShipping()"><option value="">Tất cả</option><option value="processing">Đang chuẩn bị</option><option value="shipping">Đang giao</option><option value="delivered">Đã giao</option><option value="cancelled">Đã hủy</option></select></label>
+    <label class="portal-field compact"><span>Vị trí cập nhật</span><input id="shippingLocation" class="portal-input" value="Kho ShopSphere"></label>
+    <button class="portal-btn" onclick="Portal.loadShipping()"><i data-lucide="refresh-cw"></i>Tải lại</button>
+  </div>
+  <div id="shippingTable"></div>
+</section>
+{% endblock %}

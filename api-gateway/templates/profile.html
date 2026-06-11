@@ -15,7 +15,7 @@
     <div>
       <div class="eyebrow">Hồ sơ</div>
       <h1 class="page-title">Thông tin tài khoản</h1>
-      <p class="page-subtitle">Cập nhật thông tin cá nhân và quản lý địa chỉ mặc định dùng cho checkout.</p>
+      <p class="page-subtitle">Cập nhật thông tin cá nhân và quản lý địa chỉ mặc định dùng khi thanh toán.</p>
     </div>
     <span class="pill teal" data-auth-user>Khách</span>
   </section>
@@ -39,7 +39,7 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">Thông tin cá nhân</h2>
-            <div class="section-note">Email không chỉnh sửa tại màn này để giữ đồng bộ tài khoản đăng nhập.</div>
+            <div class="section-note">Email được dùng để đăng nhập nên hiện chưa chỉnh sửa tại đây.</div>
           </div>
         </div>
 
@@ -54,7 +54,7 @@
           </div>
           <div class="info-box">
             <div class="data-label">Vai trò</div>
-            <div class="data-value" data-auth-role>customer</div>
+            <div class="data-value" data-auth-role>Khách hàng</div>
           </div>
         </div>
 
@@ -82,7 +82,7 @@
         <div class="section-head">
           <div>
             <h2 class="section-title">Địa chỉ giao hàng</h2>
-            <div class="section-note">Checkout sẽ tự lấy địa chỉ đang được đặt mặc định.</div>
+            <div class="section-note">Địa chỉ mặc định sẽ được dùng khi bạn thanh toán.</div>
           </div>
           <button class="btn small" onclick="openAddressForm()">Thêm địa chỉ</button>
         </div>
@@ -167,7 +167,7 @@ async function loadProfile() {
 function renderAddresses() {
   const box = document.getElementById('addressesList');
   if (!currentAddresses.length) {
-    box.innerHTML = '<div class="empty-state"><strong>Chưa có địa chỉ</strong>Thêm địa chỉ để checkout có thể lấy địa chỉ giao hàng.</div>';
+    box.innerHTML = '<div class="empty-state"><strong>Chưa có địa chỉ</strong>Thêm địa chỉ để dùng khi thanh toán và giao hàng.</div>';
     return;
   }
 

@@ -2,7 +2,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from .models import Order, OrderItem, OrderAddress, OrderStatusHistory
 from .serializers import OrderSerializer, OrderItemSerializer, OrderAddressSerializer, OrderStatusHistorySerializer
@@ -283,6 +283,42 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         histories = OrderStatusHistory.objects.filter(order=order).order_by('-updated_at')
         serializer = OrderStatusHistorySerializer(histories, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['put'], url_path='status')
+    @transaction.atomic
+    def update_status(self, request, pk=None):
+        if getattr(request.user, 'role', None) not in {'admin', 'manager', 'staff'}:
+            raise PermissionDenied('Only staff can update order status')
+
+        order = self.get_object()
+        new_status = request.data.get('status')
+        if new_status not in ORDER_STATUSES:
+            raise ValidationError({'error': 'Invalid status'})
+
+        transitions = {
+            'pending': {'paid'},
+            'paid': {'shipping'},
+            'shipping': {'completed'},
+            'completed': set(),
+            'cancelled': set(),
+            'failed': set(),
+        }
+        if new_status not in transitions.get(order.current_status, set()):
+            raise ValidationError({
+                'error': f'Cannot transition from {order.current_status} to {new_status}'
+            })
+
+        order.current_status = new_status
+        order.save(update_fields=['current_status', 'updated_at'])
+        OrderStatusHistory.objects.create(order=order, status=new_status)
+        _notify_customer(
+            order.user_id,
+            'Trạng thái đơn hàng đã cập nhật',
+            f'Đơn hàng #{order.id} đã chuyển sang trạng thái {new_status}',
+            'order',
+            entity_id=order.id,
+        )
+        return Response(self.get_serializer(order).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['put'])
     @transaction.atomic

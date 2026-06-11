@@ -1,0 +1,15 @@
+{% extends "_portal_base.html" %}
+{% block portal_content %}
+<section class="portal-section portal-panel">
+  <div class="portal-toolbar">
+    <label class="portal-field"><span>Tìm người dùng</span><input id="userSearch" class="portal-input" placeholder="Tên đăng nhập, họ tên, email hoặc điện thoại" oninput="Portal.renderUsers()"></label>
+    <label class="portal-field compact"><span>Vai trò</span><select id="userRoleFilter" class="portal-select" onchange="Portal.renderUsers()"><option value="">Tất cả</option></select></label>
+    <button class="portal-btn primary" onclick="Portal.openUserForm()"><i data-lucide="user-plus"></i>Tạo người dùng</button>
+  </div>
+  <div id="usersTable"></div>
+</section>
+<section class="portal-section">
+  <div class="portal-section-head"><div><h2>Vai trò hệ thống</h2><p>Tạo và quản lý nhóm quyền được gán cho tài khoản.</p></div><button class="portal-btn" onclick="Portal.openRoleForm()"><i data-lucide="plus"></i>Tạo vai trò</button></div>
+  <div id="rolesList" class="catalog-grid"></div>
+</section>
+{% endblock %}

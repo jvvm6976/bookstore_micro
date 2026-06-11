@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.conf import settings
 from .models import Domain, Category, Product, Book, Electronics, Fashion
 
 class DomainSerializer(serializers.ModelSerializer):
@@ -52,6 +53,18 @@ class ProductSerializer(serializers.ModelSerializer):
             'image_url', 'book', 'electronics', 'fashion',
             'created_at', 'updated_at'
         ]
+
+    def validate_image_url(self, value):
+        if not value:
+            return value
+        base_url = getattr(settings, 'PRODUCT_IMAGE_BASE_URL', '').rstrip('/')
+        allowed_prefixes = tuple(prefix for prefix in [
+            f'{base_url}/' if base_url else '',
+            '/static/images/products/',
+        ] if prefix)
+        if value.startswith(allowed_prefixes):
+            return value
+        raise serializers.ValidationError('Ảnh sản phẩm phải được lưu trong thư mục local của Product Service.')
     
     def create(self, validated_data):
         """

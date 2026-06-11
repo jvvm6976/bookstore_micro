@@ -142,7 +142,7 @@ function itemPrice(item){
 function renderCart(){
   const box = document.getElementById('cartPreview');
   if(!cartItems.length){
-    box.innerHTML = '<div class="empty-state"><strong>Giỏ hàng trống</strong>Hãy thêm sản phẩm trước khi checkout.</div>';
+    box.innerHTML = '<div class="empty-state"><strong>Giỏ hàng trống</strong>Hãy thêm sản phẩm trước khi thanh toán.</div>';
     updateSummary();
     return;
   }
@@ -265,7 +265,7 @@ async function checkout(){
     ShopUI.toast(`Thanh toán ${payment.overall_status || 'success'}`);
     window.location.href = `/orders/${orderId}/tracking/`;
   }catch(err){
-    setMsg(err.message || 'Checkout thất bại.', true);
+    setMsg(err.message || 'Thanh toán thất bại.', true);
     btn.disabled = false;
   }
 }
@@ -278,7 +278,7 @@ async function initCheckout(){
   try{
     await Promise.all([loadCart(), loadAddresses()]);
   }catch(err){
-    setMsg(err.message || 'Không tải được dữ liệu checkout.', true);
+    setMsg(err.message || 'Không tải được dữ liệu thanh toán.', true);
   }
 }
 

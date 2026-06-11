@@ -68,6 +68,14 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
+PRODUCT_IMAGE_BASE_URL = os.environ.get(
+    'PRODUCT_IMAGE_BASE_URL',
+    'http://localhost:8002/static/images/products',
+).rstrip('/')
+PRODUCT_IMAGE_UPLOAD_DIR = Path(os.environ.get(
+    'PRODUCT_IMAGE_UPLOAD_DIR',
+    BASE_DIR / 'app' / 'static' / 'images' / 'products' / 'uploads',
+))
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -1,0 +1,11 @@
+{% extends "_portal_base.html" %}
+{% block portal_content %}
+<section class="portal-section-head">
+  <div class="portal-tabs"><button class="portal-tab" data-tab="domains" onclick="Portal.setCatalogTab('domains')">Ngành hàng</button><button class="portal-tab" data-tab="categories" onclick="Portal.setCatalogTab('categories')">Danh mục</button><button class="portal-tab active" data-tab="products" onclick="Portal.setCatalogTab('products')">Sản phẩm</button></div>
+  <div style="display:flex;gap:8px"><button class="portal-btn" onclick="Portal.openDomainForm()"><i data-lucide="layers-3"></i>Ngành hàng</button><button class="portal-btn" onclick="Portal.openCategoryForm()"><i data-lucide="tags"></i>Danh mục</button><button class="portal-btn primary" onclick="Portal.openProductForm()"><i data-lucide="package-plus"></i>Sản phẩm</button></div>
+</section>
+<section class="portal-panel">
+  <div class="portal-toolbar"><label class="portal-field"><span>Tìm sản phẩm và danh mục</span><input id="catalogSearch" class="portal-input" placeholder="Tên, SKU, danh mục hoặc ngành hàng" oninput="Portal.renderCatalog()"></label><button class="portal-btn" onclick="Portal.loadCatalog()"><i data-lucide="refresh-cw"></i>Tải lại</button></div>
+  <div id="catalogContent"></div>
+</section>
+{% endblock %}

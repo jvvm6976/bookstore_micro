@@ -63,7 +63,7 @@ async function loadWishlist(){
     const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/wishlist/`, {headers:ShopUI.authHeaders(false)});
     wishlistItems = ShopUI.safeList(data);
     if(!wishlistItems.length){
-      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm yêu thích</strong>Hãy lưu sản phẩm từ catalog để xem lại sau.</div>';
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm yêu thích</strong>Hãy lưu sản phẩm từ danh sách sản phẩm để xem lại sau.</div>';
       return;
     }
     const products = await Promise.all(wishlistItems.map(item => loadProduct(item.product_id)));

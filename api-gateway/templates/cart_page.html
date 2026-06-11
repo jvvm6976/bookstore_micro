@@ -28,12 +28,12 @@
       <div style="margin-top:.8rem">
         <div class="summary-row"><span>Số lượng</span><strong id="sumQty">0</strong></div>
         <div class="summary-row"><span>Tạm tính</span><strong id="sumTotal">0₫</strong></div>
-        <div class="summary-row"><span>Vận chuyển</span><strong>Chọn ở checkout</strong></div>
+        <div class="summary-row"><span>Vận chuyển</span><strong>Chọn khi thanh toán</strong></div>
         <div class="summary-row summary-total"><span>Tổng cộng</span><strong id="grandTotal">0₫</strong></div>
       </div>
       <button class="btn primary block" onclick="goCheckout()" style="margin-top:.9rem">Thanh toán</button>
       <button class="btn block" onclick="clearCart()" style="margin-top:.55rem">Xóa giỏ hàng</button>
-      <div class="notice" style="margin-top:.9rem">Bạn cần có địa chỉ mặc định trước khi checkout. Nếu chưa có, trang checkout sẽ cho phép tạo nhanh.</div>
+      <div class="notice" style="margin-top:.9rem">Bạn cần có địa chỉ mặc định trước khi thanh toán. Nếu chưa có, trang thanh toán sẽ cho phép tạo nhanh.</div>
     </aside>
   </section>
 
@@ -43,7 +43,7 @@
         <h2 class="section-title">Có thể bạn cũng thích</h2>
         <div class="section-note">Gợi ý thêm theo giỏ hàng hiện tại, loại bỏ sản phẩm đã có trong giỏ.</div>
       </div>
-      <a class="btn subtle" href="/products/">Xem catalog</a>
+      <a class="btn subtle" href="/products/">Xem sản phẩm</a>
     </div>
     <div id="recGrid" class="product-grid"></div>
   </section>
@@ -86,7 +86,7 @@ function rowPrice(item){
 function renderCart(){
   const panel = document.getElementById('cartPanel');
   if(!cartItems.length){
-    panel.innerHTML = '<div class="empty-state"><strong>Giỏ hàng đang trống</strong>Hãy thêm sản phẩm từ catalog hoặc hỏi AI để được gợi ý.</div>';
+    panel.innerHTML = '<div class="empty-state"><strong>Giỏ hàng đang trống</strong>Hãy thêm sản phẩm từ danh sách sản phẩm hoặc hỏi AI để được gợi ý.</div>';
     updateSummary();
     return;
   }

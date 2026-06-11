@@ -4,7 +4,7 @@ from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from .models import Notification, NotificationLog, NotificationReadState
 from .serializers import NotificationSerializer, NotificationLogSerializer
 
@@ -19,6 +19,11 @@ PRIORITIES = {'low', 'normal', 'high'}
 
 def _role_name(user):
     return getattr(user, 'role', None)
+
+
+def _assert_staff(user):
+    if _role_name(user) not in STAFF_ROLES:
+        raise PermissionDenied('Only staff can manage notifications')
 
 
 def _recipient_types_for_role(role):
@@ -71,6 +76,8 @@ class NotificationListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
     
     def get_queryset(self):
+        if self.request.query_params.get('scope') == 'manage' and _role_name(self.request.user) in STAFF_ROLES:
+            return Notification.objects.prefetch_related('read_states').all().order_by('-created_at')
         return _visible_notifications(self.request.user).order_by('-created_at')
 
 
@@ -84,6 +91,49 @@ class NotificationDetailView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         return _visible_notifications(self.request.user)
+
+
+class NotificationManageView(generics.GenericAPIView):
+    permission_classes = (IsAuthenticated,)
+    serializer_class = NotificationSerializer
+
+    def get_object(self):
+        _assert_staff(self.request.user)
+        try:
+            return Notification.objects.get(pk=self.kwargs.get('pk'))
+        except Notification.DoesNotExist:
+            raise ValidationError({'error': 'Notification not found'})
+
+    def get(self, request, *args, **kwargs):
+        notification = self.get_object()
+        return Response(self.get_serializer(notification).data)
+
+    def patch(self, request, *args, **kwargs):
+        notification = self.get_object()
+        allowed = {
+            'user_id', 'recipient_type', 'target_role', 'title', 'content',
+            'type', 'entity_type', 'entity_id', 'priority', 'status'
+        }
+        for field, value in request.data.items():
+            if field in allowed:
+                setattr(notification, field, value)
+        if notification.recipient_type not in RECIPIENT_TYPES:
+            raise ValidationError({'error': 'Invalid recipient_type'})
+        if notification.type not in NOTIFICATION_TYPES:
+            raise ValidationError({'error': 'Invalid type'})
+        if notification.priority not in PRIORITIES:
+            raise ValidationError({'error': 'Invalid priority'})
+        if notification.status not in NOTIFICATION_STATUSES:
+            raise ValidationError({'error': 'Invalid status'})
+        if notification.recipient_type == 'customer' and not notification.user_id:
+            raise ValidationError({'error': 'user_id is required for customer notifications'})
+        notification.save()
+        return Response(self.get_serializer(notification).data)
+
+    def delete(self, request, *args, **kwargs):
+        notification = self.get_object()
+        notification.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class NotificationUnreadListView(generics.ListAPIView):

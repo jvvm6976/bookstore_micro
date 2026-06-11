@@ -1,0 +1,12 @@
+{% extends "_portal_base.html" %}
+{% block portal_content %}
+<section class="portal-panel">
+  <div class="portal-toolbar">
+    <label class="portal-field"><span>Tìm thông báo</span><input id="notificationSearch" class="portal-input" placeholder="Tiêu đề, nội dung hoặc mã khách" oninput="Portal.renderNotifications()"></label>
+    <label class="portal-field compact"><span>Loại</span><select id="notificationTypeFilter" class="portal-select" onchange="Portal.renderNotifications()"><option value="">Tất cả</option><option value="system">Hệ thống</option><option value="order">Đơn hàng</option><option value="payment">Thanh toán</option><option value="shipping">Vận chuyển</option><option value="review">Đánh giá</option></select></label>
+    <button class="portal-btn" onclick="Portal.markAllNotificationsRead()"><i data-lucide="check-check"></i>Đã đọc tất cả</button>
+    <button class="portal-btn primary" onclick="Portal.openNotificationForm()"><i data-lucide="plus"></i>Tạo thông báo</button>
+  </div>
+  <div id="notificationsTable"></div>
+</section>
+{% endblock %}

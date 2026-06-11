@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ portal_title }} - ShopSphere</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<style>{% include "_portal.css" %}</style>
+</head>
+<body class="portal-body" data-portal-kind="{{ portal_kind }}" data-portal-page="{{ portal_active }}">
+<aside class="portal-sidebar" id="portalSidebar">
+  <div class="portal-brand">
+    <a href="/" class="portal-brand-link"><span class="portal-brand-mark">S</span><span class="portal-brand-text">Shop<span>Sphere</span></span></a>
+    <button class="icon-btn" id="sidebarToggle" type="button" title="Thu gọn menu"><i data-lucide="panel-left-close"></i></button>
+  </div>
+  <div class="portal-context">
+    <span class="context-label">{% if portal_kind == "admin" %}Quản trị hệ thống{% else %}Không gian nhân viên{% endif %}</span>
+    <strong data-portal-user>Đang xác thực</strong>
+  </div>
+  <nav class="portal-nav" aria-label="Điều hướng vận hành">
+    {% if portal_kind == "admin" %}
+      <a class="portal-nav-item {% if portal_active == 'dashboard' %}active{% endif %}" href="/manager/"><i data-lucide="layout-dashboard"></i><span>Tổng quan</span></a>
+      <a class="portal-nav-item {% if portal_active == 'users' %}active{% endif %}" href="/manager/users/"><i data-lucide="users"></i><span>Người dùng & vai trò</span></a>
+      <a class="portal-nav-item {% if portal_active == 'catalog' %}active{% endif %}" href="/manager/catalog/"><i data-lucide="package-search"></i><span>Sản phẩm & tồn kho</span></a>
+      <a class="portal-nav-item {% if portal_active == 'orders' %}active{% endif %}" href="/manager/orders/"><i data-lucide="receipt-text"></i><span>Đơn hàng</span></a>
+      <a class="portal-nav-item {% if portal_active == 'reviews' %}active{% endif %}" href="/manager/reviews/"><i data-lucide="message-square-more"></i><span>Đánh giá</span></a>
+      <a class="portal-nav-item {% if portal_active == 'notifications' %}active{% endif %}" href="/manager/notifications/"><i data-lucide="bell-ring"></i><span>Thông báo</span></a>
+      <a class="portal-nav-item {% if portal_active == 'ai' %}active{% endif %}" href="/manager/ai/"><i data-lucide="brain-circuit"></i><span>AI & cá nhân hóa</span></a>
+      <div class="portal-nav-divider"></div>
+      <a class="portal-nav-item" href="/staff/"><i data-lucide="headset"></i><span>Mở khu vực staff</span></a>
+    {% else %}
+      <a class="portal-nav-item {% if portal_active == 'dashboard' %}active{% endif %}" href="/staff/"><i data-lucide="layout-dashboard"></i><span>Tổng quan</span></a>
+      <a class="portal-nav-item {% if portal_active == 'orders' %}active{% endif %}" href="/staff/orders/"><i data-lucide="clipboard-list"></i><span>Hỗ trợ đơn hàng</span></a>
+      <a class="portal-nav-item {% if portal_active == 'shipping' %}active{% endif %}" href="/staff/shipping/"><i data-lucide="truck"></i><span>Vận chuyển</span></a>
+      <a class="portal-nav-item {% if portal_active == 'reviews' %}active{% endif %}" href="/staff/reviews/"><i data-lucide="star"></i><span>Duyệt đánh giá</span></a>
+      <a class="portal-nav-item {% if portal_active == 'notifications' %}active{% endif %}" href="/staff/notifications/"><i data-lucide="send"></i><span>Thông báo</span></a>
+    {% endif %}
+  </nav>
+  <div class="portal-sidebar-footer">
+    <a class="portal-nav-item" href="/"><i data-lucide="store"></i><span>Về cửa hàng</span></a>
+    <button class="portal-nav-item portal-logout" type="button" onclick="ShopUI.logout('/')"><i data-lucide="log-out"></i><span>Đăng xuất</span></button>
+  </div>
+</aside>
+
+<div class="portal-main">
+  <header class="portal-topbar">
+    <div>
+      <div class="portal-eyebrow">{% if portal_kind == "admin" %}Quản trị{% else %}Nhân viên{% endif %}</div>
+      <h1>{{ portal_title }}</h1>
+      <p>{{ portal_subtitle }}</p>
+    </div>
+    <div class="portal-top-actions">
+      <button class="icon-btn" type="button" title="Tải lại dữ liệu" onclick="Portal.reloadPage()"><i data-lucide="refresh-cw"></i></button>
+      <a class="icon-btn" href="/notifications/" title="Trung tâm thông báo"><i data-lucide="bell"></i></a>
+      <span class="role-chip" data-portal-role>Đang tải</span>
+    </div>
+  </header>
+  <main class="portal-content">
+    <div id="portalAccessDenied" class="portal-access" hidden>
+      <i data-lucide="shield-alert"></i>
+      <h2>Không có quyền truy cập</h2>
+      <p>Hãy đăng nhập bằng tài khoản phù hợp với khu vực vận hành này.</p>
+      <a class="portal-btn primary" href="/login/">Đăng nhập</a>
+    </div>
+    <div id="portalPageContent">{% block portal_content %}{% endblock %}</div>
+  </main>
+</div>
+
+<div class="portal-modal-layer" id="portalModalLayer" aria-hidden="true">
+  <div class="portal-modal" role="dialog" aria-modal="true" aria-labelledby="portalModalTitle">
+    <div class="portal-modal-head">
+      <div><div class="portal-eyebrow" id="portalModalEyebrow">Thao tác</div><h2 id="portalModalTitle">Cập nhật</h2></div>
+      <button class="icon-btn" type="button" onclick="Portal.closeModal()" title="Đóng"><i data-lucide="x"></i></button>
+    </div>
+    <form id="portalModalForm">
+      <div id="portalModalBody"></div>
+      <div class="portal-modal-actions">
+        <button class="portal-btn" type="button" onclick="Portal.closeModal()">Hủy</button>
+        <button class="portal-btn primary" id="portalModalSubmit" type="submit">Lưu</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="portal-toast" id="portalToast"></div>
+
+<script>{% include "_customer_ui.js" %}</script>
+<script>{% include "_portal.js" %}</script>
+</body>
+</html>

@@ -1,13 +1,21 @@
+from pathlib import Path
+from uuid import uuid4
 from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from decimal import Decimal, InvalidOperation
+from django.conf import settings
 from django.db.models.deletion import RestrictedError, ProtectedError
 from django.db.models import Q
+from django.utils.text import get_valid_filename, slugify
 from .models import Domain, Category, Product, Book, Electronics, Fashion
 from .serializers import DomainSerializer, CategorySerializer, ProductSerializer
+
+
+ALLOWED_PRODUCT_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
+MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024
 
 
 _SEARCH_ALIASES = {
@@ -99,6 +107,26 @@ def _validate_price_and_stock(data):
                 raise ValidationError({'stock': 'Stock cannot be negative'})
         except (TypeError, ValueError):
             raise ValidationError({'stock': 'Invalid stock'})
+
+
+def _save_product_image(uploaded_file):
+    if not uploaded_file:
+        return None
+    suffix = Path(uploaded_file.name or '').suffix.lower()
+    if suffix not in ALLOWED_PRODUCT_IMAGE_EXTENSIONS:
+        raise ValidationError({'image_file': 'Ảnh sản phẩm chỉ hỗ trợ JPG, PNG hoặc WEBP'})
+    if getattr(uploaded_file, 'size', 0) > MAX_PRODUCT_IMAGE_SIZE:
+        raise ValidationError({'image_file': 'Ảnh sản phẩm không được vượt quá 5MB'})
+
+    upload_dir = Path(settings.PRODUCT_IMAGE_UPLOAD_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    safe_stem = slugify(Path(get_valid_filename(uploaded_file.name)).stem)[:48] or 'product-image'
+    filename = f'{safe_stem}-{uuid4().hex[:12]}{suffix}'
+    target = upload_dir / filename
+    with target.open('wb') as destination:
+        for chunk in uploaded_file.chunks():
+            destination.write(chunk)
+    return f'{settings.PRODUCT_IMAGE_BASE_URL}/uploads/{filename}'
 
 
 class DomainViewSet(viewsets.ModelViewSet):
@@ -262,22 +290,30 @@ class ProductViewSet(viewsets.ModelViewSet):
             raise ValidationError({'category_id': 'Category does not exist'})
         
         _validate_price_and_stock(self.request.data)
-        
-        serializer.save(category=category)
+
+        save_kwargs = {'category': category}
+        image_url = _save_product_image(self.request.FILES.get('image_file'))
+        if image_url:
+            save_kwargs['image_url'] = image_url
+        serializer.save(**save_kwargs)
 
     def perform_update(self, serializer):
         _assert_staff_user(self.request)
         _validate_price_and_stock(self.request.data)
 
+        save_kwargs = {}
         category_id = self.request.data.get('category_id')
         if category_id:
             try:
                 category = Category.objects.get(id=category_id)
             except (Category.DoesNotExist, ValueError, TypeError):
                 raise ValidationError({'category_id': 'Category does not exist'})
-            serializer.save(category=category)
-        else:
-            serializer.save()
+            save_kwargs['category'] = category
+
+        image_url = _save_product_image(self.request.FILES.get('image_file'))
+        if image_url:
+            save_kwargs['image_url'] = image_url
+        serializer.save(**save_kwargs)
 
     def destroy(self, request, *args, **kwargs):
         """Soft delete - chuyển status thành inactive"""

@@ -119,6 +119,8 @@ services:
         condition: service_healthy
     networks:
       - ecommerce-network
+    volumes:
+      - product_images:/app/app/static/images/products/uploads
     environment:
       - DEBUG=1
       - DJANGO_SETTINGS_MODULE=config.settings.dev
@@ -343,5 +345,6 @@ volumes:
   postgres_data:
   rabbitmq_data:
   ai_artifacts:
+  product_images:
   neo4j_data:
   neo4j_logs:

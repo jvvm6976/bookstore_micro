@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catalog sản phẩm - ShopSphere</title>
+<title>Danh sách sản phẩm - ShopSphere</title>
 <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>{% include "_customer_ui.css" %}</style>
 </head>
@@ -12,7 +12,7 @@
 <main class="page">
   <section class="page-head">
     <div>
-      <div class="eyebrow">Catalog</div>
+      <div class="eyebrow">Sản phẩm</div>
       <h1 class="page-title" id="pageTitle">Tất cả sản phẩm</h1>
       <p class="page-subtitle" id="pageSubtitle">Lọc theo ngành hàng, danh mục, khoảng giá và tình trạng tồn kho.</p>
     </div>
@@ -84,7 +84,7 @@
   </section>
 </main>
 
-<div class="footer-note">Giá bán đang hiển thị theo VND và được đồng bộ từ catalog ShopSphere.</div>
+<div class="footer-note">Giá bán đang hiển thị bằng VND và được cập nhật từ kho sản phẩm ShopSphere.</div>
 
 <script>{% include "_customer_ui.js" %}</script>
 <script>
@@ -227,7 +227,7 @@ function renderCompact(items){
         return `
           <div class="catalog-row">
             <a class="product-media" href="/products/${p.id}/" onclick="ShopUI.track('view_detail', ${Number(p.id)})" style="border-radius:8px;aspect-ratio:1/1">
-              <img src="${ShopUI.imageFor(p)}" alt="${ShopUI.escapeHtml(p.name)}" loading="lazy" onerror="this.onerror=null;this.src=ShopUI.fallbackImage()">
+              <img src="${ShopUI.imageFor(p)}" data-fallback-src="${ShopUI.escapeHtml(ShopUI.fallbackImage(p))}" alt="${ShopUI.escapeHtml(p.name)}" loading="eager" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc||ShopUI.fallbackImage()">
             </a>
             <div>
               <a href="/products/${p.id}/" class="product-title" onclick="ShopUI.track('view_detail', ${Number(p.id)})">${ShopUI.escapeHtml(p.name)}</a>
@@ -310,7 +310,7 @@ function renderCatalog(){
 async function loadCatalog(){
   const grid = document.getElementById('productsGrid');
   document.getElementById('globalSearch').value = query;
-  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Dữ liệu catalog mới nhất đang được đồng bộ.</div>';
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải sản phẩm</strong>ShopSphere đang lấy danh sách mới nhất.</div>';
   try{
     const [data, reviewData] = await Promise.all([
       ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`),
@@ -321,7 +321,7 @@ async function loadCatalog(){
     populateFilters();
     renderCatalog();
   }catch(_){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được catalog</strong>Hệ thống catalog chưa sẵn sàng, vui lòng thử lại sau.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm</strong>Kho sản phẩm chưa sẵn sàng, vui lòng thử lại sau.</div>';
   }
 }
 

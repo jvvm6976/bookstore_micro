@@ -195,7 +195,7 @@ button{cursor:pointer}
 .chat-input input{border:1px solid var(--line-strong);border-radius:8px;padding:.72rem .85rem;outline:0}
 .footer-note{max-width:1240px;margin:1.5rem auto 0;padding:1rem;color:var(--muted);font-size:.85rem;text-align:center}
 .auth-page{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,520px);background:#fff}
-.auth-visual{background:linear-gradient(135deg,rgba(194,24,43,.92),rgba(15,118,110,.86)),url('https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80') center/cover;color:#fff;padding:2rem;display:flex;flex-direction:column;justify-content:space-between}
+.auth-visual{background:linear-gradient(135deg,rgba(194,24,43,.92),rgba(15,118,110,.86)),url('http://localhost:8002/static/images/products/product_30.jpg') center/cover;color:#fff;padding:2rem;display:flex;flex-direction:column;justify-content:space-between}
 .auth-visual .brand{color:#fff}
 .auth-visual .brand em{color:#fff}
 .auth-visual .brand-mark{background:#fff;color:var(--brand)}
@@ -621,7 +621,7 @@ body{
 .auth-visual{
   background:
     linear-gradient(135deg,rgba(127,22,33,.9),rgba(15,118,110,.78)),
-    url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1400&q=80') center/cover;
+    url('http://localhost:8002/static/images/products/product_25.jpg') center/cover;
 }
 .auth-card{
   border-color:var(--line);

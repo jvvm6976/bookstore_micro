@@ -4,6 +4,9 @@ from rest_framework import authentication
 from rest_framework import exceptions
 
 class CustomJWTAuthentication(authentication.BaseAuthentication):
+    def authenticate_header(self, request):
+        return 'Bearer'
+
     def authenticate(self, request):
         auth_header = request.headers.get('Authorization')
         if not auth_header:

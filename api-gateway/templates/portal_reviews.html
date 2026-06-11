@@ -1,0 +1,11 @@
+{% extends "_portal_base.html" %}
+{% block portal_content %}
+<section class="portal-panel">
+  <div class="portal-toolbar">
+    <label class="portal-field"><span>Tìm đánh giá</span><input id="reviewSearch" class="portal-input" placeholder="Mã đánh giá, đơn, sản phẩm hoặc nội dung" oninput="Portal.renderReviews()"></label>
+    <label class="portal-field compact"><span>Trạng thái</span><select id="reviewStatusFilter" class="portal-select" onchange="Portal.renderReviews()"><option value="">Tất cả</option><option value="pending">Chờ duyệt</option><option value="approved">Đã duyệt</option><option value="rejected">Từ chối</option></select></label>
+    <button class="portal-btn" onclick="Portal.loadReviews()"><i data-lucide="refresh-cw"></i>Tải lại</button>
+  </div>
+  <div id="reviewsTable"></div>
+</section>
+{% endblock %}
