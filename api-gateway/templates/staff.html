@@ -25,24 +25,57 @@
     <a class="quick-card" href="/chatbot/"><span class="quick-icon">AI</span><span><span class="quick-title">AI hỗ trợ</span><span class="quick-meta">Tư vấn câu trả lời</span></span></a>
   </section>
 
-  <section class="section panel pad">
+  <section id="staffQueueSection" class="section panel pad">
     <div class="section-head">
       <h2 class="section-title">Checklist tác nghiệp</h2>
       <a class="btn small" href="/notifications/">Mở thông báo</a>
     </div>
     <div class="spec-grid">
-      <div class="spec"><span>1. Xác minh</span><strong>Kiểm tra user và mã đơn</strong></div>
-      <div class="spec"><span>2. Trạng thái</span><strong>Đối chiếu order/payment/shipping</strong></div>
+      <div class="spec"><span>1. Xác minh</span><strong>Kiểm tra khách hàng và mã đơn</strong></div>
+      <div class="spec"><span>2. Trạng thái</span><strong>Đối chiếu đơn hàng, thanh toán và vận chuyển</strong></div>
       <div class="spec"><span>3. Phản hồi</span><strong>Ghi chú cho khách hàng</strong></div>
       <div class="spec"><span>4. Theo dõi</span><strong>Kiểm tra lại sau khi cập nhật</strong></div>
     </div>
+  </section>
+
+  <section id="staffLookupSection" class="section panel pad">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Hàng đợi hỗ trợ</h2>
+        <div class="section-note">Ưu tiên các đơn chưa hoàn tất, vận đơn đang giao và đánh giá chờ phản hồi.</div>
+      </div>
+      <button class="btn small" onclick="loadShipments()">Tải lại</button>
+    </div>
+    <div id="staffQueueSummary" class="spec-grid" style="margin-top:.9rem">
+      <div class="spec"><span>Đang tải</span><strong>Đang tổng hợp tác vụ</strong></div>
+    </div>
+    <div id="staffActionQueue" class="empty-state" style="margin-top:.9rem"><strong>Đang tải hàng đợi</strong></div>
+  </section>
+
+  <section class="section panel pad">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Tra cứu đơn hỗ trợ</h2>
+        <div class="section-note">Nhập mã đơn để đối chiếu nhanh khách hàng, thanh toán, vận chuyển và lịch sử xử lý.</div>
+      </div>
+    </div>
+    <div class="toolbar" style="margin:.9rem 0">
+      <div class="field" style="min-width:180px">
+        <label>Mã đơn</label>
+        <input id="staffLookupOrderId" type="number" min="1" placeholder="Ví dụ: 101" onkeydown="if(event.key === 'Enter') lookupStaffOrder()">
+      </div>
+      <button id="staffLookupButton" class="btn primary small" style="align-self:end" onclick="lookupStaffOrder()">Tra cứu</button>
+      <a id="staffLookupOrderLink" class="btn small" style="align-self:end;display:none">Mở chi tiết</a>
+      <a id="staffLookupShipLink" class="btn small" style="align-self:end;display:none">Mở vận chuyển</a>
+    </div>
+    <div id="staffOrderLookupPanel" class="empty-state"><strong>Chưa chọn đơn</strong>Nhập mã đơn để bắt đầu hỗ trợ khách hàng.</div>
   </section>
 
   <section class="section panel pad">
     <div class="section-head">
       <div>
         <h2 class="section-title">Vận hành giao hàng</h2>
-        <div class="section-note">Cập nhật vận đơn, đồng bộ trạng thái đơn hàng và phát sinh thông báo cho khách.</div>
+        <div class="section-note">Cập nhật vận đơn, đồng bộ trạng thái đơn hàng và gửi thông báo cho khách.</div>
       </div>
       <button class="btn small" onclick="loadShipments()">Tải lại</button>
     </div>
@@ -61,7 +94,7 @@
         <input id="shipLocation" value="Kho ShopSphere">
       </div>
     </div>
-    <div id="shipmentsPanel" class="empty-state"><strong>Đang tải vận đơn</strong>Dữ liệu lấy từ shipping-service.</div>
+    <div id="shipmentsPanel" class="empty-state"><strong>Đang tải vận đơn</strong>Đang lấy danh sách vận đơn mới nhất.</div>
   </section>
 
   <section class="section panel pad">
@@ -105,10 +138,36 @@ function goSearch(){
 }
 
 let shipments = [];
+let staffReviews = [];
 let orderCache = new Map();
 let paymentCache = new Map();
 let userOrderMap = new Map();
 const SHIPMENT_RENDER_LIMIT = 25;
+const orderStatusLabels = {
+  pending: 'Chờ xác nhận',
+  paid: 'Đã thanh toán',
+  processing: 'Đang chuẩn bị',
+  shipping: 'Đang giao',
+  delivered: 'Đã giao',
+  completed: 'Hoàn tất',
+  cancelled: 'Đã hủy'
+};
+const paymentStatusLabels = {
+  pending: 'Chờ xử lý',
+  success: 'Thành công',
+  failed: 'Thất bại',
+  refunded: 'Hoàn tiền'
+};
+const shipStatusLabels = {
+  processing: 'Đang chuẩn bị',
+  shipping: 'Đang giao',
+  delivered: 'Đã giao',
+  cancelled: 'Đã hủy'
+};
+
+function labelFrom(map, status, fallback='-'){
+  return map[String(status || '').toLowerCase()] || status || fallback;
+}
 
 async function loadUserOrders(){
   try{
@@ -139,6 +198,147 @@ async function loadPayment(orderId){
   }catch(_){
     paymentCache.set(orderId, null);
     return null;
+  }
+}
+
+function renderStaffQueue(){
+  const summary = document.getElementById('staffQueueSummary');
+  const panel = document.getElementById('staffActionQueue');
+  if(!summary || !panel) return;
+  const activeShipments = shipments.filter(s => !['delivered','cancelled'].includes(String(s.current_status || '').toLowerCase()));
+  const shippingNow = shipments.filter(s => String(s.current_status || '').toLowerCase() === 'shipping');
+  const pendingReviews = staffReviews.filter(r => String(r.status || '').toLowerCase() === 'pending');
+  summary.innerHTML = [
+    ['Vận đơn cần xử lý', `${activeShipments.length} vận đơn`],
+    ['Đang giao', `${shippingNow.length} vận đơn`],
+    ['Review chờ duyệt', `${pendingReviews.length} đánh giá`],
+    ['Tổng vận đơn', `${shipments.length} bản ghi`]
+  ].map(([label, value]) => `<div class="spec"><span>${label}</span><strong>${value}</strong></div>`).join('');
+
+  const queueRows = [
+    ...activeShipments.slice(0, 6).map(s => ({
+      kind: 'shipment',
+      title: `Đơn #${s.order_id}`,
+      desc: `${s.receiver_name || ''} - ${s.full_address || ''}`,
+      meta: `Vận chuyển: ${labelFrom(shipStatusLabels, s.current_status)}`,
+      href: `/shipping/${s.order_id}/tracking/`,
+      cta: 'Mở tracking'
+    })),
+    ...pendingReviews.slice(0, 4).map(r => ({
+      kind: 'review',
+      title: `Review #${r.id} - ${r.rating}/5 sao`,
+      desc: r.comment || 'Không có nội dung đánh giá',
+      meta: `Đơn #${r.order_id} - Sản phẩm #${r.product_id}`,
+      href: `/reviews/?order_id=${r.order_id}`,
+      cta: 'Duyệt review'
+    }))
+  ];
+  if(!queueRows.length){
+    panel.className = 'empty-state';
+    panel.innerHTML = '<strong>Không có tác vụ khẩn</strong>Các vận đơn và đánh giá hiện không cần xử lý ngay.';
+    return;
+  }
+  panel.className = '';
+  panel.innerHTML = `
+    <div class="ops-list">
+      ${queueRows.map(row => `
+        <div class="ops-row">
+          <div>
+            <div class="product-title">${ShopUI.escapeHtml(row.title)}</div>
+            <div class="product-desc">${ShopUI.escapeHtml(row.desc)}</div>
+            <div class="product-meta">
+              <span class="pill teal">${row.kind === 'shipment' ? 'Vận chuyển' : 'Đánh giá'}</span>
+              <span class="pill amber">${ShopUI.escapeHtml(row.meta)}</span>
+            </div>
+          </div>
+          <div class="row-actions">
+            <a class="btn small" href="${row.href}">${row.cta}</a>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function lookupStaffOrder(){
+  const orderId = Number(document.getElementById('staffLookupOrderId').value || 0);
+  const panel = document.getElementById('staffOrderLookupPanel');
+  const orderLink = document.getElementById('staffLookupOrderLink');
+  const shipLink = document.getElementById('staffLookupShipLink');
+  orderLink.style.display = 'none';
+  shipLink.style.display = 'none';
+  if(!orderId){
+    panel.className = 'empty-state';
+    panel.innerHTML = '<strong>Nhập mã đơn</strong>Vui lòng nhập mã đơn cần hỗ trợ.';
+    return;
+  }
+  panel.className = 'empty-state';
+  panel.innerHTML = '<strong>Đang tra cứu đơn</strong>Đang lấy dữ liệu thanh toán và vận chuyển.';
+  try{
+    const [order, paymentResult, shipmentResult, historyResult] = await Promise.all([
+      ShopUI.fetchJson(`${ShopUI.API_BASE}/api/orders/${orderId}/`, {headers:ShopUI.authHeaders(false)}),
+      ShopUI.fetchJson(`${ShopUI.API_BASE}/api/payments/${orderId}/`, {headers:ShopUI.authHeaders(false)}).catch(() => null),
+      ShopUI.fetchJson(`${ShopUI.API_BASE}/api/shipping/${orderId}/`, {headers:ShopUI.authHeaders(false)}).catch(() => null),
+      ShopUI.fetchJson(`${ShopUI.API_BASE}/api/orders/${orderId}/history/`, {headers:ShopUI.authHeaders(false)}).catch(() => [])
+    ]);
+    const payment = paymentResult;
+    const shipment = shipmentResult;
+    const history = ShopUI.safeList(historyResult);
+    orderLink.href = `/orders/${orderId}/tracking/`;
+    shipLink.href = `/shipping/${orderId}/tracking/`;
+    orderLink.style.display = '';
+    shipLink.style.display = shipment ? '' : 'none';
+    panel.className = '';
+    panel.innerHTML = `
+      <div class="spec-grid">
+        <div class="spec"><span>Đơn hàng</span><strong>#${order.id} - ${labelFrom(orderStatusLabels, order.current_status)}</strong></div>
+        <div class="spec"><span>Khách hàng</span><strong>#${order.user_id || '-'}</strong></div>
+        <div class="spec"><span>Tổng tiền</span><strong>${ShopUI.money(order.total_price || order.total_amount || 0)}</strong></div>
+        <div class="spec"><span>Vận chuyển</span><strong>${shipment ? labelFrom(shipStatusLabels, shipment.current_status) : 'Chưa có vận đơn'}</strong></div>
+      </div>
+      <div class="drawer-grid" style="margin-top:.9rem">
+        <div class="spec" style="align-items:stretch">
+          <h3 class="section-title" style="font-size:1rem">Thông tin nhận hàng</h3>
+          <div class="summary-row"><span>Người nhận</span><strong>${ShopUI.escapeHtml(shipment?.receiver_name || order.address?.receiver_name || '-')}</strong></div>
+          <div class="summary-row"><span>Điện thoại</span><strong>${ShopUI.escapeHtml(shipment?.phone || order.address?.phone || '-')}</strong></div>
+          <div class="summary-row" style="align-items:flex-start"><span>Địa chỉ</span><strong>${ShopUI.escapeHtml(shipment?.full_address || order.shipping_address || '-')}</strong></div>
+        </div>
+        <div class="spec" style="align-items:stretch">
+          <h3 class="section-title" style="font-size:1rem">Thanh toán</h3>
+          ${payment ? `
+            <div class="summary-row"><span>Phương thức</span><strong>${ShopUI.escapeHtml(payment.payment_method || '-')}</strong></div>
+            <div class="summary-row"><span>Trạng thái</span><strong>${labelFrom(paymentStatusLabels, payment.overall_status)}</strong></div>
+            <div class="toolbar" style="margin-top:.8rem">
+              <select id="staffPaymentStatus_${orderId}" style="padding:.45rem;border:1px solid var(--line);border-radius:8px">
+                ${['pending','success','failed','refunded'].map(s => `<option value="${s}" ${s === String(payment.overall_status || '').toLowerCase() ? 'selected' : ''}>${paymentStatusLabels[s]}</option>`).join('')}
+              </select>
+              <button class="btn small" onclick="updateStaffPaymentStatus(${orderId})">Lưu thanh toán</button>
+            </div>
+          ` : '<div class="empty-state"><strong>Chưa có thanh toán</strong></div>'}
+        </div>
+      </div>
+      <div class="notice" style="margin-top:.9rem">
+        Lịch sử: ${history.length ? history.slice(0, 5).map(h => labelFrom(orderStatusLabels, h.status)).join(' -> ') : 'Chưa có lịch sử'}
+      </div>
+    `;
+  }catch(err){
+    panel.className = 'empty-state';
+    panel.innerHTML = `<strong>Không tìm thấy đơn</strong>${ShopUI.escapeHtml(err.message || '')}`;
+  }
+}
+
+async function updateStaffPaymentStatus(orderId){
+  const value = document.getElementById(`staffPaymentStatus_${orderId}`).value;
+  try{
+    await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/payments/${orderId}/status/`, {
+      method:'PUT',
+      headers:ShopUI.authHeaders(),
+      body:JSON.stringify({overall_status:value})
+    });
+    ShopUI.toast('Đã cập nhật thanh toán');
+    await lookupStaffOrder();
+  }catch(err){
+    ShopUI.toast(err.message || 'Không cập nhật được thanh toán', 'err');
   }
 }
 
@@ -177,13 +377,13 @@ async function renderShipments(){
     : '';
   panel.className = '';
   panel.innerHTML = `
-    <div style="display:grid;gap:.7rem">
+    <div class="ops-list">
       ${truncatedNote}
       ${enriched.map(({shipment, order, payment}) => {
         const status = shipment.current_status || 'processing';
         const next = nextShipmentStatus(status);
         return `
-          <div class="cart-row" style="align-items:flex-start">
+          <div class="ops-row">
             <div>
               <div class="product-title">Đơn #${shipment.order_id}</div>
               <div class="product-desc">${ShopUI.escapeHtml(shipment.receiver_name || '')} - ${ShopUI.escapeHtml(shipment.full_address || '')}</div>
@@ -193,7 +393,7 @@ async function renderShipments(){
                 <span class="pill amber">Pay: ${ShopUI.escapeHtml(payment?.overall_status || 'chưa có')}</span>
               </div>
             </div>
-            <div style="display:flex;gap:.45rem;flex-wrap:wrap;justify-content:flex-end">
+            <div class="row-actions">
               <a class="btn small" href="/orders/${shipment.order_id}/tracking/">Chi tiết</a>
               <a class="btn small" href="/shipping/${shipment.order_id}/tracking/">Tracking</a>
               ${next ? `<button class="btn primary small" onclick="advanceShipment(${shipment.order_id}, '${next}')">${nextStatusLabel(status)}</button>` : ''}
@@ -220,10 +420,16 @@ async function loadShipments(){
     return;
   }
   panel.className = 'empty-state';
-  panel.innerHTML = '<strong>Đang tải vận đơn</strong>Dữ liệu lấy từ shipping-service.';
+  panel.innerHTML = '<strong>Đang tải vận đơn</strong>Đang lấy danh sách vận đơn mới nhất.';
   try{
-    await loadUserOrders();
-    shipments = await ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/shipping/`, {headers:ShopUI.authHeaders(false)});
+    const [, reviewData, shipmentData] = await Promise.all([
+      loadUserOrders(),
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/reviews/`, {headers:ShopUI.authHeaders(false)}).catch(() => []),
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/shipping/`, {headers:ShopUI.authHeaders(false)})
+    ]);
+    staffReviews = ShopUI.safeList(reviewData);
+    shipments = ShopUI.safeList(shipmentData);
+    renderStaffQueue();
     await renderShipments();
     renderReviewOps();
   }catch(err){
@@ -242,6 +448,7 @@ async function advanceShipment(orderId, status){
     ShopUI.toast('Đã cập nhật vận chuyển');
     shipments = shipments.map(s => Number(s.order_id) === Number(orderId) ? {...s, current_status:status} : s);
     orderCache.delete(orderId);
+    renderStaffQueue();
     await renderShipments();
   }catch(err){
     ShopUI.toast(err.message || 'Không cập nhật được vận chuyển', 'err');
@@ -276,6 +483,7 @@ async function deleteShipment(orderId){
     }
     ShopUI.toast('Đã hủy vận đơn');
     shipments = shipments.filter(s => Number(s.order_id) !== Number(orderId));
+    renderStaffQueue();
     await renderShipments();
   }catch(err){
     ShopUI.toast(err.message || 'Không hủy được vận đơn', 'err');

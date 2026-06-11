@@ -15,7 +15,7 @@
     <div>
       <div class="eyebrow">Theo dõi đơn</div>
       <h1 class="page-title">Chi tiết đơn hàng</h1>
-      <p class="page-subtitle">Đối chiếu trạng thái order, payment và shipment theo dữ liệu service thật.</p>
+      <p class="page-subtitle">Theo dõi trạng thái đơn hàng, thanh toán và vận chuyển trong một màn hình.</p>
     </div>
     <a class="btn subtle" href="/orders/">Quay lại đơn hàng</a>
   </section>
@@ -132,7 +132,7 @@ async function loadTracking() {
                   ${ShopUI.escapeHtml(tx.transaction_note || '-')}<br>
                   <span>${ShopUI.escapeHtml(tx.transaction_code || '')} ${tx.created_at ? '- ' + new Date(tx.created_at).toLocaleString('vi-VN') : ''}</span>
                 </div>
-              `).join('') : '<div class="tracking-details">Chưa có transaction log.</div>'}
+              `).join('') : '<div class="tracking-details">Chưa có lịch sử giao dịch.</div>'}
             ` : '<div class="tracking-details">Chưa có bản ghi thanh toán cho đơn này.</div>'}
           </article>
         </aside>

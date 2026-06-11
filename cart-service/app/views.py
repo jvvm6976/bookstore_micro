@@ -234,6 +234,26 @@ class WishlistAddItemView(generics.CreateAPIView):
         
         if not product_id:
             raise ValidationError({'error': 'product_id is required'})
+        try:
+            product_id = int(product_id)
+            if product_id <= 0:
+                raise ValidationError({'error': 'Invalid product_id'})
+        except (TypeError, ValueError):
+            raise ValidationError({'error': 'Invalid product_id'})
+
+        try:
+            product_resp = requests.get(
+                f"{PRODUCT_SERVICE_URL}/internal/products/{product_id}/",
+                timeout=5
+            )
+            if product_resp.status_code != 200:
+                raise ValidationError({'error': 'Product not found'})
+            product_data = product_resp.json()
+            if str(product_data.get('status', 'active')).lower() != 'active':
+                raise ValidationError({'error': 'Product is not available'})
+        except requests.RequestException as e:
+            logger.error(f"Error calling product service: {str(e)}")
+            raise ValidationError({'error': 'Failed to validate product'})
         
         wishlist, _ = Wishlist.objects.get_or_create(user_id=user_id)
         WishlistItem.objects.get_or_create(wishlist=wishlist, product_id=product_id)

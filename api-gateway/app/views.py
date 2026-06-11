@@ -1,5 +1,8 @@
 import os
 import requests
+import json
+import jwt
+from django.conf import settings
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
@@ -54,7 +57,7 @@ def proxy_request(request, path):
         if not target_url and service_prefix in SERVICES:
             target_url = f"{SERVICES[service_prefix]}/{proxy_path}"
         elif not target_url:
-            return JsonResponse({'error': 'Service not found for prefix: ' + service_prefix}, status=404)
+            return JsonResponse({'error': 'Không tìm thấy chức năng phù hợp'}, status=404)
 
     headers = {k: v for k, v in request.headers.items() if k.lower() not in ['host', 'content-length']}
     
@@ -76,7 +79,66 @@ def proxy_request(request, path):
         )
         return django_response
     except requests.exceptions.RequestException as e:
-        return JsonResponse({'error': 'Gateway timeout or service unavailable', 'details': str(e)}, status=503)
+        return JsonResponse({'error': 'Hệ thống tạm thời chưa sẵn sàng', 'details': str(e)}, status=503)
+
+
+def _staff_payload_from_request(request):
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.lower().startswith('bearer '):
+        return None
+    token = auth_header.split(' ', 1)[1].strip()
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=['HS256'])
+    except jwt.PyJWTError:
+        return None
+    if payload.get('role') not in {'admin', 'manager', 'staff'}:
+        return None
+    return payload
+
+
+@csrf_exempt
+def staff_notification_create(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    payload = _staff_payload_from_request(request)
+    if not payload:
+        return JsonResponse({'error': 'Chỉ tài khoản vận hành được gửi thông báo'}, status=403)
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    recipient_type = data.get('recipient_type', 'staff')
+    if recipient_type not in {'staff', 'manager', 'admin', 'all', 'customer'}:
+        return JsonResponse({'error': 'Invalid recipient_type'}, status=400)
+    if recipient_type == 'customer' and not data.get('user_id'):
+        return JsonResponse({'error': 'user_id is required for customer notifications'}, status=400)
+
+    forward_payload = {
+        'user_id': data.get('user_id') or None,
+        'recipient_type': recipient_type,
+        'target_role': data.get('target_role') or None,
+        'title': data.get('title'),
+        'content': data.get('content'),
+        'type': data.get('type', 'system'),
+        'status': 'unread',
+        'entity_type': data.get('entity_type') or 'manager_notice',
+        'entity_id': data.get('entity_id') or payload.get('user_id'),
+        'priority': data.get('priority', 'normal'),
+    }
+    try:
+        response = requests.post(
+            f"{SERVICES['notifications']}/internal/notifications/",
+            json=forward_payload,
+            timeout=10,
+        )
+    except requests.exceptions.RequestException as exc:
+        return JsonResponse({'error': 'Không gửi được thông báo lúc này', 'details': str(exc)}, status=503)
+    return HttpResponse(
+        content=response.content,
+        status=response.status_code,
+        content_type=response.headers.get('Content-Type', 'application/json'),
+    )
 
 # ════════════════════════════════════════════════════════════════════
 # TEMPLATE VIEWS - Render HTML pages with API integration

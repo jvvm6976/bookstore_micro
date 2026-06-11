@@ -10,63 +10,84 @@
 <body>
 {% include "_customer_header.html" %}
 <main class="page">
-  <section class="page-head">
+  <section class="page-head commerce-hero">
     <div>
       <div class="eyebrow">Sàn thương mại ShopSphere</div>
-      <h1 class="page-title">Mua sắm sách, điện tử, thời trang và đồ gia dụng với giá niêm yết theo VND</h1>
-      <p class="page-subtitle">Catalog rõ ràng, ảnh sản phẩm riêng, giỏ hàng nhanh và gợi ý cá nhân hóa theo hành vi mua sắm.</p>
+      <h1 class="page-title">Mua sắm theo giá VND, gợi ý đúng theo nhu cầu của bạn</h1>
+      <p class="page-subtitle">Catalog có ảnh riêng cho từng sản phẩm, quy trình giỏ hàng rõ ràng và gợi ý cá nhân hóa từ lịch sử xem, tìm kiếm, thêm giỏ và mua hàng.</p>
+      <div class="toolbar">
+        <span class="pill teal" data-auth-user>Khách</span>
+        <a class="btn primary" href="/products/">Duyệt catalog</a>
+        <a class="btn subtle" href="/chatbot/">Hỏi AI tư vấn</a>
+      </div>
     </div>
-    <div class="toolbar">
-      <span class="pill teal" data-auth-user>Khách</span>
-      <a class="btn primary" href="/products/">Duyệt catalog</a>
+    <div class="hero-showcase" aria-hidden="true">
+      <div class="hero-shot primary" data-label="Điện tử chính hãng">
+        <img id="heroPrimaryImage" src="http://localhost:8002/static/images/products/product_9.jpg" alt="">
+      </div>
+      <div class="hero-shot" data-label="Thời trang">
+        <img id="heroSecondImage" src="http://localhost:8002/static/images/products/product_16.jpg" alt="">
+      </div>
+      <div class="hero-shot" data-label="Nhà cửa & đời sống">
+        <img id="heroThirdImage" src="http://localhost:8002/static/images/products/product_25.jpg" alt="">
+      </div>
     </div>
   </section>
 
-  <section class="quick-grid section" aria-label="Lối tắt">
-    <a class="quick-card" href="/products/?domain=Books">
-      <span class="quick-icon">SA</span>
-      <span><span class="quick-title">Sách</span><span class="quick-meta">Tiểu thuyết, khoa học</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Electronics">
-      <span class="quick-icon">DT</span>
-      <span><span class="quick-title">Điện tử</span><span class="quick-meta">Điện thoại, laptop</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Fashion">
-      <span class="quick-icon">TT</span>
-      <span><span class="quick-title">Thời trang</span><span class="quick-meta">Áo, váy, giày</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Home%20%26%20Kitchen">
-      <span class="quick-icon">NB</span>
-      <span><span class="quick-title">Nhà bếp</span><span class="quick-meta">Nồi chảo, máy pha cà phê</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Beauty%20%26%20Personal%20Care">
-      <span class="quick-icon">LD</span>
-      <span><span class="quick-title">Làm đẹp</span><span class="quick-meta">Skincare, nước hoa</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Sports%20%26%20Outdoors">
-      <span class="quick-icon">TT</span>
-      <span><span class="quick-title">Thể thao</span><span class="quick-meta">Tạ, lều cắm trại</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Toys%20%26%20Games">
-      <span class="quick-icon">DC</span>
-      <span><span class="quick-title">Đồ chơi</span><span class="quick-meta">Board game, giáo dục</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Grocery">
-      <span class="quick-icon">TH</span>
-      <span><span class="quick-title">Tạp hóa</span><span class="quick-meta">Cà phê, đồ khô</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Automotive">
-      <span class="quick-icon">XE</span>
-      <span><span class="quick-title">Ô tô xe máy</span><span class="quick-meta">Chăm sóc xe</span></span>
-    </a>
-    <a class="quick-card" href="/products/?domain=Office%20%26%20Stationery">
-      <span class="quick-icon">VP</span>
-      <span><span class="quick-title">Văn phòng</span><span class="quick-meta">Sổ tay, bút viết</span></span>
-    </a>
-    <a class="quick-card" href="/chatbot/">
-      <span class="quick-icon">AI</span>
-      <span><span class="quick-title">Tư vấn AI</span><span class="quick-meta">Gợi ý theo hành vi</span></span>
-    </a>
+  <section class="section panel pad" aria-label="Bộ lọc catalog">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">Bộ lọc mua sắm</h2>
+        <div class="section-note">Dữ liệu ngành hàng, danh mục, giá và đánh giá được lấy từ catalog hiện tại.</div>
+      </div>
+      <a class="btn small" href="/products/">Mở catalog đầy đủ</a>
+    </div>
+    <div class="auth-grid">
+      <div class="field">
+        <label>Ngành hàng</label>
+        <select id="homeDomainFilter" onchange="onHomeDomainChange()">
+          <option value="">Tất cả ngành hàng</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Danh mục</label>
+        <select id="homeCategoryFilter" onchange="renderProducts()">
+          <option value="">Tất cả danh mục</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Khoảng giá</label>
+        <select id="homePriceFilter" onchange="renderProducts()">
+          <option value="">Tất cả mức giá</option>
+          <option value="0:500000">Dưới 500.000đ</option>
+          <option value="500000:2000000">500.000đ - 2.000.000đ</option>
+          <option value="2000000:10000000">2.000.000đ - 10.000.000đ</option>
+          <option value="10000000:">Trên 10.000.000đ</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Đánh giá</label>
+        <select id="homeRatingFilter" onchange="renderProducts()">
+          <option value="">Tất cả đánh giá</option>
+          <option value="4.5">Từ 4.5 sao</option>
+          <option value="4">Từ 4 sao</option>
+          <option value="3">Từ 3 sao</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Sắp xếp</label>
+        <select id="homeSortBy" onchange="renderProducts()">
+          <option value="newest">Mới nhất</option>
+          <option value="rating_desc">Đánh giá cao</option>
+          <option value="price_asc">Giá tăng dần</option>
+          <option value="price_desc">Giá giảm dần</option>
+          <option value="stock_desc">Tồn kho nhiều</option>
+        </select>
+      </div>
+      <label class="pill" style="align-self:end;cursor:pointer">
+        <input id="homeStockOnly" type="checkbox" onchange="renderProducts()" style="accent-color:var(--brand)"> Còn hàng
+      </label>
+    </div>
   </section>
 
   <section class="section">
@@ -75,9 +96,7 @@
         <h2 class="section-title">Sản phẩm mới trong catalog</h2>
         <div id="productMeta" class="section-note">Đang tải dữ liệu...</div>
       </div>
-      <div class="toolbar" id="domainFilterBar">
-        <button class="btn small primary" data-domain="all">Tất cả</button>
-      </div>
+      <button class="btn small" onclick="resetHomeFilters()">Đặt lại bộ lọc</button>
     </div>
     <div id="productGrid" class="product-grid"></div>
   </section>
@@ -99,7 +118,7 @@
 <script>{% include "_customer_ui.js" %}</script>
 <script>
 let allProducts = [];
-let currentDomain = 'all';
+let allReviews = [];
 
 function goSearch(){
   const q = document.getElementById('globalSearch').value.trim();
@@ -111,53 +130,119 @@ function logout(){
   ShopUI.toast('Đã đăng xuất');
 }
 
-function filterDomain(domain){
-  currentDomain = domain;
-  renderDomainFilters();
+function priceBounds(value){
+  if(!value) return [null, null];
+  const [minRaw, maxRaw] = value.split(':');
+  return [
+    minRaw ? Number(minRaw) : null,
+    maxRaw ? Number(maxRaw) : null
+  ];
+}
+
+function optionList(values, label){
+  return `<option value="">${label}</option>` + values
+    .map(value => `<option value="${ShopUI.escapeHtml(value)}">${ShopUI.escapeHtml(value)}</option>`)
+    .join('');
+}
+
+function populateHomeFilters(){
+  const domainSelect = document.getElementById('homeDomainFilter');
+  const categorySelect = document.getElementById('homeCategoryFilter');
+  const domains = [...new Set(allProducts.map(p => p.domain_name).filter(Boolean))]
+    .sort((a,b) => String(a).localeCompare(String(b), 'vi'));
+  domainSelect.innerHTML = optionList(domains, 'Tất cả ngành hàng');
+  populateHomeCategories();
+}
+
+function populateHomeCategories(){
+  const domain = document.getElementById('homeDomainFilter').value;
+  const categorySelect = document.getElementById('homeCategoryFilter');
+  const categories = [...new Set(allProducts
+    .filter(p => !domain || p.domain_name === domain)
+    .map(p => p.category_name)
+    .filter(Boolean))]
+    .sort((a,b) => String(a).localeCompare(String(b), 'vi'));
+  const current = categorySelect.value;
+  categorySelect.innerHTML = optionList(categories, 'Tất cả danh mục');
+  if(categories.includes(current)) categorySelect.value = current;
+}
+
+function onHomeDomainChange(){
+  populateHomeCategories();
   renderProducts();
 }
 
-function renderDomainFilters(){
-  const bar = document.getElementById('domainFilterBar');
-  if(!bar) return;
-  const domainNames = [...new Set(allProducts.map(p => p.domain_name).filter(Boolean))]
-    .sort((a,b) => String(a).localeCompare(String(b), 'vi'));
-  if(currentDomain !== 'all' && !domainNames.includes(currentDomain)){
-    currentDomain = 'all';
-  }
-  const buttons = ['all', ...domainNames];
-  bar.innerHTML = buttons.map(domain => {
-    const label = domain === 'all' ? 'Tất cả' : domain;
-    const active = currentDomain === domain ? ' primary' : '';
-    return `<button class="btn small${active}" data-domain="${ShopUI.escapeHtml(domain)}">${ShopUI.escapeHtml(label)}</button>`;
-  }).join('');
-  bar.querySelectorAll('button[data-domain]').forEach(button => {
-    button.addEventListener('click', () => filterDomain(button.dataset.domain));
+function resetHomeFilters(){
+  ['homeDomainFilter','homeCategoryFilter','homePriceFilter','homeRatingFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('homeSortBy').value = 'newest';
+  document.getElementById('homeStockOnly').checked = false;
+  populateHomeCategories();
+  renderProducts();
+}
+
+function updateHeroShowcase(){
+  const slots = [
+    {id:'heroPrimaryImage', domain:'Electronics'},
+    {id:'heroSecondImage', domain:'Fashion'},
+    {id:'heroThirdImage', domain:'Home & Kitchen'}
+  ];
+  slots.forEach((slot, index) => {
+    const product = allProducts.find(p => p.domain_name === slot.domain && p.image_url) || allProducts[index];
+    const img = document.getElementById(slot.id);
+    if(product && img){
+      img.src = ShopUI.imageFor(product);
+      img.onerror = () => { img.onerror = null; img.src = ShopUI.fallbackImage(); };
+    }
   });
 }
 
 function renderProducts(){
   const grid = document.getElementById('productGrid');
-  let items = allProducts;
-  if(currentDomain !== 'all'){
-    items = items.filter(p => String(p.domain_name || '').toLowerCase() === currentDomain.toLowerCase());
+  const domain = document.getElementById('homeDomainFilter').value;
+  const category = document.getElementById('homeCategoryFilter').value;
+  const [minPrice, maxPrice] = priceBounds(document.getElementById('homePriceFilter').value);
+  const minRating = Number(document.getElementById('homeRatingFilter').value || 0);
+  const sortBy = document.getElementById('homeSortBy').value;
+  const stockOnly = document.getElementById('homeStockOnly').checked;
+  let items = [...allProducts];
+  if(domain) items = items.filter(p => p.domain_name === domain);
+  if(category) items = items.filter(p => p.category_name === category);
+  if(minPrice !== null) items = items.filter(p => Number(p.price || 0) >= minPrice);
+  if(maxPrice !== null) items = items.filter(p => Number(p.price || 0) <= maxPrice);
+  if(minRating) items = items.filter(p => Number(p.rating_avg || 0) >= minRating);
+  if(stockOnly) items = items.filter(p => Number(p.stock || 0) > 0);
+  if(sortBy === 'rating_desc') items.sort((a,b) => Number(b.rating_avg || 0) - Number(a.rating_avg || 0));
+  if(sortBy === 'price_asc') items.sort((a,b) => Number(a.price || 0) - Number(b.price || 0));
+  if(sortBy === 'price_desc') items.sort((a,b) => Number(b.price || 0) - Number(a.price || 0));
+  if(sortBy === 'stock_desc') items.sort((a,b) => Number(b.stock || 0) - Number(a.stock || 0));
+  if(sortBy === 'newest') {
+    items.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || Number(b.id || 0) - Number(a.id || 0));
   }
-  document.getElementById('productMeta').textContent = `${items.length} sản phẩm đang hiển thị`;
+  document.getElementById('productMeta').textContent = `${items.length} sản phẩm phù hợp từ ${allProducts.length} sản phẩm đang bán`;
   if(!items.length){
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có sản phẩm</strong>Thử chọn danh mục khác hoặc tìm kiếm bằng từ khóa.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không có sản phẩm phù hợp</strong>Hãy đổi ngành hàng, khoảng giá hoặc mức đánh giá.</div>';
     return;
   }
-  grid.innerHTML = items.slice(0,8).map(p => ShopUI.productCard(p)).join('');
+  grid.innerHTML = items.slice(0,12).map(p => ShopUI.productCard(p)).join('');
 }
 
 async function loadProducts(){
   const grid = document.getElementById('productGrid');
   grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải catalog</strong>Vui lòng chờ trong giây lát.</div>';
   try{
-    const data = await ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`);
-    allProducts = data.map(ShopUI.normalizeProduct);
-    renderDomainFilters();
+    const [productData, reviewData] = await Promise.all([
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/products/`),
+      ShopUI.fetchAllPages(`${ShopUI.API_BASE}/api/reviews/`).catch(() => [])
+    ]);
+    allReviews = ShopUI.safeList(reviewData);
+    allProducts = ShopUI.withRatings(productData.map(ShopUI.normalizeProduct), allReviews);
+    populateHomeFilters();
+    updateHeroShowcase();
     renderProducts();
+    loadRecommendations();
   }catch(err){
     document.getElementById('productMeta').textContent = 'Không tải được sản phẩm';
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Lỗi tải dữ liệu</strong>Hệ thống catalog chưa sẵn sàng, vui lòng thử lại sau.</div>';
@@ -170,12 +255,12 @@ async function loadRecommendations(){
   try{
     const uid = ShopUI.userId() || 1;
     const data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/recommend/recommendations/?user_id=${encodeURIComponent(uid)}&limit=8`);
-    let items = ShopUI.safeList(data.recommendations || data).map(ShopUI.normalizeProduct);
+    let items = ShopUI.withRatings(ShopUI.safeList(data.recommendations || data).map(ShopUI.normalizeProduct), allReviews);
     if(!items.length && Array.isArray(data.recommended_product_ids)){
       const detail = await Promise.all(data.recommended_product_ids.slice(0,6).map(id =>
         fetch(`${ShopUI.API_BASE}/api/products/${id}/`).then(r => r.ok ? r.json() : null).catch(() => null)
       ));
-      items = detail.filter(Boolean).map(ShopUI.normalizeProduct);
+      items = ShopUI.withRatings(detail.filter(Boolean).map(ShopUI.normalizeProduct), allReviews);
     }
     if(!items.length){
       grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Chưa có gợi ý</strong>Hãy xem thêm sản phẩm hoặc hỏi AI chatbot.</div>';
@@ -191,7 +276,6 @@ if(new URLSearchParams(window.location.search).get('tab') === 'login'){
   window.location.replace('/login/?next=/');
 }
 loadProducts();
-loadRecommendations();
 </script>
 </body>
 </html>

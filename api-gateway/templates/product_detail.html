@@ -22,7 +22,7 @@
     <div class="section-head">
       <div>
         <h2 class="section-title">Sản phẩm liên quan</h2>
-        <div class="section-note">Dựa trên cùng ngành hàng hoặc gợi ý từ AI.</div>
+        <div class="section-note">Dựa trên cùng ngành hàng và lịch sử quan tâm của bạn.</div>
       </div>
       <a class="btn subtle" href="/products/">Xem thêm</a>
     </div>
@@ -33,7 +33,7 @@
     <div class="section-head">
       <div>
         <h2 class="section-title">Đánh giá sản phẩm</h2>
-        <div class="section-note">Lấy từ comment-rate-service, chỉ hiển thị đánh giá đã duyệt.</div>
+        <div class="section-note">Chỉ hiển thị đánh giá công khai đã được duyệt.</div>
       </div>
       <a class="btn subtle" href="/reviews/">Đánh giá của tôi</a>
     </div>
@@ -54,11 +54,16 @@ function goSearch(){
 }
 
 function specRows(product){
+  const p = ShopUI.normalizeProduct(product);
   const rows = [
-    ['SKU', product.sku || '-'],
-    ['Danh mục', product.category_name || '-'],
-    ['Ngành hàng', product.domain_name || '-'],
-    ['Tồn kho', product.stock ?? '-']
+    ['Mã sản phẩm', `#${p.id || productId}`],
+    ['SKU', p.sku || '-'],
+    ['Danh mục', p.category_name || '-'],
+    ['Ngành hàng', p.domain_name || '-'],
+    ['Giá niêm yết', ShopUI.money(p.price)],
+    ['Tồn kho', p.stock === null ? '-' : `${p.stock} sản phẩm`],
+    ['Trạng thái', productStatusLabel(p)],
+    ['Cập nhật', formatProductDate(product.updated_at || product.created_at)]
   ];
   if(product.book){
     rows.push(['Tác giả', product.book.author || '-']);
@@ -81,9 +86,25 @@ function specRows(product){
   `).join('');
 }
 
+function productStatusLabel(product){
+  const status = String(product.status || 'active').toLowerCase();
+  if(Number(product.stock || 0) <= 0) return 'Hết hàng';
+  if(status === 'active') return 'Đang bán';
+  if(status === 'inactive') return 'Ngưng bán';
+  return status;
+}
+
+function formatProductDate(value){
+  if(!value) return '-';
+  const date = new Date(value);
+  if(Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('vi-VN');
+}
+
 function renderDetail(product){
   const p = ShopUI.normalizeProduct(product);
   currentProduct = p;
+  const inStock = Number(p.stock || 0) > 0 && String(p.status || 'active').toLowerCase() === 'active';
   document.title = `${p.name} - ShopSphere`;
   document.getElementById('detailWrap').innerHTML = `
     <div class="detail-media panel">
@@ -96,11 +117,11 @@ function renderDetail(product){
       <div class="toolbar" style="margin:1rem 0">
         <span class="pill teal">${ShopUI.escapeHtml(p.category_name || 'Danh mục')}</span>
         <span class="pill amber">${p.stock ?? 0} sản phẩm còn lại</span>
-        <span class="pill">${ShopUI.escapeHtml(p.status || 'active')}</span>
+        <span class="pill">${ShopUI.escapeHtml(productStatusLabel(p))}</span>
       </div>
       <div class="price" style="font-size:2rem;margin:.8rem 0">${ShopUI.money(p.price)}</div>
       <div class="toolbar" style="margin-bottom:1.1rem">
-        <button class="btn primary" onclick="ShopUI.addToCart(${Number(p.id)})">Thêm vào giỏ</button>
+        <button class="btn primary" ${inStock ? '' : 'disabled'} onclick="ShopUI.addToCart(${Number(p.id)})">${inStock ? 'Thêm vào giỏ' : 'Tạm hết hàng'}</button>
         <button class="btn" onclick="ShopUI.addWishlist(${Number(p.id)})">Lưu yêu thích</button>
         <a class="btn subtle" href="/chatbot/">Hỏi AI về sản phẩm</a>
       </div>
@@ -116,16 +137,34 @@ async function loadRelated(product){
   const grid = document.getElementById('relatedGrid');
   grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Đang tải sản phẩm liên quan</strong></div>';
   try{
-    let data;
-    if(product.category_id){
-      data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/?category_id=${encodeURIComponent(product.category_id)}`);
-    }else{
-      data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/`);
+    const items = [];
+    const seen = new Set([Number(product.id)]);
+    const addItems = data => {
+      ShopUI.safeList(data?.similar || data?.recommendations || data?.items || data)
+        .map(ShopUI.normalizeProduct)
+        .forEach(p => {
+          const id = Number(p.id);
+          const status = String(p.status || 'active').toLowerCase();
+          const sellable = status === 'active' && (p.stock === null || Number(p.stock || 0) > 0);
+          if(!id || seen.has(id) || !sellable) return;
+          seen.add(id);
+          items.push(p);
+        });
+    };
+
+    try{
+      addItems(await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/recommend/similar/${encodeURIComponent(product.id)}/?limit=8`));
+    }catch(_){}
+    if(items.length < 4 && product.category_id){
+      addItems(await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/?category_id=${encodeURIComponent(product.category_id)}`));
     }
-    let items = ShopUI.safeList(data).map(ShopUI.normalizeProduct).filter(p => Number(p.id) !== Number(product.id));
-    if(!items.length && product.domain_id){
-      data = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/?domain_id=${encodeURIComponent(product.domain_id)}`);
-      items = ShopUI.safeList(data).map(ShopUI.normalizeProduct).filter(p => Number(p.id) !== Number(product.id));
+    if(items.length < 4 && product.domain_id){
+      addItems(await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/products/?domain_id=${encodeURIComponent(product.domain_id)}`));
+    }
+    if(items.length < 4){
+      try{
+        addItems(await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/recommend/popular/?limit=8`));
+      }catch(_){}
     }
     grid.innerHTML = items.length
       ? items.slice(0,4).map(p => ShopUI.productCard(p)).join('')
@@ -153,7 +192,7 @@ async function loadProductReviews(){
             <strong>${rating}/5 sao</strong><br>
             <small>${new Date(review.created_at || Date.now()).toLocaleDateString('vi-VN')}</small><br>
             ${ShopUI.escapeHtml(review.comment || '')}
-            ${replies.length ? `<br><small style="display:block;margin-top:.45rem;color:var(--teal)">Phản hồi: ${ShopUI.escapeHtml(replies[0].content || '')}</small>` : ''}
+            ${replies.length ? `<br><small style="display:block;margin-top:.45rem;color:var(--teal)">Phản hồi từ cửa hàng: ${ShopUI.escapeHtml(replies[0].content || '')}</small>` : ''}
           </span>
           <strong>${rating}/5</strong>
         </div>
@@ -176,7 +215,7 @@ async function loadDetail(){
     loadRelated(product);
     loadProductReviews();
   }catch(_){
-    document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm</strong>Sản phẩm có thể đã ngừng bán hoặc service chưa sẵn sàng.</div>';
+    document.getElementById('detailWrap').innerHTML = '<div class="empty-state" style="grid-column:1/-1"><strong>Không tải được sản phẩm</strong>Sản phẩm có thể đã ngừng bán hoặc tạm thời chưa sẵn sàng.</div>';
   }
 }
 

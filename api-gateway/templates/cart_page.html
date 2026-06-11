@@ -108,7 +108,7 @@ function renderCart(){
             <span class="pill">${ShopUI.money(price)} / sản phẩm</span>
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.55rem">
+        <div class="item-actions">
           <div class="price">${ShopUI.money(price * qty)}</div>
           <div class="qty-control">
             <button onclick="changeQty(${productId}, ${Math.max(0, qty - 1)})">−</button>

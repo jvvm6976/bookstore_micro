@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.permissions import AllowAny
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from decimal import Decimal, InvalidOperation
+from django.db.models.deletion import RestrictedError, ProtectedError
 from django.db.models import Q
 from .models import Domain, Category, Product, Book, Electronics, Fashion
 from .serializers import DomainSerializer, CategorySerializer, ProductSerializer
@@ -118,7 +119,12 @@ class DomainViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         _assert_staff_user(self.request)
-        instance.delete()
+        if instance.categories.exists():
+            raise ValidationError({'domain': 'Cannot delete a domain that still has categories'})
+        try:
+            instance.delete()
+        except (RestrictedError, ProtectedError):
+            raise ValidationError({'domain': 'Cannot delete a domain that still has linked catalog data'})
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """
@@ -161,7 +167,12 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         _assert_staff_user(self.request)
-        instance.delete()
+        if instance.products.exists():
+            raise ValidationError({'category': 'Cannot delete a category that still has products'})
+        try:
+            instance.delete()
+        except (RestrictedError, ProtectedError):
+            raise ValidationError({'category': 'Cannot delete a category that still has linked products'})
 
 class ProductViewSet(viewsets.ModelViewSet):
     """

@@ -1,6 +1,7 @@
 from django.urls import path, re_path
 from .views import (
     proxy_request,
+    staff_notification_create,
     home_page,
     products_page,
     product_detail_page,
@@ -34,6 +35,7 @@ urlpatterns = [
     path('profile/', profile_page, name='profile'),
     path('checkout/', checkout_page, name='checkout'),
     path('cart/', cart_page, name='cart'),
+    path('api/notifications/create/', staff_notification_create, name='staff_notification_create'),
     
     # Legacy pages (for compatibility)
     path('customer-login/', home_page),

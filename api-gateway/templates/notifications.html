@@ -149,6 +149,7 @@ async function markAsRead(notifId) {
       body: '{}'
     });
     await loadNotifications();
+    await ShopUI.refreshNotifications();
   } catch (e) {
     ShopUI.toast(e.message || 'Không cập nhật được thông báo', 'err');
   }
@@ -166,6 +167,7 @@ async function markAllRead() {
       body: '{}'
     });
     await loadNotifications();
+    await ShopUI.refreshNotifications();
   } catch (e) {
     ShopUI.toast(e.message || 'Không cập nhật được thông báo', 'err');
   }

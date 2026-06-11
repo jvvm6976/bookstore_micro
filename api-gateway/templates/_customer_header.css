@@ -31,13 +31,3 @@
 .nav-link.active{border-color:rgba(180,35,47,.32);background:#fff1f3;color:var(--brand)}
 .nav-action.subtle{background:#f8fafc}
 [data-auth-only]{display:none}
-@media(max-width:960px){
-  .nav-inner{grid-template-columns:1fr}
-  .nav-links{justify-content:flex-start}
-}
-@media(max-width:620px){
-  .nav-inner{gap:.7rem}
-  .nav-links{flex-wrap:nowrap;overflow-x:auto;padding-bottom:.15rem;scrollbar-width:none}
-  .nav-links::-webkit-scrollbar{display:none}
-  .nav-link,.nav-action{padding:.46rem .58rem;font-size:.78rem}
-}

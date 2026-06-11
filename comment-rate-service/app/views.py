@@ -18,6 +18,19 @@ NOTIFICATION_SERVICE_URL = os.environ.get('NOTIFICATION_SERVICE_URL', 'http://no
 REVIEW_STATUSES = {'pending', 'approved', 'rejected'}
 
 
+def _positive_int_query(params, name):
+    value = params.get(name)
+    if value in (None, ''):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise ValidationError({'error': f'{name} must be a positive integer'})
+    if parsed <= 0:
+        raise ValidationError({'error': f'{name} must be a positive integer'})
+    return parsed
+
+
 def _is_staff_user(user):
     return getattr(user, 'role', None) in {'admin', 'manager', 'staff'}
 
@@ -156,14 +169,16 @@ class ReviewListView(generics.ListCreateAPIView):
             queryset = Review.objects.all()
         else:
             queryset = Review.objects.filter(status='approved')
-        product_id = self.request.query_params.get('product_id')
-        if product_id:
+        product_id = _positive_int_query(self.request.query_params, 'product_id')
+        if product_id is not None:
             queryset = queryset.filter(product_id=product_id)
-        order_id = self.request.query_params.get('order_id')
-        if order_id:
+        order_id = _positive_int_query(self.request.query_params, 'order_id')
+        if order_id is not None:
             queryset = queryset.filter(order_id=order_id)
         review_status = self.request.query_params.get('status')
         if review_status:
+            if review_status not in REVIEW_STATUSES:
+                raise ValidationError({'error': 'Invalid status'})
             queryset = queryset.filter(status=review_status)
         return queryset.order_by('-created_at')
 

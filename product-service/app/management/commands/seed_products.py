@@ -315,8 +315,8 @@ PRODUCTS = [
     },
     {
         'sku': 'BEAUTY001',
-        'name': 'CeraVe Hydrating Facial Cleanser',
-        'description': 'Gentle daily cleanser for normal to dry skin.',
+        'name': 'Curology Gentle Facial Cleanser',
+        'description': 'Daily foaming facial cleanser with a clean skincare-product presentation.',
         'price': '285000.00',
         'stock': 160,
         'domain': 'Beauty & Personal Care',
@@ -325,8 +325,8 @@ PRODUCTS = [
     },
     {
         'sku': 'BEAUTY002',
-        'name': 'Bleu de Chanel Eau de Parfum',
-        'description': 'Woody aromatic fragrance in a spray bottle.',
+        'name': 'Chanel No.5 Eau de Parfum',
+        'description': 'Classic floral fragrance in a glass spray bottle.',
         'price': '3890000.00',
         'stock': 42,
         'domain': 'Beauty & Personal Care',
@@ -375,8 +375,8 @@ PRODUCTS = [
     },
     {
         'sku': 'AUTO001',
-        'name': "Meguiar's Car Wash Kit",
-        'description': 'Car shampoo, microfiber towel, and detailing accessories.',
+        'name': 'Premium Car Detailing Kit',
+        'description': 'Car wash essentials for exterior detailing and routine vehicle care.',
         'price': '890000.00',
         'stock': 95,
         'domain': 'Automotive',

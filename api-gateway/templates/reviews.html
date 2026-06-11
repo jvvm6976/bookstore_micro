@@ -230,7 +230,7 @@ function renderReviews() {
         <div class="review-text">${ShopUI.escapeHtml(review.comment || review.content || '')}</div>
         ${replies.length ? replies.map(reply => `
           <div class="reply-box">
-            <strong>Phản hồi nhân viên</strong><br>
+            <strong>Phản hồi từ cửa hàng</strong><br>
             ${ShopUI.escapeHtml(reply.content || '')}
           </div>
         `).join('') : ''}
