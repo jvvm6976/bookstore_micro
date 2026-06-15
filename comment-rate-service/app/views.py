@@ -100,7 +100,7 @@ def _create_review(request):
     if Review.objects.filter(user_id=user_id, order_id=order_id, product_id=product_id).exists():
         raise ValidationError({'error': 'You have already reviewed this product for this order'})
 
-    # Validate order status = completed or paid
+    # Reviews are only valid after the customer has received the order.
     try:
         order_resp = requests.get(f"{ORDER_SERVICE_URL}/internal/orders/{order_id}/", timeout=5)
         if order_resp.status_code == 200:
@@ -108,8 +108,8 @@ def _create_review(request):
             if int(order_data.get('user_id') or 0) != int(user_id):
                 raise ValidationError({'error': 'You can only review your own orders'})
             order_status = order_data.get('current_status')
-            if order_status not in ['completed', 'paid', 'delivered']:
-                raise ValidationError({'error': f'You can only review completed or paid orders (current status: {order_status})'})
+            if order_status not in ['completed', 'delivered']:
+                raise ValidationError({'error': f'You can only review delivered orders (current status: {order_status})'})
             ordered_product_ids = {
                 int(item.get('product_id'))
                 for item in order_data.get('items', [])
@@ -136,7 +136,7 @@ def _create_review(request):
         _notify_customer(
             user_id,
             'Đánh giá đang chờ duyệt',
-            f'Đánh giá của bạn cho sản phẩm #{product_id} đã được ghi nhận và đang chờ duyệt',
+            f'Đánh giá của bạn cho sản phẩm #{product_id} đã được ghi nhận. ShopSphere sẽ hiển thị sau khi kiểm duyệt.',
             review.id,
         )
         _notify_staff(
@@ -194,7 +194,7 @@ class ReviewListView(generics.ListCreateAPIView):
 
 class ReviewCreateView(generics.CreateAPIView):
     """
-    Create review (only for completed or paid orders)
+    Create review (only for delivered orders)
     POST /reviews/
     
     Request: {order_id, product_id, rating, comment}
@@ -266,8 +266,8 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
             }
             _notify_customer(
                 review.user_id,
-                'Trạng thái đánh giá đã cập nhật',
-                f'Đánh giá #{review.id} {status_labels.get(review.status, review.status)}',
+                'Đánh giá của bạn đã cập nhật',
+                f'Đánh giá #{review.id} {status_labels.get(review.status, review.status)}.',
                 review.id,
                 priority='high' if review.status in {'approved', 'rejected'} else 'normal',
             )
@@ -365,7 +365,7 @@ class ReviewReplyCreateView(generics.CreateAPIView):
             _notify_customer(
                 review.user_id,
                 'Có phản hồi cho đánh giá của bạn',
-                f'Nhân viên đã phản hồi đánh giá #{review.id}',
+                f'ShopSphere đã phản hồi đánh giá #{review.id}. Bạn có thể xem lại trong chi tiết sản phẩm.',
                 review.id,
             )
             

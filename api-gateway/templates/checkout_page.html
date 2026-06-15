@@ -61,8 +61,8 @@
         <div class="auth-grid" style="margin-top:.85rem">
           <div class="field">
             <label>Phương thức</label>
-            <select id="paymentMethod">
-              <option value="cod">COD</option>
+            <select id="paymentMethod" onchange="updatePaymentCopy()">
+              <option value="cod">Thanh toán khi nhận hàng (COD)</option>
               <option value="vnpay">VNPAY</option>
               <option value="momo">MoMo</option>
               <option value="stripe">Stripe</option>
@@ -84,7 +84,7 @@
         <div class="summary-row"><span>Tạm tính</span><strong id="sumTotal">0₫</strong></div>
         <div class="summary-row summary-total"><span>Tổng thanh toán</span><strong id="grandTotal">0₫</strong></div>
       </div>
-      <button id="checkoutBtn" class="btn primary block" onclick="checkout()" style="margin-top:.9rem">Đặt hàng và thanh toán</button>
+      <button id="checkoutBtn" class="btn primary block" onclick="checkout()" style="margin-top:.9rem">Đặt hàng</button>
       <div id="checkoutMsg" class="notice" style="margin-top:.85rem;display:none"></div>
     </aside>
   </section>
@@ -172,6 +172,12 @@ function updateSummary(){
   document.getElementById('grandTotal').textContent = ShopUI.money(total);
 }
 
+function updatePaymentCopy(){
+  const method = document.getElementById('paymentMethod').value;
+  document.getElementById('checkoutBtn').textContent =
+    method === 'cod' ? 'Đặt hàng' : 'Đặt hàng và thanh toán';
+}
+
 function renderAddresses(){
   const select = document.getElementById('addressSelect');
   if(!addresses.length){
@@ -252,17 +258,22 @@ async function checkout(){
     });
     const orderId = order.id;
     const amount = Number(order.total_price || order.total_amount || cartTotal());
-    setMsg('Đã tạo đơn hàng, đang xử lý thanh toán...');
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    setMsg(paymentMethod === 'cod'
+      ? 'Đã tạo đơn hàng, đang xác nhận thanh toán khi nhận hàng...'
+      : 'Đã tạo đơn hàng, đang xử lý thanh toán...');
     const payment = await ShopUI.fetchJson(`${ShopUI.API_BASE}/api/payment/pay/`, {
       method:'POST',
       headers:ShopUI.authHeaders(),
       body:JSON.stringify({
         order_id: orderId,
         amount,
-        payment_method: document.getElementById('paymentMethod').value
+        payment_method: paymentMethod
       })
     });
-    ShopUI.toast(`Thanh toán ${payment.overall_status || 'success'}`);
+    ShopUI.toast(paymentMethod === 'cod'
+      ? 'Đã đặt hàng, bạn sẽ thanh toán khi nhận hàng'
+      : 'Thanh toán thành công');
     window.location.href = `/orders/${orderId}/tracking/`;
   }catch(err){
     setMsg(err.message || 'Thanh toán thất bại.', true);
@@ -277,6 +288,7 @@ async function initCheckout(){
   }
   try{
     await Promise.all([loadCart(), loadAddresses()]);
+    updatePaymentCopy();
   }catch(err){
     setMsg(err.message || 'Không tải được dữ liệu thanh toán.', true);
   }

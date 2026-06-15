@@ -227,6 +227,7 @@ services:
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - JWT_SECRET=super-secret-jwt-key-change-in-production-2024
       - ORDER_SERVICE_URL=http://order-service:8000
+      - PAYMENT_SERVICE_URL=http://payment-service:8000
       - NOTIFICATION_SERVICE_URL=http://notification-service:8000
 
   comment-rate-service:

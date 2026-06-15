@@ -148,6 +148,8 @@ async function loadProfile() {
     currentProfile = profile;
 
     const displayName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username || 'Người dùng';
+    localStorage.setItem('display_name', displayName);
+    ShopUI.updateNav();
     document.getElementById('profileName').textContent = displayName;
     document.getElementById('avatarLg').textContent = initials(profile);
     document.getElementById('emailDisplay').textContent = profile.email || 'Chưa cập nhật';

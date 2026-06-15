@@ -141,18 +141,13 @@ def _compose_product_advice(entities: dict, data: dict, customer_id: int | None)
             return f"Dựa trên thông tin tôi có:\n\n{context}\n\nBạn muốn tìm hiểu thêm về sản phẩm nào?"
         return (
             "Tôi chưa tìm thấy sản phẩm phù hợp với yêu cầu của bạn. "
-            "Hãy thử mô tả rõ hơn về thể loại hoặc chủ đề bạn quan tâm! 🛍️"
+            "Bạn có thể mô tả rõ hơn về loại sản phẩm, mức giá hoặc nhu cầu sử dụng."
         )
 
-    header_parts = ["**Gợi ý sản phẩm dành cho bạn**"]
-    if category:
-        header_parts.append(f"thể loại: {category}")
+    header = "**Gợi ý phù hợp với nhu cầu của bạn**"
     if budget_max:
-        header_parts.append(f"dưới {_fmt_price(budget_max)}")
-    if keywords:
-        header_parts.append(f"từ khóa: {', '.join(keywords[:3])}")
+        header += f" trong khoảng dưới {_fmt_price(budget_max)}"
 
-    header = " | ".join(header_parts)
     lines  = [header, ""]
     for b in recs[:5]:
         lines.append(_fmt_book(b))

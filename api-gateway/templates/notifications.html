@@ -15,7 +15,7 @@
     <div>
       <div class="eyebrow">Thông báo</div>
       <h1 class="page-title">Trung tâm thông báo</h1>
-      <p class="page-subtitle">Thông báo được phân loại theo đơn hàng, thanh toán, vận chuyển, đánh giá và hệ thống. Nội dung nội bộ chỉ hiển thị với tài khoản vận hành.</p>
+      <p class="page-subtitle">Theo dõi các cập nhật mới nhất về đơn hàng, thanh toán, vận chuyển, đánh giá và hỗ trợ từ cửa hàng.</p>
     </div>
     <button class="btn subtle" type="button" onclick="markAllRead()">Đánh dấu đã đọc</button>
   </section>
@@ -41,6 +41,7 @@ const API_BASE = window.location.origin;
 let token = localStorage.getItem('token');
 let allNotifs = [];
 let currentFilter = 'all';
+let visibleLimit = 12;
 const STAFF_ROLES = ['admin', 'manager', 'staff'];
 
 const typeLabels = {
@@ -87,7 +88,7 @@ async function loadNotifications() {
 
   try {
     const data = await ShopUI.fetchJson(`${API_BASE}/api/notifications/`, {headers: ShopUI.authHeaders(false)});
-    allNotifs = ShopUI.safeList(data);
+    allNotifs = ShopUI.groupNotifications(ShopUI.safeList(data));
     renderNotifications();
   } catch (err) {
     document.getElementById('notifContainer').innerHTML = '<div class="empty-state"><strong>Không tải được thông báo</strong>Vui lòng thử lại sau.</div>';
@@ -102,6 +103,7 @@ function visibleByFilter(notif) {
 
 function renderNotifications() {
   const filtered = allNotifs.filter(visibleByFilter);
+  const visible = filtered.slice(0, visibleLimit);
 
   if (!filtered.length) {
     document.getElementById('notifContainer').innerHTML = '<div class="empty-state"><strong>Không có thông báo</strong>Không tìm thấy thông báo theo bộ lọc hiện tại.</div>';
@@ -110,44 +112,64 @@ function renderNotifications() {
 
   document.getElementById('notifContainer').innerHTML = `
     <div class="notification-list">
-      ${filtered.map(notif => {
+      ${visible.map(notif => {
         const isUnread = (notif.status || 'unread') === 'unread';
         const type = String(notif.type || 'system').toLowerCase();
+        const ids = (notif.grouped_ids || [notif.id]).filter(Boolean).join(',');
+        const repeatLabel = Number(notif.repeat_count || 1) > 1
+          ? `<span class="notification-repeat">Gộp ${Number(notif.repeat_count)} lần</span>`
+          : '';
         return `
           <article class="notification-card ${isUnread ? 'unread' : ''}">
             <div>
               <div class="notification-type">
                 ${ShopUI.escapeHtml(typeLabels[type] || type)}
-                <span class="recipient-pill">${recipientLabel(notif)}</span>
+                <span class="recipient-pill">${ShopUI.escapeHtml(recipientLabel(notif))}</span>
+                ${repeatLabel}
               </div>
               <div class="notification-title">${ShopUI.escapeHtml(notif.title || 'Thông báo')}</div>
               <div class="notification-msg">${ShopUI.escapeHtml(notif.content || '')}</div>
               <div class="notification-time">${new Date(notif.created_at || Date.now()).toLocaleString('vi-VN')}</div>
             </div>
             <div class="notification-actions">
-              ${isUnread ? `<button class="btn primary small" onclick="markAsRead(${Number(notif.id)})">Đã xem</button>` : '<span class="status-pill read">Đã đọc</span>'}
+              ${isUnread ? `<button class="btn primary small" onclick="markAsRead('${ShopUI.escapeHtml(ids)}')">Đã xem</button>` : '<span class="status-pill read">Đã đọc</span>'}
             </div>
           </article>
         `;
       }).join('')}
     </div>
+    ${filtered.length > visible.length ? `
+      <div style="display:flex;justify-content:center;margin-top:1rem">
+        <button class="btn" type="button" onclick="showMoreNotifications()">Xem thêm ${Math.min(12, filtered.length - visible.length)} thông báo</button>
+      </div>
+    ` : ''}
   `;
 }
 
 function filterNotif(type, el) {
   currentFilter = type;
+  visibleLimit = 12;
   document.querySelectorAll('.filter-chip').forEach(btn => btn.classList.remove('active'));
   if (el) el.classList.add('active');
   renderNotifications();
 }
 
-async function markAsRead(notifId) {
+function showMoreNotifications() {
+  visibleLimit += 12;
+  renderNotifications();
+}
+
+async function markAsRead(notifIds) {
+  const ids = String(notifIds || '').split(',').map(id => Number(id.trim())).filter(Boolean);
+  if (!ids.length) return;
   try {
-    await ShopUI.fetchJson(`${API_BASE}/api/notifications/${notifId}/read/`, {
-      method: 'PUT',
-      headers: ShopUI.authHeaders(),
-      body: '{}'
-    });
+    await Promise.all(ids.map(notifId => (
+      ShopUI.fetchJson(`${API_BASE}/api/notifications/${notifId}/read/`, {
+        method: 'PUT',
+        headers: ShopUI.authHeaders(),
+        body: '{}'
+      })
+    )));
     await loadNotifications();
     await ShopUI.refreshNotifications();
   } catch (e) {

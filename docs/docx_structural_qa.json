@@ -1,0 +1,34 @@
+[
+  {
+    "file": "docs\\chuong1.docx",
+    "headings": 60,
+    "tables": 10,
+    "images": 10,
+    "chars": 22294,
+    "legacy_terms": []
+  },
+  {
+    "file": "docs\\chuong2.docx",
+    "headings": 113,
+    "tables": 14,
+    "images": 19,
+    "chars": 31000,
+    "legacy_terms": []
+  },
+  {
+    "file": "docs\\chuong3.docx",
+    "headings": 80,
+    "tables": 21,
+    "images": 12,
+    "chars": 24739,
+    "legacy_terms": []
+  },
+  {
+    "file": "docs\\chuong4.docx",
+    "headings": 72,
+    "tables": 18,
+    "images": 15,
+    "chars": 17928,
+    "legacy_terms": []
+  }
+]

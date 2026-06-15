@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 
 STATUS_VI = {
     "pending":    "⏳ Chờ xử lý",
-    "paid":       "✅ Đã thanh toán",
+    "paid":       "✅ Đã xác nhận",
+    "shipping":   "🚚 Đang giao hàng",
     "shipped":    "🚚 Đang giao hàng",
     "delivered":  "📬 Đã giao",
     "canceled":   "❌ Đã hủy",
@@ -31,6 +32,21 @@ STATUS_VI = {
 
 def _fmt_status(s: str) -> str:
     return STATUS_VI.get(s, s)
+
+
+def _fmt_payment_status(status: str, method: str) -> str:
+    if method == "cod" and status == "pending":
+        return "Thanh toán khi nhận hàng"
+    return _fmt_status(status)
+
+
+def _fmt_payment_method(method: str) -> str:
+    return {
+        "cod": "Thanh toán khi nhận hàng (COD)",
+        "momo": "MoMo",
+        "vnpay": "VNPAY",
+        "stripe": "Thẻ quốc tế",
+    }.get(method, method)
 
 
 def get_order_info(customer_id: int, order_id: int | None = None) -> dict[str, Any]:
@@ -64,8 +80,11 @@ def get_order_info(customer_id: int, order_id: int | None = None) -> dict[str, A
                 "eta":      ship.get("estimated_delivery", ""),
             },
             "payment": {
-                "status": _fmt_status(payment.get("overall_status") or payment.get("status", "")),
-                "method": payment.get("payment_method", ""),
+                "status": _fmt_payment_status(
+                    payment.get("overall_status") or payment.get("status", ""),
+                    payment.get("payment_method", ""),
+                ),
+                "method": _fmt_payment_method(payment.get("payment_method", "")),
             },
         }
 

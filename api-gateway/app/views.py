@@ -227,7 +227,7 @@ def staff_orders_page(request):
 
 
 def staff_shipping_page(request):
-    return _portal_page(request, 'staff_shipping.html', 'staff', 'shipping', 'Vận hành giao hàng', 'Cập nhật trạng thái vận đơn và các mốc tracking thực tế.')
+    return _portal_page(request, 'staff_shipping.html', 'staff', 'shipping', 'Vận hành giao hàng', 'Cập nhật trạng thái vận đơn và các mốc vận chuyển thực tế.')
 
 
 def staff_reviews_page(request):
@@ -260,7 +260,3 @@ def admin_reviews_page(request):
 
 def admin_notifications_page(request):
     return _portal_page(request, 'portal_notifications.html', 'admin', 'notifications', 'Trung tâm thông báo', 'Tạo, sửa, xóa và theo dõi thông báo vận hành toàn hệ thống.')
-
-
-def admin_ai_page(request):
-    return _portal_page(request, 'admin_ai.html', 'admin', 'ai', 'AI và cá nhân hóa', 'Kiểm tra tri thức, phân tích khách hàng và gợi ý theo tài khoản.')

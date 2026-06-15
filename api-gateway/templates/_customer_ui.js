@@ -31,6 +31,7 @@ const ShopUI = (() => {
   function token() { return localStorage.getItem('token') || ''; }
   function userId() { return localStorage.getItem('user_id') || ''; }
   function username() { return localStorage.getItem('username') || ''; }
+  function displayName() { return localStorage.getItem('display_name') || username(); }
   function role() { return localStorage.getItem('role') || ''; }
 
   function roleLabel(value) {
@@ -82,11 +83,12 @@ const ShopUI = (() => {
     localStorage.setItem('user_id', String(data.user_id || payload.user_id || ''));
     localStorage.setItem('username', data.username || payload.username || fallbackUsername || '');
     localStorage.setItem('role', data.role || payload.role || 'customer');
+    localStorage.removeItem('display_name');
     updateNav();
   }
 
   function clearSession() {
-    ['token', 'refresh', 'user_id', 'username', 'role'].forEach(k => localStorage.removeItem(k));
+    ['token', 'refresh', 'user_id', 'username', 'display_name', 'role'].forEach(k => localStorage.removeItem(k));
     updateNav();
   }
 
@@ -97,7 +99,7 @@ const ShopUI = (() => {
 
   function updateNav() {
     document.querySelectorAll('[data-auth-user]').forEach(el => {
-      el.textContent = token() ? `Xin chào ${username() || 'bạn'}` : 'Khách';
+      el.textContent = token() ? `Xin chào ${displayName() || 'bạn'}` : 'Khách';
     });
     document.querySelectorAll('[data-auth-role]').forEach(el => {
       el.textContent = token() ? roleLabel(role()) : 'Khách';
@@ -116,6 +118,21 @@ const ShopUI = (() => {
       notificationError = '';
       closeNotifications();
       renderHeaderNotifications();
+    }
+  }
+
+  async function loadDisplayName() {
+    if (!token()) return '';
+    try {
+      const profile = await fetchJson(`${API_BASE}/api/users/profile/`, { headers: authHeaders(false) });
+      const name = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.username || username();
+      if (name) {
+        localStorage.setItem('display_name', name);
+        updateNav();
+      }
+      return name;
+    } catch (_) {
+      return displayName();
     }
   }
 
@@ -143,6 +160,71 @@ const ShopUI = (() => {
     return String(notif?.status || 'unread').toLowerCase();
   }
 
+  function notificationGroupKey(notif) {
+    const normalize = value => String(value ?? '').trim().toLowerCase();
+    return [
+      normalize(notif?.recipient_type),
+      normalize(notif?.user_id),
+      normalize(notif?.target_role),
+      normalize(notif?.type),
+      normalize(notif?.entity_type),
+      normalize(notif?.entity_id),
+      normalize(notif?.title),
+      normalize(notif?.content)
+    ].join('|');
+  }
+
+  function notificationDigestGroupKey(notif) {
+    const normalize = value => String(value ?? '').trim().toLowerCase();
+    return [
+      normalize(notif?.recipient_type),
+      normalize(notif?.user_id),
+      normalize(notif?.target_role),
+      normalize(notif?.type),
+      normalize(notif?.title)
+    ].join('|');
+  }
+
+  function notificationTimeValue(notif) {
+    const value = notif?.updated_at || notif?.created_at;
+    const time = value ? new Date(value).getTime() : 0;
+    return Number.isFinite(time) ? time : 0;
+  }
+
+  function groupNotifications(items = [], options = {}) {
+    const groups = new Map();
+    const digest = Boolean(options.digest);
+    safeList(items).forEach(item => {
+      const key = digest ? notificationDigestGroupKey(item) : notificationGroupKey(item);
+      const current = groups.get(key);
+      if (!current) {
+        groups.set(key, {
+          ...item,
+          grouped_ids: item?.id ? [Number(item.id)] : [],
+          repeat_count: 1,
+          digest_group: digest
+        });
+        return;
+      }
+      const latest = notificationTimeValue(item) >= notificationTimeValue(current) ? item : current;
+      const ids = [...(current.grouped_ids || []), item?.id ? Number(item.id) : null].filter(Boolean);
+      const hasUnread = notificationStatus(current) === 'unread' || notificationStatus(item) === 'unread';
+      groups.set(key, {
+        ...latest,
+        grouped_ids: [...new Set(ids)],
+        repeat_count: Number(current.repeat_count || 1) + 1,
+        status: hasUnread ? 'unread' : 'read',
+        digest_group: digest
+      });
+    });
+    return [...groups.values()].sort((a, b) => notificationTimeValue(b) - notificationTimeValue(a));
+  }
+
+  function parseNotificationIds(notificationIds) {
+    if (Array.isArray(notificationIds)) return notificationIds.map(Number).filter(Boolean);
+    return String(notificationIds || '').split(',').map(id => Number(id.trim())).filter(Boolean);
+  }
+
   function formatTime(value) {
     const date = value ? new Date(value) : new Date();
     if (Number.isNaN(date.getTime())) return '';
@@ -163,7 +245,7 @@ const ShopUI = (() => {
   function renderHeaderNotifications() {
     const { trigger, badge, list, summary } = headerNotificationNodes();
     if (!list || !badge || !summary) return;
-    const visible = token() ? notificationItems.filter(isHeaderVisibleNotification) : [];
+    const visible = token() ? groupNotifications(notificationItems.filter(isHeaderVisibleNotification), { digest: true }) : [];
     const unread = visible.filter(item => notificationStatus(item) === 'unread').length;
     if (!token()) {
       list.innerHTML = '<div class="notification-empty">Đăng nhập để xem thông báo.</div>';
@@ -178,19 +260,27 @@ const ShopUI = (() => {
       list.innerHTML = '<div class="notification-empty">Bạn chưa có thông báo mới.</div>';
       summary.textContent = 'Không có thông báo';
     } else {
-      summary.textContent = unread ? `${unread} thông báo chưa đọc` : 'Tất cả đã đọc';
+      summary.textContent = unread ? `${unread} mục chưa đọc` : 'Tất cả đã đọc';
       list.innerHTML = visible.slice(0, 6).map(notif => {
         const type = String(notif.type || 'system').toLowerCase();
         const isUnread = notificationStatus(notif) === 'unread';
+        const ids = (notif.grouped_ids || [notif.id]).filter(Boolean).join(',');
+        const repeatLabel = Number(notif.repeat_count || 1) > 1
+          ? `<span class="notification-repeat">Gộp ${Number(notif.repeat_count)} lần</span>`
+          : '';
+        const message = notif.digest_group && Number(notif.repeat_count || 1) > 1
+          ? `${Number(notif.repeat_count)} cập nhật cùng loại. Mới nhất: ${notif.content || ''}`
+          : (notif.content || '');
         return `
           <article class="notification-dropdown-item ${isUnread ? 'unread' : ''}">
-            <a href="/notifications/" onclick="ShopUI.markNotificationRead(${Number(notif.id || 0)}, event)">
+            <a href="/notifications/" onclick="ShopUI.markNotificationGroupRead('${escapeHtml(ids)}', event)">
               <div class="notification-mini-type">
                 <span>${escapeHtml(notificationTypeLabels[type] || type)}</span>
                 <span class="recipient-pill">${escapeHtml(notificationRecipientLabel(notif))}</span>
+                ${repeatLabel}
               </div>
               <div class="notification-mini-title">${escapeHtml(notif.title || 'Thông báo')}</div>
-              <div class="notification-mini-msg">${escapeHtml(notif.content || '')}</div>
+              <div class="notification-mini-msg">${escapeHtml(message)}</div>
               <div class="notification-mini-time">${escapeHtml(formatTime(notif.created_at))}</div>
             </a>
             ${isUnread ? '<span class="notification-mini-dot" aria-label="Chưa đọc"></span>' : ''}
@@ -283,16 +373,23 @@ const ShopUI = (() => {
   }
 
   async function markNotificationRead(notificationId, event) {
-    if (!notificationId || !token()) return;
+    return markNotificationGroupRead([notificationId], event);
+  }
+
+  async function markNotificationGroupRead(notificationIds, event) {
+    const ids = parseNotificationIds(notificationIds);
+    if (!ids.length || !token()) return;
     if (event) event.preventDefault();
     try {
-      await fetchJson(`${API_BASE}/api/notifications/${notificationId}/read/`, {
-        method: 'PUT',
-        headers: authHeaders(),
-        body: '{}'
-      });
+      await Promise.all(ids.map(notificationId => (
+        fetchJson(`${API_BASE}/api/notifications/${notificationId}/read/`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: '{}'
+        })
+      )));
       notificationItems = notificationItems.map(item => (
-        Number(item.id) === Number(notificationId) ? { ...item, status: 'read' } : item
+        ids.includes(Number(item.id)) ? { ...item, status: 'read' } : item
       ));
       renderHeaderNotifications();
     } catch (_) {
@@ -626,6 +723,7 @@ const ShopUI = (() => {
 
   function init() {
     updateNav();
+    loadDisplayName();
     bindSearch();
     document.addEventListener('click', event => {
       const { widget } = headerNotificationNodes();
@@ -642,6 +740,7 @@ const ShopUI = (() => {
     token,
     userId,
     username,
+    displayName,
     role,
     authHeaders,
     safeList,
@@ -651,10 +750,12 @@ const ShopUI = (() => {
     clearSession,
     logout,
     updateNav,
+    loadDisplayName,
     goSearch,
     bindSearch,
     imageFor,
     fallbackImage,
+    groupNotifications,
     ratingMapFromReviews,
     withRatings,
     normalizeProduct,
@@ -670,6 +771,7 @@ const ShopUI = (() => {
     toggleNotifications,
     refreshNotifications,
     markNotificationRead,
+    markNotificationGroupRead,
     markAllNotificationsRead,
     init
   };

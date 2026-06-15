@@ -29,6 +29,7 @@ from .graph.graph_queries import (
     get_top_recommended_products,
 )
 from .ml.preprocess import BestModelPredictor
+from .services.text_normalizer import strip_vietnamese_accents
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,109 @@ def _enrich_recommendations_with_catalog(recommendations: list[dict]) -> list[di
             if rec.get(key) in (None, "") and product.get(key) not in (None, ""):
                 rec[key] = product.get(key)
     return recommendations
+
+
+def _explicit_catalog_recommendations(
+    message: str,
+    entities: dict[str, Any],
+    customer_ratings: dict[int, int],
+    limit: int = 5,
+) -> list[dict]:
+    """Prioritize catalog items that directly match the current request."""
+    from .clients.catalog_client import catalog_client
+    from .clients.comment_client import comment_client
+
+    category = entities.get("category")
+    raw_keywords = [
+        strip_vietnamese_accents(str(value)).lower()
+        for value in entities.get("product_keywords", [])
+        if len(str(value).strip()) >= 3
+    ]
+    keywords = [] if category else raw_keywords
+    original_message = message.lower()
+    folded_message = strip_vietnamese_accents(message).lower()
+    synonym_terms = []
+    synonym_map = {
+        "tai nghe": ["headphone", "noise cancel"],
+        "chong on": ["noise cancel", "headphone"],
+        "lam sach da": ["cleanser", "skincare"],
+        "sua rua mat": ["cleanser", "skincare"],
+        "cham soc da": ["skincare", "cleanser"],
+        "nuoc hoa": ["fragrance", "parfum"],
+        "thoi trang": ["fashion", "womens", "mens", "shoes"],
+        "phat trien ban than": ["habits", "startup", "non-fiction"],
+        "so ghi chep": ["notebook", "stationery"],
+        "ghi chep": ["notebook", "stationery"],
+        "do dung gia dinh": ["home", "kitchen", "cookware", "appliance"],
+    }
+    for phrase, terms in synonym_map.items():
+        if phrase in folded_message:
+            synonym_terms.extend(terms)
+    if re.search(r"(?<!\w)(sách|sach)(?!\w)", original_message):
+        synonym_terms.extend(["books", "non-fiction", "fiction", "science"])
+    query_terms = list(dict.fromkeys(keywords + synonym_terms))
+
+    scored = []
+    for product in catalog_client.get_all_products(limit=500):
+        if not product.get("id") or int(product.get("stock", 0) or 0) <= 0:
+            continue
+        text = strip_vietnamese_accents(" ".join([
+            str(product.get("title") or product.get("name") or ""),
+            str(product.get("description") or ""),
+            str(product.get("category") or product.get("category_name") or ""),
+            str(product.get("domain_name") or ""),
+            str(product.get("brand") or ""),
+        ])).lower()
+        score = 0
+        if category and product.get("category") == category:
+            score += 20
+        title_text = strip_vietnamese_accents(str(product.get("title") or "")).lower()
+        for term in query_terms:
+            pattern = rf"(?<!\w){re.escape(term)}(?!\w)"
+            if re.search(pattern, text):
+                score += 8 if re.search(pattern, title_text) else 3
+        if score > 0:
+            scored.append((score, product))
+
+    if not scored:
+        return []
+
+    scored.sort(key=lambda item: (item[0], float(item[1].get("price", 0) or 0)), reverse=True)
+    product_ids = [product["id"] for _, product in scored[:limit]]
+    rating_map = comment_client.get_reviews_for_products(product_ids)
+    result = []
+    for score, product in scored[:limit]:
+        product_id = product["id"]
+        if customer_ratings.get(product_id, 5) < 3:
+            continue
+        rating = rating_map.get(product_id, {})
+        result.append({
+            "product_id": product_id,
+            "title": product.get("title") or product.get("name") or "",
+            "author": product.get("author", ""),
+            "category": product.get("category") or product.get("category_name") or "",
+            "domain_name": product.get("domain_name") or "",
+            "price": float(product.get("price", 0) or 0),
+            "score": float(score),
+            "reason": "khớp trực tiếp với nhu cầu bạn vừa mô tả",
+            "avg_rating": round(float(rating.get("avg", 0) or 0), 2),
+        })
+    return result
+
+
+def _merge_recommendations(*groups: list[dict], limit: int = 8) -> list[dict]:
+    merged = []
+    seen = set()
+    for group in groups:
+        for item in group:
+            product_id = int(item.get("product_id") or item.get("id") or 0)
+            if not product_id or product_id in seen:
+                continue
+            seen.add(product_id)
+            merged.append(item)
+            if len(merged) >= limit:
+                return merged
+    return merged
 
 
 def _infer_book_title_from_history(session_id: str, current_message: str) -> str | None:
@@ -543,6 +647,22 @@ class ChatOrchestrator:
                 category=entities.get("category"),
                 model_best_prediction=model_best_prediction,
             )
+            explicit_recs = _explicit_catalog_recommendations(
+                message,
+                entities,
+                customer_ratings,
+            )
+            if explicit_recs:
+                explicit_domains = {
+                    item.get("domain_name")
+                    for item in explicit_recs
+                    if item.get("domain_name")
+                }
+                related_personalized = [
+                    item for item in recs
+                    if not explicit_domains or item.get("domain_name") in explicit_domains
+                ]
+                recs = _merge_recommendations(explicit_recs, related_personalized)
 
             if customer_id:
                 try:
@@ -595,7 +715,13 @@ class ChatOrchestrator:
 
                         existing = {int(r.get("product_id") or r.get("id") or 0) for r in recs}
                         for gi in graph_items:
-                            if gi["product_id"] not in existing:
+                            if (
+                                gi["product_id"] not in existing
+                                and (
+                                    not entities.get("category")
+                                    or gi.get("category") == entities.get("category")
+                                )
+                            ):
                                 recs.append(gi)
                 except Exception as exc:
                     logger.debug("Graph enrichment failed in product_advice: %s", exc)

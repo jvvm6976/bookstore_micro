@@ -1,0 +1,1662 @@
+{
+  "Chương 1: Từ Monolithic đến Microservices và DDD": [
+    {
+      "idx": 20,
+      "text": "Chương 1: Từ Monolithic đến Microservices và DDD",
+      "style": "Heading 1"
+    },
+    {
+      "idx": 21,
+      "text": "1.1 Bối cảnh chuyển dịch từ Monolithic sang Microservices",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 25,
+      "text": "1.2 Kiến trúc Monolithic",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 26,
+      "text": "1.2.1 Khái niệm",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 31,
+      "text": "Hình 1.1. Kiến trúc Monolithic",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 32,
+      "text": "1.2.2 Cấu trúc điển hình của hệ thống Monolithic",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 38,
+      "text": "Hình 1.2. Sơ đồ tổ chức phân lớp (Layered Architecture)",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 40,
+      "text": "1.2.3 Ví dụ Monolithic trong hệ thống e-commerce",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 43,
+      "text": "Hình 1.3. Minh họa cấu trúc các phân hệ chức năng trong một hệ thống Thương mại điện tử Monolithic",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 47,
+      "text": "1.2.4 Ưu điểm và hạn chế của Monolithic",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 54,
+      "text": "Hình 1.4. Các hạn chế về mặt kỹ thuật của kiến trúc Monolithic",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 67,
+      "text": "1.2.5 Khi nào nên dùng Monolithic",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 81,
+      "text": "1.3 Kiến trúc Microservices",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 82,
+      "text": "1.3.1 Khái niệm",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 87,
+      "text": "Hình 1.5. Kiến trúc Microservice",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 89,
+      "text": "1.3.2 Đặc điểm cốt lõi của Microservices",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 96,
+      "text": "1.3.3 Ưu điểm và thách thức",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 101,
+      "text": "1.4 So sánh Monolithic - Microservices",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 104,
+      "text": "Hình 1.6. Hình ảnh so sánh giữa kiến trúc Monolithic và Microservices",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 106,
+      "text": "Hình 1.1 minh họa sự khác biệt trực quan giữa hai cách tổ chức hệ thống. Ở phía Monolithic, các phân hệ nghiệp vụ cùng tồn tại trong một khối ứng dụng và sử dụng chung cơ sở dữ liệu. Ở phía Microservices, mỗi service có trách nhiệm riêng, sở hữu dữ liệu riêng và giao tiếp với service khác thông qua API hoặc sự kiện. Đây là khác biệt cốt lõi về ranh giới triển khai, ranh giới dữ liệu và ranh giới trách nhiệm.",
+      "style": "normal"
+    },
+    {
+      "idx": 107,
+      "text": "Bảng 1.1. Bảng so sánh các tiêu chí khác biệt giữa kiến trúc Monolithic và Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 109,
+      "text": "Bảng 1.1 cho thấy Microservices không đơn thuần là phiên bản “nâng cấp” tuyệt đối của Monolithic. Microservices đánh đổi sự đơn giản ban đầu để lấy khả năng mở rộng, triển khai độc lập và tổ chức nhóm tốt hơn. Ngược lại, Monolithic đánh đổi tính linh hoạt dài hạn để lấy tốc độ phát triển và tính nhất quán dữ liệu trong giai đoạn đầu. Vì vậy, quyết định kiến trúc cần dựa trên quy mô hệ thống, mức độ ổn định nghiệp vụ, năng lực DevOps và số lượng nhóm phát triển.",
+      "style": "normal"
+    },
+    {
+      "idx": 110,
+      "text": "1.5 Các Big Tech sử dụng Microservices và quá trình phát triển",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 111,
+      "text": "1.5.1 Amazon: từ khối thương mại điện tử lớn đến tư duy service ownership",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 115,
+      "text": "1.5.2 Netflix: mở rộng toàn cầu, tự động hóa và thiết kế chống lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 119,
+      "text": "1.5.3 Uber: từ monolith ban đầu đến kiến trúc domain-oriented",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 123,
+      "text": "1.5.4 Tổng hợp bài học từ Big Tech",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 124,
+      "text": "Bảng 1.2. Tổng hợp cách Big Tech áp dụng và phát triển Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 126,
+      "text": "1.6 Thiết kế Microservices không phải là Monolithic bị chia nhỏ",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 128,
+      "text": "Hình 1.7. Khác biệt tư duy thiết kế giữa Monolithic và Microservices",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 132,
+      "text": "1.6.1 Các dấu hiệu của thiết kế Microservices sai",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 139,
+      "text": "1.6.2 Nguyên tắc chuyển đổi đúng",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 146,
+      "text": "1.7 Domain-Driven Design làm nền tảng phân rã",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 150,
+      "text": "Bảng 1.3. Ánh xạ khái niệm DDD sang thiết kế Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 152,
+      "text": "1.8 Case Study Healthcare: phân rã hệ thống y tế",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 154,
+      "text": "Hình 1.8. Phân rã hệ thống Healthcare thành các bounded context và microservice",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 155,
+      "text": "1.8.1 Mô tả bài toán",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 159,
+      "text": "1.8.2 Xác định Domain và Bounded Context",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 164,
+      "text": "1.8.3 Phân rã thành Microservices",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 165,
+      "text": "Bảng 1.4. Phân rã Healthcare thành các microservice",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 170,
+      "text": "1.8.4 Luồng nghiệp vụ đặt lịch khám",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 179,
+      "text": "1.9 Tạo services với Django và các lớp minh họa",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 181,
+      "text": "Hình 1.9. Mô hình tạo các service Healthcare với Django",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 183,
+      "text": "1.9.1 Patient Service - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 186,
+      "text": "1.9.2 Doctor Service - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 189,
+      "text": "1.9.3 Appointment Service - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 192,
+      "text": "1.9.4 API minh họa cho từng service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 193,
+      "text": "Bảng 1.5. API minh họa cho hệ thống Healthcare Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 195,
+      "text": "1.9.5 Gợi ý cấu trúc thư mục Django theo service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 198,
+      "text": "1.10 Bổ sung phân tích thiết kế và kiểm chứng kiến trúc",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 199,
+      "text": "1.10.1 Thuộc tính chất lượng cần đánh giá khi chọn kiến trúc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 203,
+      "text": "Bảng 1.6. Đánh giá thuộc tính chất lượng giữa Monolithic và Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 205,
+      "text": "1.10.2 Lộ trình chuyển đổi từ Monolithic sang Microservices",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 216,
+      "text": "1.10.3 Các anti-pattern thường gặp trong Microservices",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 221,
+      "text": "Bảng 1.7. Anti-pattern và biện pháp phòng tránh khi thiết kế Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 223,
+      "text": "1.10.4 Gợi ý mô hình hóa trong Visual Paradigm",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 227,
+      "text": "Bảng 1.8. Chuyển nội dung chương 1 thành biểu đồ trong Visual Paradigm",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 229,
+      "text": "1.10.5 Bổ sung serializer và view minh họa cho Django",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 234,
+      "text": "1.10.6 Kiểm thử kiến trúc ở mức chương 1",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 238,
+      "text": "Bảng 1.9. Checklist kiểm chứng thiết kế Microservices",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 240,
+      "text": "1.11 Kết luận chương 1",
+      "style": "Heading 2"
+    }
+  ],
+  "Chương 1 đã trình bày nền tảng lý thuyết và thực tiễn để hiểu sự chuyển dịch từ Monolithic sang Microservices. Monolithic phù hợp với giai đoạn đầu, hệ thống nhỏ, nhóm ít người và yêu cầu vận hành đơn giản. Microservices phù hợp hơn khi hệ thống có nhiều domain, nhiều nhóm phát triển, nhu cầu scale không đồng đều và cần triển khai độc lập theo từng năng lực nghiệp vụ.": [],
+  "Chương 2: Phát triển hệ E-Commerce Microservices": [
+    {
+      "idx": 245,
+      "text": "Chương 2: Phát triển hệ E-Commerce Microservices",
+      "style": "Heading 1"
+    },
+    {
+      "idx": 246,
+      "text": "2.1 Phân tích yêu cầu",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 247,
+      "text": "2.1.1 Bối cảnh nghiệp vụ",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 250,
+      "text": "2.1.2 Yêu cầu chức năng",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 251,
+      "text": "Bảng 2.1. Yêu cầu chức năng của hệ thống E-Commerce",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 253,
+      "text": "2.1.3 Yêu cầu phi chức năng",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 254,
+      "text": "Bảng 2.2. Yêu cầu phi chức năng của hệ thống",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 256,
+      "text": "2.1.4 Biểu đồ Use Case tổng quát",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 260,
+      "text": "Hình 2.1. Biểu đồ Use Case tổng quát của hệ thống E-Commerce Microservices",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 261,
+      "text": "2.1.5 Đặc tả Use Case tổng quát",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 311,
+      "text": "Bảng 2.3. Phân quyền chức năng theo ba actor",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 313,
+      "text": "2.2 Phân rã service theo DDD",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 316,
+      "text": "Hình 2.2. Sơ đồ phân rã service của hệ thống E-Commerce Microservices",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 319,
+      "text": "Hình 2.3. Sơ đồ giao tiếp nghiệp vụ giữa các service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 320,
+      "text": "Bảng 2.4. Bounded Context và service tương ứng",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 324,
+      "text": "2.3 Thiết kế Product Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 327,
+      "text": "2.3.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 330,
+      "text": "2.3.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 331,
+      "text": "Bảng 2.5. Cấu trúc lớp trong Product Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 334,
+      "text": "2.3.3 Class Diagram của Product Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 336,
+      "text": "Hình 2.4. Class Diagram của Product Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 338,
+      "text": "2.3.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 342,
+      "text": "2.3.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 368,
+      "text": "2.3.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 375,
+      "text": "2.4 Thiết kế User Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 378,
+      "text": "2.4.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 381,
+      "text": "2.4.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 382,
+      "text": "Bảng 2.6. Cấu trúc lớp trong User Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 385,
+      "text": "2.4.3 Class Diagram của User Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 387,
+      "text": "Hình 2.5. Class Diagram của User Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 389,
+      "text": "2.4.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 393,
+      "text": "2.4.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 410,
+      "text": "2.4.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 418,
+      "text": "2.5 Thiết kế Cart Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 421,
+      "text": "2.5.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 424,
+      "text": "2.5.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 425,
+      "text": "Bảng 2.7. Cấu trúc lớp trong Cart Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 428,
+      "text": "2.5.3 Class Diagram của Cart Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 430,
+      "text": "Hình 2.6. Class Diagram của Cart Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 432,
+      "text": "2.5.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 435,
+      "text": "2.5.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 448,
+      "text": "2.5.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 455,
+      "text": "2.6 Thiết kế Order Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 458,
+      "text": "2.6.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 461,
+      "text": "2.6.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 462,
+      "text": "Bảng 2.8. Cấu trúc lớp trong Order Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 465,
+      "text": "2.6.3 Class Diagram của Order Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 467,
+      "text": "Hình 2.7. Class Diagram của Order Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 469,
+      "text": "2.6.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 472,
+      "text": "2.6.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 481,
+      "text": "2.6.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 488,
+      "text": "2.7 Thiết kế Payment Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 491,
+      "text": "2.7.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 495,
+      "text": "2.7.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 496,
+      "text": "Bảng 2.9. Cấu trúc lớp trong Payment Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 499,
+      "text": "2.7.3 Class Diagram của Payment Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 501,
+      "text": "Hình 2.8. Class Diagram của Payment Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 503,
+      "text": "2.7.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 506,
+      "text": "2.7.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 513,
+      "text": "2.7.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 521,
+      "text": "2.8 Thiết kế Shipping Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 524,
+      "text": "2.8.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 527,
+      "text": "2.8.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 528,
+      "text": "Bảng 2.10. Cấu trúc lớp trong Shipping Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 531,
+      "text": "2.8.3 Class Diagram của Shipping Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 533,
+      "text": "Hình 2.9. Class Diagram của Shipping Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 535,
+      "text": "2.8.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 539,
+      "text": "2.8.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 548,
+      "text": "2.8.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 555,
+      "text": "2.9 Thiết kế Comment-Rate Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 558,
+      "text": "2.9.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 561,
+      "text": "2.9.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 562,
+      "text": "Bảng 2.11. Cấu trúc lớp trong Comment-Rate Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 565,
+      "text": "2.9.3 Class Diagram của Comment-Rate Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 567,
+      "text": "Hình 2.10. Class Diagram của Comment-Rate Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 569,
+      "text": "2.9.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 572,
+      "text": "2.9.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 584,
+      "text": "2.9.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 591,
+      "text": "2.10 Thiết kế Notification Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 594,
+      "text": "2.10.1 Vai trò nghiệp vụ và ranh giới dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 597,
+      "text": "2.10.2 Cấu trúc lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 598,
+      "text": "Bảng 2.12. Cấu trúc lớp trong Notification Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 601,
+      "text": "2.10.3 Class Diagram của Notification Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 603,
+      "text": "Hình 2.11. Class Diagram của Notification Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 605,
+      "text": "2.10.4 Thể hiện service qua Django - models.py",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 608,
+      "text": "2.10.5 Endpoint và API giữ nguyên theo bản gốc",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 616,
+      "text": "2.10.6 Luật nghiệp vụ và kiểm soát lỗi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 624,
+      "text": "2.11 Flow luồng hoạt động của hệ thống",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 626,
+      "text": "2.11.1 Sequence Diagram: Checkout tạo đơn hàng",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 629,
+      "text": "Hình 2.12. Sequence Diagram quá trình checkout tạo đơn hàng",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 631,
+      "text": "2.11.2 Activity Diagram: Checkout",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 634,
+      "text": "Hình 2.13. Activity Diagram quá trình checkout",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 637,
+      "text": "2.11.3 Sequence Diagram: Thanh toán và giao hàng",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 640,
+      "text": "Hình 2.14. Sequence Diagram thanh toán thành công và tạo vận chuyển",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 642,
+      "text": "2.11.4 Activity Diagram: Vận chuyển",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 645,
+      "text": "Hình 2.15. Activity Diagram quá trình vận chuyển",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 647,
+      "text": "2.12 Biểu đồ Data Model và công nghệ dữ liệu",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 648,
+      "text": "2.12.1 Nguyên tắc data model trong microservices",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 652,
+      "text": "Hình 2.16. Data Model tổng quan theo database per service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 654,
+      "text": "2.12.2 Mapping Class Diagram sang Database",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 665,
+      "text": "Hình 2.17. Entity Relationship Diagram Product Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 668,
+      "text": "Hình 2.18. Entity Relationship Diagram User Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 670,
+      "text": "Hình 2.19. Entity Relationship Diagram Cart Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 673,
+      "text": "Hình 2.20. Entity Relationship Diagram Order Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 675,
+      "text": "Hình 2.21. Entity Relationship Diagram Payment Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 678,
+      "text": "Hình 2.22. Entity Relationship Diagram Shipping Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 680,
+      "text": "Hình 2.23. Entity Relationship Diagram Comment-Rate Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 683,
+      "text": "Hình 2.24. Entity Relationship Diagram Notification Service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 684,
+      "text": "2.12.3 Công nghệ dữ liệu sử dụng",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 685,
+      "text": "Bảng 2.13. Công nghệ dữ liệu theo từng service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 688,
+      "text": "2.12.4 SQL Data Model chi tiết",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 713,
+      "text": "2.12.5 So sánh MySQL và PostgreSQL",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 714,
+      "text": "Bảng 2.14. So sánh MySQL và PostgreSQL trong thiết kế hệ thống",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 716,
+      "text": "2.13 Kết luận chương",
+      "style": "Heading 2"
+    }
+  ],
+  "Chương 2 đã làm rõ phần lõi của hệ thống thương mại điện tử theo kiến trúc microservices. Từ yêu cầu chức năng ban đầu, hệ thống được phân rã thành tám service có trách nhiệm rõ ràng: User Service, Product Service, Cart Service, Order Service, Payment Service, Shipping Service, Comment-Rate Service và Notification Service. Việc giữ nguyên tên service, số lượng service, endpoint và thuộc tính model giúp báo cáo mới không lệch khỏi bản thiết kế ban đầu, đồng thời các phần bổ sung làm cho chương có tính phân tích và thiết kế đầy đủ hơn.": [],
+  "Chương 3: Xây dựng và thực nghiệm AI Service cho hệ thống E-Commerce": [
+    {
+      "idx": 721,
+      "text": "Chương 3: Xây dựng và thực nghiệm AI Service cho hệ thống E-Commerce",
+      "style": "Heading 1"
+    },
+    {
+      "idx": 722,
+      "text": "3.1 Mô tả AI Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 723,
+      "text": "3.1.1 Vai trò của AI Service trong kiến trúc ShopSphere",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 727,
+      "text": "3.1.2 Thành phần mã nguồn chính của AI Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 737,
+      "text": "Bảng 3.1. Phân vai trách nhiệm các module trong AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 739,
+      "text": "3.1.3 Luồng xử lý tổng quát của AI Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 742,
+      "text": "3.1.4 API contract của AI Service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 744,
+      "text": "Bảng 3.2. API contract chính của AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 747,
+      "text": "3.2 Bộ dữ liệu hành vi người dùng",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 748,
+      "text": "3.2.1 Mục tiêu xây dựng dataset",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 751,
+      "text": "Bảng 3.3. Quy mô bốn tập dataset hành vi người dùng",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 756,
+      "text": "Hình 3.1. Tổng quan quy mô 4 tập dataset",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 759,
+      "text": "Hình 3.2. 20 dòng dữ liệu mẫu",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 761,
+      "text": "3.2.2 Ý nghĩa các trường dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 762,
+      "text": "Bảng 3.4. Ý nghĩa các trường trong dataset hành vi",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 765,
+      "text": "3.2.3 Phân tích chất lượng dữ liệu và rủi ro lệch lớp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 768,
+      "text": "3.3 Tiền xử lý và tạo mẫu chuỗi",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 769,
+      "text": "3.3.1 Quy trình tiền xử lý tổng quan",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 828,
+      "text": "3.3.2 Mã hóa event thành vector đầu vào",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 830,
+      "text": "Bảng 3.5. Cấu trúc vector đầu vào của mỗi event",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 833,
+      "text": "3.3.3 Tạo mẫu bằng sliding window",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 880,
+      "text": "3.3.4 Phân chia dữ liệu và lưu metadata",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 883,
+      "text": "3.4 Mô hình dự đoán chuỗi hành vi",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 884,
+      "text": "3.4.1 Lý do so sánh RNN, LSTM và BiLSTM",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 887,
+      "text": "3.4.2 Code mô hình RNN",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 909,
+      "text": "3.4.3 Code mô hình LSTM",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 931,
+      "text": "3.4.4 Code mô hình BiLSTM",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 954,
+      "text": "3.4.5 So sánh kiến trúc ba mô hình",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 955,
+      "text": "Bảng 3.6. So sánh đặc điểm RNN, LSTM và BiLSTM trong bài toán hành vi người dùng",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 957,
+      "text": "3.5 Huấn luyện và so sánh mô hình",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 958,
+      "text": "3.5.1 Cấu hình huấn luyện",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1040,
+      "text": "3.5.2 Kết quả train và biểu đồ thực nghiệm",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1042,
+      "text": "Hình 3.3. Terminal train RNN, LSTM và BiLSTM trên 4 dataset",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1045,
+      "text": "Hình 3.4. F1-score của 3 mô hình trên 4 dataset",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1049,
+      "text": "Hình 3.5. So sánh metric trên dataset lớn nhất",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1050,
+      "text": "Bảng 3.7. Kết quả so sánh mô hình trên dataset lớn nhất",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1053,
+      "text": "3.5.3 Phân tích kết quả và lựa chọn model_best",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1056,
+      "text": "Bảng 3.8. Lý do chọn LSTM làm best model",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1058,
+      "text": "3.6 Xây dựng KB Graph",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1059,
+      "text": "3.6.1 Mục tiêu của KB Graph",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1062,
+      "text": "Bảng 3.9. Các node và relationship chính trong KB Graph",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1064,
+      "text": "3.6.2 Ánh xạ hành động sang relationship và trọng số",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1114,
+      "text": "3.6.3 Xây graph từ CSV hành vi",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1209,
+      "text": "3.6.4 Minh họa KB Graph theo từng dataset",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1211,
+      "text": "Hình 3.6. KB Graph minh họa cho dataset 1",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1214,
+      "text": "Hình 3.7. KB Graph minh họa cho dataset 2",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1216,
+      "text": "Hình 3.8. KB Graph minh họa cho dataset 3",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1220,
+      "text": "Hình 3.9. KB Graph minh họa cho dataset 4",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1222,
+      "text": "3.6.5 Ứng dụng graph score trong recommendation",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1225,
+      "text": "Bảng 3.10. Cách sử dụng relationship trong gợi ý sản phẩm",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1227,
+      "text": "3.7 RAG và Knowledge Base",
+      "style": "normal"
+    },
+    {
+      "idx": 1228,
+      "text": "3.7.1 Vai trò của RAG trong chatbot e-commerce",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1232,
+      "text": "3.7.2 Ingest sản phẩm vào Knowledge Base",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1301,
+      "text": "3.7.3 Xây dựng FAISS index từ KB entries",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1342,
+      "text": "3.7.4 Chiến lược truy hồi: TF-IDF, FAISS và keyword fallback",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1345,
+      "text": "Bảng 3.11. So sánh các lớp truy hồi trong RAG",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1347,
+      "text": "3.8 Hybrid recommendation trong AI Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1348,
+      "text": "3.8.1 Lý do dùng hybrid model",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1352,
+      "text": "Bảng 3.12. Các thành phần trong điểm gợi ý hybrid",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1354,
+      "text": "3.8.2 Công thức điểm hóa ở mức khái niệm",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1358,
+      "text": "Bảng 3.13. Ví dụ giải thích lý do gợi ý sản phẩm",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1360,
+      "text": "3.9 Tích hợp vào giao diện ShopSphere",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1361,
+      "text": "3.9.1 Vị trí tích hợp AI trong frontend",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1365,
+      "text": "Hình 3.10. Giao diện chatbot trả lời câu hỏi 'Tôi muốn mua điện thoại'",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1366,
+      "text": "Hình 3.10 cho thấy chatbot đã nhận câu hỏi tiếng Việt và trả về phản hồi liên quan đến nhu cầu mua điện thoại. Trong tình huống này, intent có thể được nhận diện là product_advice hoặc recommendation, entity trích xuất là danh mục điện thoại. AI Service sau đó sử dụng entity này để truy hồi knowledge base và sinh danh sách sản phẩm phù hợp.",
+      "style": "normal"
+    },
+    {
+      "idx": 1368,
+      "text": "Hình 3.11. Giao diện trang chủ có sản phẩm gợi ý",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1371,
+      "text": "Hình 3.12. Giao diện giỏ hàng có gợi ý sản phẩm",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1373,
+      "text": "3.9.2 Luồng tích hợp qua API Gateway",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1376,
+      "text": "Bảng 3.14. Mapping route từ frontend/API Gateway đến AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1378,
+      "text": "3.10 Kiểm thử AI Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1379,
+      "text": "3.10.1 Kiểm thử chức năng API",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1382,
+      "text": "Bảng 3.15. Bộ kiểm thử chức năng đề xuất cho AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1384,
+      "text": "3.10.2 Kiểm thử mô hình và chất lượng gợi ý",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1388,
+      "text": "Bảng 3.16. Tiêu chí đánh giá chất lượng AI Service ở mức sản phẩm",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1390,
+      "text": "3.10.3 Kiểm thử hiệu năng và lỗi tích hợp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1394,
+      "text": "Bảng 3.17. Rủi ro vận hành và biện pháp kiểm soát AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1396,
+      "text": "3.11 Đánh giá kiến trúc AI Service",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1397,
+      "text": "3.11.1 Ưu điểm của thiết kế hiện tại",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1400,
+      "text": "3.11.2 Hạn chế và điểm cần cải thiện",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1403,
+      "text": "Bảng 3.18. Hạn chế và hướng cải tiến AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1405,
+      "text": "3.12 Kết luận chương",
+      "style": "Heading 2"
+    }
+  ],
+  "Chương 3 đã trình bày toàn bộ quá trình hiện thực AI Service sát với code hiện tại của dự án. Bốn tập dataset được sinh theo đúng schema train, ba mô hình RNN/LSTM/BiLSTM được huấn luyện và so sánh, LSTM được chọn làm best model, KB Graph được minh họa theo từng dataset và các giao diện tích hợp AI đã được kiểm chứng bằng ảnh chụp thực tế.": [],
+  "Chương 4: Xây dựng hệ thống E-Commerce tích hợp AI": [
+    {
+      "idx": 1411,
+      "text": "Chương 4: Xây dựng hệ thống E-Commerce tích hợp AI",
+      "style": "Heading 1"
+    }
+  ],
+  "Chương 4 trình bày quá trình xây dựng hệ thống ShopSphere ở mức hoàn chỉnh sau khi đã hoàn thành phần phân tích thiết kế ở Chương 2 và phần AI Service ở Chương 3. Nội dung chương tập trung vào cách các service thương mại điện tử, AI Service, cơ sở dữ liệu, message broker, API Gateway và môi trường container được kết nối thành một hệ thống có thể triển khai, kiểm thử và vận hành. Khác với các chương trước thiên về phân tích và mô hình hóa, chương này đi sâu vào cấu trúc mã nguồn, công nghệ sử dụng, cách đóng gói bằng Docker, cách kiểm tra endpoint, cách quan sát hệ thống và kết quả thực nghiệm khi chạy toàn bộ các container.": [
+    {
+      "idx": 1414,
+      "text": "4.1 Mô tả kiến trúc với code toàn hệ thống",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1415,
+      "text": "4.1.1 Tổng quan kiến trúc Microservices tích hợp AI",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1420,
+      "text": "Bảng 4.1. Vai trò các thành phần trong kiến trúc ShopSphere",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1421,
+      "text": "4.1.2 Cấu trúc dự án toàn hệ thống",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1424,
+      "text": "Hình 4.1. Cấu trúc thư mục",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1427,
+      "text": "Bảng 4.2. Ánh xạ thư mục dự án sang thành phần kiến trúc",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1428,
+      "text": "4.1.3 Luồng giao tiếp giữa các service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1431,
+      "text": "Hình 4.2. Luồng request từ client qua API Gateway đến các service",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1433,
+      "text": "Hình 4.3. Luồng tương tác nội bộ trong quá trình tạo đơn hàng",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1436,
+      "text": "Bảng 4.3. So sánh REST orchestration và event-driven choreography trong ShopSphere",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1437,
+      "text": "4.1.4 API Gateway - điểm vào duy nhất",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1441,
+      "text": "Bảng 4.4. Quy tắc route API Gateway trong ShopSphere",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1442,
+      "text": "4.1.5 AI Service - Chatbot và Recommendation Engine",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1447,
+      "text": "4.1.6 Sơ đồ component toàn hệ thống",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1450,
+      "text": "Hình 4.4. Component Diagram toàn hệ thống ShopSphere",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1452,
+      "text": "4.2 Các công nghệ sử dụng",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1453,
+      "text": "4.2.1 Backend Framework và Runtime",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1455,
+      "text": "Bảng 4.5. Công nghệ backend và runtime",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1458,
+      "text": "4.2.2 Cơ sở dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1460,
+      "text": "Bảng 4.6. Công nghệ cơ sở dữ liệu sử dụng trong hệ thống",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1463,
+      "text": "4.2.3 Containerization và Orchestration",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1466,
+      "text": "Bảng 4.7. Công nghệ containerization và orchestration",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1470,
+      "text": "4.2.4 AI và Machine Learning Libraries",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1472,
+      "text": "Bảng 4.8. Thư viện AI/ML sử dụng trong AI Service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1476,
+      "text": "4.2.5 Message Broker và Event-Driven Communication",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1479,
+      "text": "Bảng 4.9. Công nghệ message broker và task queue",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1485,
+      "text": "4.2.6 Monitoring và Logging",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1487,
+      "text": "Bảng 4.10. Công nghệ monitoring và logging",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1494,
+      "text": "4.3 Triển khai",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1495,
+      "text": "4.3.1 Chuẩn bị môi trường",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1498,
+      "text": "Bảng 4.11. Danh sách port triển khai local",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1499,
+      "text": "4.3.2 File .env và biến môi trường",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1503,
+      "text": "4.3.3 Xây dựng Docker image",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1507,
+      "text": "4.3.4 Khởi động hệ thống",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1512,
+      "text": "4.3.5 Khởi tạo database và migration",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1516,
+      "text": "4.3.6 Seed dữ liệu",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1520,
+      "text": "Bảng 4.12. Dữ liệu seed sử dụng trong hệ thống",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1521,
+      "text": "4.3.7 Kiểm tra health các service",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1526,
+      "text": "4.3.8 Test API endpoint",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1530,
+      "text": "4.3.9 Dừng hệ thống và quản lý volume",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1533,
+      "text": "4.3.10 Xử lý lỗi triển khai thường gặp",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1534,
+      "text": "Bảng 4.13. Một số lỗi triển khai thường gặp và cách xử lý",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1535,
+      "text": "4.4 Thể hiện kết quả",
+      "style": "Heading 2"
+    },
+    {
+      "idx": 1536,
+      "text": "4.4.1 Kiến trúc hệ thống khi chạy thực tế",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1540,
+      "text": "Hình 4.5. Sơ đồ kiến trúc hệ thống khi triển khai local",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1541,
+      "text": "4.4.2 Kết quả theo từng phase",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1546,
+      "text": "Hình 4.6. Kết quả khởi tạo database theo phase",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1549,
+      "text": "Bảng 4.14. Tổng hợp kết quả của các phase triển khai",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1550,
+      "text": "4.4.3 API endpoint testing results",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1562,
+      "text": "4.4.4 Performance Metrics",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1570,
+      "text": "Bảng 4.15. Nhận xét hiệu năng theo từng nhóm service",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1571,
+      "text": "4.4.5 Monitoring Dashboard",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1577,
+      "text": "4.4.6 Container Status",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1581,
+      "text": "4.4.7 Thống kê dự án",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1585,
+      "text": "4.4.8 User Journey Demonstration",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1587,
+      "text": "Hình 4.7. Sơ đồ hành trình mua hàng hoàn chỉnh trên ShopSphere",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1589,
+      "text": "4.4.9. Một số giao diện chính",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1590,
+      "text": "Hình 4.9. Giao diện đăng nhập",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1592,
+      "text": "Hình 4.10. Giao diện đăng ký",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1595,
+      "text": "Hình 4.11. Giao diện trang chủ xem sản phẩm",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1597,
+      "text": "Hình 4.12. Giao diện chi tiết sản phẩm",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1600,
+      "text": "Hình 4.13. Giao diện profile",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1602,
+      "text": "Hình 4.14. Giao diện danh sách yêu thích",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1604,
+      "text": "Hình 4.15. Giao diện giỏ hàng",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1606,
+      "text": "Hình 4.16. Giao diện đặt hàng",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1609,
+      "text": "Hình 4.17. Giao diện đơn hàng",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1611,
+      "text": "Hình 4.18. Giao diện chatbot",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1613,
+      "text": "Hình 4.19. Giao diện gợi ý sản phẩm",
+      "style": "Heading 4"
+    },
+    {
+      "idx": 1615,
+      "text": "4.4.10 Đánh giá hệ thống sau triển khai",
+      "style": "Heading 3"
+    },
+    {
+      "idx": 1616,
+      "text": "Bảng 4.16. Đánh giá ưu điểm và hạn chế của hệ thống ShopSphere",
+      "style": "Heading 5"
+    },
+    {
+      "idx": 1618,
+      "text": "4.5 Kết luận chương 4 và hướng phát triển",
+      "style": "Heading 2"
+    }
+  ],
+  "Chương 4 đã trình bày quá trình xây dựng hệ thống ShopSphere E-Commerce tích hợp AI ở mức triển khai. Từ cấu trúc project, hệ thống được tổ chức thành API Gateway, tám microservice nghiệp vụ, AI Service, các database tương ứng, RabbitMQ và các thành phần monitoring/logging. Các đoạn code minh họa cho thấy cách triển khai models, serializers, gateway proxy, AI orchestrator, Dockerfile, docker-compose, training LSTM, RabbitMQ, logging và health check.": [
+    {
+      "idx": 1623,
+      "text": "Bảng 4.17. Hướng phát triển tiếp theo của hệ thống",
+      "style": "Heading 5"
+    }
+  ]
+}

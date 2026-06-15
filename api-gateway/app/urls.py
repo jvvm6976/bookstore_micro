@@ -29,7 +29,6 @@ from .views import (
     admin_orders_page,
     admin_reviews_page,
     admin_notifications_page,
-    admin_ai_page,
 )
 
 urlpatterns = [
@@ -62,7 +61,6 @@ urlpatterns = [
     path('manager/orders/', admin_orders_page, name='admin_orders'),
     path('manager/reviews/', admin_reviews_page, name='admin_reviews'),
     path('manager/notifications/', admin_notifications_page, name='admin_notifications'),
-    path('manager/ai/', admin_ai_page, name='admin_ai'),
     path('api/notifications/create/', staff_notification_create, name='staff_notification_create'),
     
     # Legacy pages (for compatibility)

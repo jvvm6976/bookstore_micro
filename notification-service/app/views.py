@@ -1,5 +1,7 @@
 import logging
+from datetime import timedelta
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,6 +17,7 @@ RECIPIENT_TYPES = {'customer', 'staff', 'admin', 'manager', 'all'}
 NOTIFICATION_TYPES = {'order', 'payment', 'shipping', 'review', 'system'}
 NOTIFICATION_STATUSES = {'unread', 'read'}
 PRIORITIES = {'low', 'normal', 'high'}
+DEDUPLICATE_WINDOW_HOURS = 12
 
 
 def _role_name(user):
@@ -64,6 +67,25 @@ def _mark_notification_read(notification, user):
         notification=notification,
         user_id=user.id,
         defaults={'status': 'read'},
+    )
+
+
+def _normalized_int(value):
+    if value in ('', None):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _recent_duplicate_notification(**fields):
+    since = timezone.now() - timedelta(hours=DEDUPLICATE_WINDOW_HOURS)
+    return (
+        Notification.objects
+        .filter(created_at__gte=since, **fields)
+        .order_by('-created_at')
+        .first()
     )
 
 
@@ -247,10 +269,35 @@ class InternalNotificationCreateView(generics.CreateAPIView):
         if priority not in PRIORITIES:
             raise ValidationError({'error': 'Invalid priority'})
 
-        if user_id in ['', None]:
-            user_id = None
+        user_id = _normalized_int(user_id)
+        entity_id = _normalized_int(entity_id)
+        target_role = target_role or None
+        entity_type = entity_type or None
         
         try:
+            notification_fields = {
+                'user_id': user_id,
+                'recipient_type': recipient_type,
+                'target_role': target_role,
+                'title': title,
+                'content': content,
+                'type': notif_type,
+                'entity_type': entity_type,
+                'entity_id': entity_id,
+                'priority': priority,
+                'status': notif_status,
+            }
+            notification = _recent_duplicate_notification(**notification_fields)
+            if notification:
+                notification.save(update_fields=['updated_at'])
+                NotificationLog.objects.create(
+                    notification=notification,
+                    channel='system',
+                    result='deduplicated'
+                )
+                serializer = NotificationSerializer(notification)
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+
             notification = Notification.objects.create(
                 user_id=user_id,
                 recipient_type=recipient_type,

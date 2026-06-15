@@ -13,6 +13,8 @@ import re
 import logging
 from typing import Tuple
 
+from .text_normalizer import search_variants
+
 logger = logging.getLogger(__name__)
 
 # Each entry: (intent, [(pattern, weight)])
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
     ("return_policy", [
         (r"\b(đổi trả|doi tra|hoàn tiền|hoan tien|refund|return|trả hàng|tra hang|đổi hàng|doi hang)\b", 3.0),
+        (r"\b(bị lỗi|bi loi|hư hỏng|hu hong|bị vỡ|bi vo|thiếu phụ kiện|thieu phu kien|sai sản phẩm|sai san pham)\b", 3.5),
         (r"\b(chính sách|chinh sach|policy|điều kiện|dieu kien)\b", 1.0),
     ]),
     ("payment_support", [
@@ -38,11 +41,12 @@ _INTENT_RULES: list[Tuple[str, list[Tuple[str, float]]]] = [
         (r"\b(hủy đơn|huy don|cancel|chưa nhận|chua nhan|thất lạc|that lac)\b", 2.5),
     ]),
     ("product_advice", [
-        (r"\b(gợi ý|goi y|recommend|đề xuất|de xuat|tư vấn|tu van|nên mua|nen mua|mua gì|mua gi)\b", 3.0),
+        (r"\b(gợi ý|goi y|recommend|đề xuất|de xuat|tư vấn|tu van|nên mua|nen mua|mua gì|mua gi|nên chọn|nen chon|chọn gì|chon gi)\b", 3.0),
         (r"\b(sản phẩm|san pham|product|item|mặt hàng|mat hang)\b", 1.1),
         (r"\b(sản phẩm tương tự|san pham tuong tu|similar product|giống sản phẩm|giong san pham)\b", 3.0),
         (r"\b(danh mục quan tâm|danh muc quan tam|category quan tâm|favorite category)\b", 2.8),
         (r"\b(muốn mua|muon mua|cần mua|can mua)\b", 1.8),
+        (r"\b(muốn mua sách|muon mua sach|cần mua sách|can mua sach)\b", 6.5),
         (r"\b(đọc cuốn nào tiếp|doc cuon nao tiep|mua cuốn nào tiếp|mua cuon nao tiep|next book|đọc tiếp|doc tiep)\b", 2.8),
         (r"\b(giá tốt nhất|gia tot nhat|rẻ nhất|re nhat|cheapest|best price)\b", 3.0),
         (r"\b(rẻ hơn|re hon|đắt hơn|dat hon|so sánh giá|so sanh gia|compare)\b", 2.8),
@@ -105,13 +109,13 @@ def detect(message: str, quick_action: str | None = None) -> Tuple[str, float]:
         logger.debug("Intent from quick_action=%s → %s", quick_action, intent)
         return intent, 1.0
 
-    text = message.lower()
+    variants = search_variants(message)
     scores: dict[str, float] = {}
 
     for intent, rules in _INTENT_RULES:
         total = 0.0
         for pattern, weight in rules:
-            matches = len(re.findall(pattern, text))
+            matches = max(len(re.findall(pattern, text)) for text in variants)
             total += matches * weight
         if total > 0:
             scores[intent] = total

@@ -15,7 +15,7 @@
     <div>
       <div class="eyebrow">Vận chuyển</div>
       <h1 class="page-title">Theo dõi vận chuyển</h1>
-      <p class="page-subtitle">Thông tin vận đơn, địa chỉ nhận hàng và các mốc tracking mới nhất.</p>
+      <p class="page-subtitle">Thông tin vận đơn, địa chỉ nhận hàng và các mốc giao hàng mới nhất.</p>
     </div>
     <a class="btn subtle" href="/orders/">Quay lại đơn hàng</a>
   </section>
@@ -34,7 +34,7 @@ let token = localStorage.getItem('token');
 
 const statusLabels = {
   pending: 'Chờ xác nhận',
-  paid: 'Đã thanh toán',
+  paid: 'Đã xác nhận',
   processing: 'Đang chuẩn bị',
   shipping: 'Đang vận chuyển',
   delivered: 'Đã giao',
@@ -104,7 +104,7 @@ async function loadShipping() {
                   <div class="timeline-time">${new Date(update.updated_at || Date.now()).toLocaleString('vi-VN')}</div>
                   <div class="tracking-details">
                     Vị trí: ${ShopUI.escapeHtml(update.location || 'Không xác định')}<br>
-                    Ghi chú: ${ShopUI.escapeHtml(update.note || update.status || '-')}
+                    Trạng thái: ${ShopUI.escapeHtml(statusLabels[String(update.status || '').toLowerCase()] || update.status || '-')}
                   </div>
                 </div>
               `).join('') : '<div class="empty-state"><strong>Chưa có cập nhật vị trí</strong></div>'}
@@ -122,7 +122,7 @@ async function loadShipping() {
       </div>
     `;
   } catch (err) {
-    document.getElementById('shippingContainer').innerHTML = '<div class="empty-state"><strong>Không tải được tracking</strong>Vận đơn không tồn tại hoặc bạn không có quyền xem.</div>';
+    document.getElementById('shippingContainer').innerHTML = '<div class="empty-state"><strong>Không tải được vận chuyển</strong>Vận đơn không tồn tại hoặc bạn không có quyền xem.</div>';
   }
 }
 

@@ -160,6 +160,7 @@ button{cursor:pointer}
 .notification-msg{color:var(--muted);font-size:.88rem;line-height:1.5}
 .notification-time{color:var(--muted);font-size:.76rem;margin-top:.35rem}
 .recipient-pill{display:inline-flex;margin-left:.35rem;border:1px solid var(--line);border-radius:999px;padding:.1rem .42rem;background:#fff;color:var(--muted);font-size:.68rem;text-transform:none}
+.notification-repeat{display:inline-flex;align-items:center;border:1px solid #e4c07a;border-radius:999px;padding:.1rem .42rem;background:#fff8e8;color:#8a5a08;font-size:.68rem;text-transform:none;font-weight:850}
 .reviews-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:1rem;align-items:start}
 .review-header{display:flex;justify-content:space-between;gap:.8rem;align-items:flex-start}
 .review-author{font-weight:850}.review-date{color:var(--muted);font-size:.78rem;margin-top:.15rem}

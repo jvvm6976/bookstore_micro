@@ -49,6 +49,14 @@ REPLENISHABLE_DOMAINS = {"Grocery", "Beauty & Personal Care", "Office & Statione
 REPLENISHABLE_CATEGORIES = {"Coffee & Tea", "Snacks", "Pantry", "Skincare", "Haircare", "Notebooks", "Writing"}
 
 
+def _format_reason(reasons: list[str], fallback: str = "Được nhiều khách hàng quan tâm") -> str:
+    unique = list(dict.fromkeys(reason.strip() for reason in reasons if reason and reason.strip()))
+    if not unique:
+        return fallback
+    text = ". ".join(unique)
+    return f"{text[0].upper()}{text[1:]}."
+
+
 def _get_purchased_ids(customer_id: int) -> set[int]:
     orders = order_client.get_orders_by_customer(customer_id)
     ids: set[int] = set()
@@ -253,13 +261,13 @@ def get_personalized(
         lstm_component = 0.0
         if bscore >= PURCHASE_THRESHOLD:
             lstm_component = min(bscore / 20.0, 1.0)
-            reasons.append("phù hợp với sản phẩm bạn quan tâm gần đây")
+            reasons.append("dựa trên các sản phẩm bạn quan tâm gần đây")
             if predicted_action in {"purchase", "add_to_cart", "wishlist", "rate_product"} and predicted_confidence > 0:
                 lstm_component *= intent_boost
         # Boost highly-rated by customer
         if bid in customer_ratings and customer_ratings[bid] >= 4:
             lstm_component += 0.3
-            reasons.append("phù hợp với đánh giá tốt của bạn")
+            reasons.append("phù hợp với những sản phẩm bạn từng đánh giá cao")
         # Propensity boost
         lstm_component *= (1.0 + max(0.0, min(propensity, 1.0)) * 0.25)
 
@@ -268,7 +276,7 @@ def get_personalized(
         if high_intent_domains and book.get("domain_name") not in high_intent_domains:
             graph_component *= 0.35
         if graph_component > 0:
-            reasons.append("khách hàng tương tự cũng quan tâm")
+            reasons.append("được nhiều khách hàng có sở thích tương tự quan tâm")
 
         # ── w3: Content affinity ──────────────────────────────────────────────
         content_component = 0.0
@@ -279,7 +287,7 @@ def get_personalized(
             content_component += 0.2 + (0.75 * min(cat_score, 1.0))
             if book.get("category") in high_intent_cats:
                 content_component += 0.12
-            reasons.append(f"cùng nhóm {book['category']} bạn hay quan tâm")
+            reasons.append(f"thuộc nhóm {book['category']} bạn thường xem")
         elif book.get("category") in profile_pref_cats:
             content_component += 0.35
         domain_score = 0.0
@@ -288,7 +296,7 @@ def get_personalized(
         if domain_score > 0 and cat_score < 0.5:
             content_component += 0.18 * min(domain_score, 1.0)
             if book.get("domain_name") in high_intent_domains:
-                reasons.append(f"cùng ngành {book['domain_name']} bạn hay xem")
+                reasons.append(f"thuộc ngành {book['domain_name']} bạn thường quan tâm")
         if book.get("author") in top_authors:
             content_component += 0.4
             reasons.append(f"tác giả {book['author']} bạn quan tâm")
@@ -297,7 +305,7 @@ def get_personalized(
         pop = _popularity_score(bid, ratings)
         rm  = ratings.get(bid, {})
         if rm.get("avg", 0) >= 4.0:
-            reasons.append("được khách hàng đánh giá tốt")
+            reasons.append("nhận được nhiều đánh giá tích cực")
 
         # ── Hybrid final score ────────────────────────────────────────────────
         final_score = (
@@ -313,7 +321,7 @@ def get_personalized(
                 **_product_payload(book, bid),
                 "author":           book.get("author", ""),
                 "score":            round(final_score, 3),
-                "reason":           ", ".join(dict.fromkeys(reasons)) if reasons else "được nhiều khách hàng quan tâm",
+                "reason":           _format_reason(reasons),
                 "avg_rating":       round(rm.get("avg", 0), 2),
             })
 
@@ -382,7 +390,7 @@ def get_similar(
             cust_rating = customer_ratings[bid]
             if cust_rating >= 4:
                 score += 3.5
-                reasons.append("phù hợp với đánh giá tốt của bạn")
+                reasons.append("phù hợp với những sản phẩm bạn từng đánh giá cao")
 
         pop = _popularity_score(bid, ratings)
         score += pop
@@ -393,7 +401,7 @@ def get_similar(
                 **_product_payload(book, bid),
                 "author":      book.get("author", ""),
                 "score":       round(score, 3),
-                "reason":      ", ".join(reasons) if reasons else "sản phẩm tương tự",
+                "reason":      _format_reason(reasons, "Sản phẩm có đặc điểm tương tự."),
                 "avg_rating":  round(rm.get("avg", 0), 2),
             })
 
@@ -419,7 +427,7 @@ def get_popular(limit: int = 10) -> list[dict[str, Any]]:
                 **_product_payload(book, bid),
                 "author":     book.get("author", ""),
                 "score":      round(score, 3),
-                "reason":     "được khách hàng đánh giá tốt",
+                "reason":     "Nhận được nhiều đánh giá tích cực.",
                 "avg_rating": round(rm.get("avg", 0), 2),
             })
 

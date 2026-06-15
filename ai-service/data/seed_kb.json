@@ -2,7 +2,7 @@
   {
     "category": "faq",
     "title": "Hướng dẫn đặt hàng trên ShopSphere",
-    "content": "Để đặt hàng: đăng nhập tài khoản, tìm sản phẩm cần mua, thêm vào giỏ hàng, kiểm tra số lượng, nhập địa chỉ giao hàng, chọn phương thức thanh toán và xác nhận đơn. Sau khi thanh toán thành công, hệ thống tự động tạo vận đơn và gửi thông báo trạng thái cho khách hàng.",
+    "content": "Để đặt hàng: đăng nhập tài khoản, tìm sản phẩm cần mua, thêm vào giỏ hàng, kiểm tra số lượng, chọn địa chỉ giao hàng, phương thức thanh toán và xác nhận đơn. Với COD, đơn được xác nhận trước và chỉ thu tiền sau khi giao thành công. Với VNPAY, MoMo hoặc thẻ quốc tế, hệ thống ghi nhận thanh toán ngay khi giao dịch thành công. Vận đơn và thông báo trạng thái được tạo tự động.",
     "keywords": ["đặt hàng", "dat hang", "mua hàng", "checkout", "giỏ hàng", "order", "shopsphere"]
   },
   {
@@ -14,7 +14,7 @@
   {
     "category": "policy",
     "title": "Phương thức thanh toán ShopSphere",
-    "content": "ShopSphere hỗ trợ COD, VNPAY, MoMo và thẻ quốc tế tùy cấu hình thanh toán đang bật. Khách hàng chỉ cần chọn phương thức ở bước thanh toán; sau khi giao dịch thành công, đơn hàng được xác nhận và chuyển sang bước chuẩn bị giao.",
+    "content": "ShopSphere hỗ trợ COD, VNPAY, MoMo và thẻ quốc tế. Với COD, khách hàng không bị trừ tiền khi đặt đơn; số tiền được thu và ghi nhận sau khi giao hàng thành công. Với VNPAY, MoMo hoặc thẻ quốc tế, đơn được xác nhận sau khi giao dịch thành công. Trạng thái đơn hàng và trạng thái thanh toán được theo dõi riêng.",
     "keywords": ["thanh toán", "thanh toan", "payment", "cod", "chuyển khoản", "paid"]
   },
   {

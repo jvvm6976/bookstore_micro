@@ -34,7 +34,7 @@ let token = localStorage.getItem('token');
 
 const statusLabels = {
   pending: 'Chờ xác nhận',
-  paid: 'Đã thanh toán',
+  paid: 'Đã xác nhận',
   processing: 'Đang chuẩn bị',
   shipping: 'Đang giao',
   delivered: 'Đã giao',
@@ -42,6 +42,42 @@ const statusLabels = {
   cancelled: 'Đã hủy',
   failed: 'Thất bại'
 };
+
+const paymentMethodLabels = {
+  cod: 'Thanh toán khi nhận hàng',
+  vnpay: 'VNPAY',
+  momo: 'MoMo',
+  stripe: 'Thẻ quốc tế'
+};
+
+const paymentStatusLabels = {
+  pending: 'Chờ thanh toán',
+  success: 'Đã thanh toán',
+  failed: 'Thanh toán thất bại',
+  refunded: 'Đã hoàn tiền'
+};
+
+function paymentMethodLabel(value) {
+  return paymentMethodLabels[String(value || '').toLowerCase()] || value || '-';
+}
+
+function paymentStatusLabel(value, method) {
+  const normalizedMethod = String(method || '').toLowerCase();
+  const normalizedStatus = String(value || '').toLowerCase();
+  if (normalizedMethod === 'cod' && normalizedStatus === 'pending') {
+    return 'Chưa thu tiền';
+  }
+  return paymentStatusLabels[normalizedStatus] || value || '-';
+}
+
+function paymentTransactionNote(note = '') {
+  const text = String(note || '');
+  const method = text.match(/^Payment via\s+(.+)$/i);
+  if (method) return `Thanh toán qua ${paymentMethodLabel(method[1])}`;
+  const refund = text.match(/^Refund:\s*(.+)$/i);
+  if (refund) return `Hoàn tiền: ${refund[1]}`;
+  return text || '-';
+}
 
 function statusClass(status) {
   return `status-pill ${String(status || 'pending').toLowerCase()}`;
@@ -123,13 +159,13 @@ async function loadTracking() {
           <article class="panel pad section">
             <h2 class="section-title">Thanh toán</h2>
             ${payment ? `
-              <div class="summary-row"><span>Phương thức</span><strong>${ShopUI.escapeHtml(payment.payment_method || '-')}</strong></div>
-              <div class="summary-row"><span>Trạng thái</span><strong>${ShopUI.escapeHtml(payment.overall_status || '-')}</strong></div>
+              <div class="summary-row"><span>Phương thức</span><strong>${ShopUI.escapeHtml(paymentMethodLabel(payment.payment_method))}</strong></div>
+              <div class="summary-row"><span>Trạng thái</span><strong>${ShopUI.escapeHtml(paymentStatusLabel(payment.overall_status, payment.payment_method))}</strong></div>
               <div class="summary-row"><span>Số tiền</span><strong class="price">${ShopUI.money(payment.amount || 0)}</strong></div>
               <div class="section-note" style="margin-top:.8rem">Giao dịch</div>
               ${paymentTransactions.length ? paymentTransactions.map(tx => `
                 <div class="tracking-details">
-                  ${ShopUI.escapeHtml(tx.transaction_note || '-')}<br>
+                  ${ShopUI.escapeHtml(paymentTransactionNote(tx.transaction_note))}<br>
                   <span>${ShopUI.escapeHtml(tx.transaction_code || '')} ${tx.created_at ? '- ' + new Date(tx.created_at).toLocaleString('vi-VN') : ''}</span>
                 </div>
               `).join('') : '<div class="tracking-details">Chưa có lịch sử giao dịch.</div>'}
@@ -157,7 +193,7 @@ function renderTimeline(currentStatus, updates) {
           <div class="timeline-time">${new Date(update.updated_at || Date.now()).toLocaleString('vi-VN')}</div>
           <div class="tracking-details">
             Vị trí: ${ShopUI.escapeHtml(update.location || 'Không xác định')}<br>
-            Trạng thái: ${ShopUI.escapeHtml(update.status || '-')}
+            Trạng thái: ${ShopUI.escapeHtml(statusLabels[String(update.status || '').toLowerCase()] || update.status || '-')}
           </div>
         ` : ''}
       </div>

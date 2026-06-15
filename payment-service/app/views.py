@@ -16,6 +16,24 @@ logger = logging.getLogger(__name__)
 
 ORDER_SERVICE_URL = os.environ.get('ORDER_SERVICE_URL', 'http://order-service:8000')
 NOTIFICATION_SERVICE_URL = os.environ.get('NOTIFICATION_SERVICE_URL', 'http://notification-service:8000')
+PAYMENT_METHOD_LABELS = {
+    'cod': 'thanh toán khi nhận hàng',
+    'vnpay': 'VNPAY',
+    'momo': 'MoMo',
+    'stripe': 'thẻ quốc tế',
+}
+
+
+def _format_money(value):
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        amount = Decimal('0')
+    return f"{amount:,.0f}".replace(',', '.') + 'đ'
+
+
+def _payment_method_label(value):
+    return PAYMENT_METHOD_LABELS.get(str(value or '').lower(), value or 'phương thức đã chọn')
 
 
 def _send_notification(payload):
@@ -136,14 +154,20 @@ class PaymentProcessView(generics.CreateAPIView):
                 overall_status=Payment.STATUS_PENDING
             )
             
-            # Simulate payment processing (always succeeds for now)
-            payment.overall_status = Payment.STATUS_SUCCESS
+            is_cod = payment_method == 'cod'
+            payment.overall_status = (
+                Payment.STATUS_PENDING if is_cod else Payment.STATUS_SUCCESS
+            )
             payment.save()
             
             # Log transaction
             PaymentTransaction.objects.create(
                 payment=payment,
-                transaction_note=f'Payment via {payment_method}',
+                transaction_note=(
+                    'Đăng ký thanh toán khi nhận hàng'
+                    if is_cod
+                    else f'Thanh toán qua {_payment_method_label(payment_method)}'
+                ),
                 transaction_code=str(uuid.uuid4())
             )
             
@@ -162,20 +186,36 @@ class PaymentProcessView(generics.CreateAPIView):
                 logger.warning(f"Warning: Failed to update order status: {str(e)}")
                 raise ValidationError({'error': 'Failed to update order status'})
             
-            _notify_customer(
-                request.user.id,
-                'Thanh toán thành công',
-                f'Thanh toán cho đơn hàng #{order_id} đã được xác nhận',
-                'payment',
-                order_id,
-            )
-            _notify_staff(
-                'Đơn hàng đã thanh toán',
-                f'Đơn hàng #{order_id} đã thanh toán {amount} bằng {payment_method}',
-                'payment',
-                order_id,
-                priority='high',
-            )
+            if is_cod:
+                _notify_customer(
+                    request.user.id,
+                    'Đơn hàng đã được xác nhận',
+                    f'Đơn hàng #{order_id} sẽ thu {_format_money(amount)} khi giao hàng. Bạn chưa bị trừ tiền.',
+                    'payment',
+                    order_id,
+                )
+                _notify_staff(
+                    'Đơn COD mới',
+                    f'Đơn hàng #{order_id} đã chọn thanh toán khi nhận hàng, số tiền cần thu là {_format_money(amount)}.',
+                    'payment',
+                    order_id,
+                    priority='high',
+                )
+            else:
+                _notify_customer(
+                    request.user.id,
+                    'Thanh toán thành công',
+                    f'ShopSphere đã xác nhận thanh toán {_format_money(amount)} cho đơn hàng #{order_id}.',
+                    'payment',
+                    order_id,
+                )
+                _notify_staff(
+                    'Đơn hàng đã thanh toán',
+                    f'Đơn hàng #{order_id} đã thanh toán {_format_money(amount)} qua {_payment_method_label(payment_method)}.',
+                    'payment',
+                    order_id,
+                    priority='high',
+                )
             
             serializer = PaymentSerializer(payment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -341,13 +381,85 @@ class InternalPaymentRefundView(generics.GenericAPIView):
         if payment.overall_status not in [Payment.STATUS_PENDING, Payment.STATUS_SUCCESS]:
             raise ValidationError({'error': f'Payment cannot be refunded in {payment.overall_status} status'})
 
-        payment.overall_status = Payment.STATUS_REFUNDED
+        is_uncollected_cod = (
+            payment.payment_method == 'cod'
+            and payment.overall_status == Payment.STATUS_PENDING
+        )
+        payment.overall_status = (
+            Payment.STATUS_FAILED if is_uncollected_cod else Payment.STATUS_REFUNDED
+        )
         payment.save()
         PaymentTransaction.objects.create(
             payment=payment,
-            transaction_note=f'Refund: {reason}',
+            transaction_note=(
+                f'Hủy thanh toán khi nhận hàng: {reason}'
+                if is_uncollected_cod
+                else f'Hoàn tiền: {reason}'
+            ),
             transaction_code=str(uuid.uuid4())
         )
 
         serializer = PaymentSerializer(payment)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class InternalCodCollectionView(generics.GenericAPIView):
+    """
+    Internal API - Collect a pending COD payment after successful delivery.
+    POST /internal/payments/{order_id}/collect-cod/
+    """
+    permission_classes = (AllowAny,)
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        order_id = self.kwargs.get('order_id')
+        try:
+            payment = Payment.objects.get(order_id=order_id)
+        except Payment.DoesNotExist:
+            return Response({'error': 'Payment not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if payment.payment_method != 'cod':
+            return Response({
+                'collected': False,
+                'reason': 'Payment method is not COD',
+                'payment': PaymentSerializer(payment).data,
+            }, status=status.HTTP_200_OK)
+
+        if payment.overall_status == Payment.STATUS_SUCCESS:
+            return Response({
+                'collected': True,
+                'payment': PaymentSerializer(payment).data,
+            }, status=status.HTTP_200_OK)
+
+        if payment.overall_status != Payment.STATUS_PENDING:
+            raise ValidationError({
+                'error': f'COD payment cannot be collected in {payment.overall_status} status'
+            })
+
+        order_data = _get_order_or_error(order_id)
+        payment.overall_status = Payment.STATUS_SUCCESS
+        payment.save(update_fields=['overall_status', 'updated_at'])
+        PaymentTransaction.objects.create(
+            payment=payment,
+            transaction_note='Đã thu tiền COD khi giao hàng',
+            transaction_code=str(uuid.uuid4()),
+        )
+
+        _notify_customer(
+            order_data.get('user_id'),
+            'Đã thanh toán khi nhận hàng',
+            f'ShopSphere đã ghi nhận {_format_money(payment.amount)} của đơn hàng #{order_id} sau khi giao thành công.',
+            'payment',
+            order_id,
+        )
+        _notify_staff(
+            'Đã thu tiền COD',
+            f'Đơn hàng #{order_id} đã thu đủ {_format_money(payment.amount)} khi giao hàng.',
+            'payment',
+            order_id,
+        )
+
+        return Response({
+            'collected': True,
+            'payment': PaymentSerializer(payment).data,
+        }, status=status.HTTP_200_OK)

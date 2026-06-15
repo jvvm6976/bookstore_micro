@@ -13,7 +13,18 @@ from .serializers import ShipmentSerializer, ShipmentTrackingSerializer
 logger = logging.getLogger(__name__)
 
 ORDER_SERVICE_URL = os.environ.get('ORDER_SERVICE_URL', 'http://order-service:8000')
+PAYMENT_SERVICE_URL = os.environ.get('PAYMENT_SERVICE_URL', 'http://payment-service:8000')
 NOTIFICATION_SERVICE_URL = os.environ.get('NOTIFICATION_SERVICE_URL', 'http://notification-service:8000')
+SHIPPING_STATUS_LABELS = {
+    'processing': 'đang chuẩn bị',
+    'shipping': 'đang giao',
+    'delivered': 'đã giao',
+    'cancelled': 'đã hủy',
+}
+
+
+def _shipping_status_label(value):
+    return SHIPPING_STATUS_LABELS.get(value, value or 'chưa xác định')
 
 
 def _send_notification(payload):
@@ -200,6 +211,21 @@ class ShipmentStatusUpdateView(generics.UpdateAPIView):
             location=request.data.get('location', '')
         )
         
+        # A COD payment is only collected after delivery succeeds.
+        if new_status == 'delivered':
+            try:
+                payment_resp = requests.post(
+                    f"{PAYMENT_SERVICE_URL}/internal/payments/{shipment.order_id}/collect-cod/",
+                    timeout=5,
+                )
+                if payment_resp.status_code >= 400:
+                    raise ValidationError({'error': 'Failed to collect COD payment'})
+            except ValidationError:
+                raise
+            except requests.RequestException as exc:
+                logger.warning("Failed to collect COD payment for order %s: %s", shipment.order_id, exc)
+                raise ValidationError({'error': 'Failed to collect COD payment'})
+
         # Keep order status in sync with shipping progress.
         order_data = _get_order_or_error(shipment.order_id)
         order_status = 'completed' if new_status == 'delivered' else new_status
@@ -221,20 +247,20 @@ class ShipmentStatusUpdateView(generics.UpdateAPIView):
             _notify_customer(
                 order_data.get('user_id'),
                 'Đơn hàng đang được giao',
-                f'Đơn hàng #{shipment.order_id} đã rời kho và đang trên đường giao',
+                f'Đơn hàng #{shipment.order_id} đã rời kho và đang trên đường giao tới bạn.',
                 shipment.order_id,
             )
         elif new_status == 'delivered':
             _notify_customer(
                 order_data.get('user_id'),
                 'Đơn hàng đã giao',
-                f'Đơn hàng #{shipment.order_id} đã được giao thành công',
+                f'Đơn hàng #{shipment.order_id} đã được giao thành công. Bạn có thể đánh giá sản phẩm trong mục Đơn hàng.',
                 shipment.order_id,
                 priority='high',
             )
             _notify_staff(
                 'Vận đơn đã hoàn tất',
-                f'Vận đơn cho đơn hàng #{shipment.order_id} đã chuyển sang delivered',
+                f'Vận đơn của đơn hàng #{shipment.order_id} đã hoàn tất giao hàng.',
                 shipment.order_id,
             )
         
@@ -346,12 +372,12 @@ class InternalShipmentCreateView(generics.CreateAPIView):
             ShipmentTracking.objects.create(
                 shipment=shipment,
                 status=Shipment.STATUS_PROCESSING,
-                location='Warehouse'
+                location='Kho ShopSphere'
             )
 
             _notify_staff(
                 'Vận đơn mới cần xử lý',
-                f'Đơn hàng #{order_id} đã tạo vận đơn cho {receiver_name}',
+                f'Đơn hàng #{order_id} đã có vận đơn mới cho {receiver_name}. Kiểm tra địa chỉ và chuẩn bị giao hàng.',
                 order_id,
                 priority='high',
             )
@@ -387,6 +413,7 @@ class InternalShipmentCancelView(generics.GenericAPIView):
             raise ValidationError({'error': 'Delivered shipment cannot be cancelled'})
 
         if shipment.current_status != 'cancelled':
+            previous_status = shipment.current_status
             shipment.current_status = 'cancelled'
             shipment.save()
             ShipmentTracking.objects.create(
@@ -396,7 +423,7 @@ class InternalShipmentCancelView(generics.GenericAPIView):
             )
             _notify_staff(
                 'Vận đơn đã hủy',
-                f'Vận đơn cho đơn hàng #{order_id} đã được hủy',
+                f'Vận đơn của đơn hàng #{order_id} đã được hủy khi đang {_shipping_status_label(previous_status)}.',
                 order_id,
                 priority='high',
             )

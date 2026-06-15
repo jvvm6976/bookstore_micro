@@ -19,12 +19,14 @@ import re
 import logging
 from typing import Any
 
+from .text_normalizer import lookup_text
+
 logger = logging.getLogger(__name__)
 
 # Category keyword map (ASCII + Vietnamese)
 _CATEGORY_MAP: dict[str, list[str]] = {
     "Fiction": ["tiểu thuyết", "tieu thuyet", "fiction", "novel", "truyện", "truyen", "văn học", "van hoc"],
-    "Non-Fiction": ["non-fiction", "non fiction", "kinh doanh", "business", "thói quen", "thoi quen", "sapiens", "startup"],
+    "Non-Fiction": ["non-fiction", "non fiction", "kinh doanh", "business", "thói quen", "thoi quen", "sapiens", "startup", "phát triển bản thân", "phat trien ban than", "self help"],
     "Science": ["khoa học", "khoa hoc", "science", "vật lý", "vat ly", "lập trình", "lap trinh", "code", "coding"],
     "Phones": ["điện thoại", "dien thoai", "phone", "phones", "smartphone", "iphone", "samsung galaxy"],
     "Laptops": ["laptop", "máy tính", "may tinh", "macbook", "ultrabook"],
@@ -33,24 +35,24 @@ _CATEGORY_MAP: dict[str, list[str]] = {
     "Womens": ["quần nữ", "quan nu", "womens", "women", "jeans"],
     "Shoes": ["giày", "giay", "shoe", "shoes", "sneaker", "boots"],
     "Cookware": ["nồi", "noi", "chảo", "chao", "cookware"],
-    "Appliances": ["máy pha", "may pha", "appliance", "espresso", "đồ gia dụng", "do gia dung"],
+    "Appliances": ["máy pha", "may pha", "appliance", "espresso", "đồ gia dụng", "do gia dung", "đồ dùng gia đình", "do dung gia dinh"],
     "Decor": ["decor", "trang trí", "trang tri"],
-    "Skincare": ["skincare", "sữa rửa mặt", "sua rua mat", "cleanser", "chăm sóc da", "cham soc da"],
+    "Skincare": ["skincare", "sữa rửa mặt", "sua rua mat", "cleanser", "chăm sóc da", "cham soc da", "làm sạch da", "lam sach da", "dịu nhẹ", "diu nhe"],
     "Haircare": ["haircare", "dầu gội", "dau goi", "tóc", "toc"],
     "Fragrance": ["nước hoa", "nuoc hoa", "perfume", "fragrance"],
     "Fitness": ["fitness", "gym", "tạ", "ta", "dumbbell", "tập luyện", "tap luyen"],
     "Camping": ["camping", "lều", "leu", "dã ngoại", "da ngoai"],
     "Cycling": ["cycling", "xe đạp", "xe dap"],
-    "Board Games": ["board game", "board games", "catan", "cờ", "co"],
+    "Board Games": ["board game", "board games", "catan", "cờ bàn", "co ban", "cờ vua", "co vua", "cờ tướng", "co tuong"],
     "Building Sets": ["lego", "building set", "xếp hình", "xep hinh"],
     "Learning Toys": ["learning toy", "đồ chơi học tập", "do choi hoc tap"],
-    "Coffee & Tea": ["coffee", "cà phê", "ca phe", "trà", "tra"],
+    "Coffee & Tea": ["coffee", "cà phê", "ca phe", "trà xanh", "tra xanh", "trà sữa", "tra sua", "trà oolong", "tra oolong"],
     "Snacks": ["snack", "snacks", "bánh", "banh", "kẹo", "keo"],
     "Pantry": ["pantry", "gia vị", "gia vi", "thực phẩm khô", "thuc pham kho"],
     "Car Care": ["car care", "rửa xe", "rua xe", "chăm sóc xe", "cham soc xe"],
     "Motorcycle Gear": ["motorcycle", "xe máy", "xe may", "mũ bảo hiểm", "mu bao hiem"],
     "Vehicle Accessories": ["phụ kiện xe", "phu kien xe", "vehicle accessories"],
-    "Notebooks": ["notebook", "notebooks", "vở", "vo", "sổ tay", "so tay"],
+    "Notebooks": ["notebook", "notebooks", "vở", "vo", "sổ", "so", "sổ tay", "so tay", "ghi chép", "ghi chep", "văn phòng", "van phong", "đồ văn phòng", "do van phong"],
     "Writing": ["bút", "but", "pen", "pencil", "writing"],
     "Desk Accessories": ["desk", "bàn làm việc", "ban lam viec", "desk accessories"],
 }
@@ -115,12 +117,17 @@ def _extract_order_id(text: str) -> int | None:
 
 def _extract_category(text: str) -> str | None:
     text_lower = text.lower()
+    best_cat: str | None = None
+    best_score = 0
     for cat, keywords in _CATEGORY_MAP.items():
         for kw in keywords:
             phrase = kw.lower()
             if re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text_lower, re.I):
-                return cat
-    return None
+                score = 1 + len(phrase.split())
+                if score > best_score:
+                    best_cat = cat
+                    best_score = score
+    return best_cat
 
 
 def _extract_policy_topic(text: str) -> str | None:
@@ -140,7 +147,7 @@ def _extract_rating_threshold(text: str) -> float | None:
 
 
 def _extract_author(text: str) -> str | None:
-    m = re.search(r"(?:tác giả|tac gia|author|của|cua)\s+([A-ZÀ-Ỹa-zà-ỹ][A-ZÀ-Ỹa-zà-ỹ\s\.]{2,40})", text)
+    m = re.search(r"(?:tác giả|tac gia|author|của tác giả|cua tac gia)\s+([A-ZÀ-Ỹa-zà-ỹ][A-ZÀ-Ỹa-zà-ỹ\s\.]{2,40})", text)
     if m:
         return m.group(1).strip()
     return None
@@ -160,6 +167,12 @@ def _cleanup_title_candidate(value: str) -> str:
         cleaned,
         flags=re.I,
     )
+    cleaned = re.sub(
+        r"\b(?:giúp tôi|giup toi|giúp mình|giup minh|giúp shop|giup shop|cho tôi|cho toi|cho mình|cho minh|nhé|nhe|ạ|a)\b.*$",
+        "",
+        cleaned,
+        flags=re.I,
+    )
     cleaned = re.sub(r"\s+", " ", cleaned).strip(" .,!?:;\"'()[]")
     return cleaned
 
@@ -173,6 +186,7 @@ def _is_plausible_title(value: str) -> bool:
         "sản", "san", "phẩm", "pham", "product", "item", "giá", "gia", "price",
         "phù", "hợp", "với", "toi", "tôi", "ban", "mình", "minh", "cho", "để",
         "tot", "tốt", "rẻ", "re", "đẹp", "dep", "mới", "moi", "cũ", "cu", "hot",
+        "đánh", "danh", "rating", "sao", "star",
     }:
         return False
     if first_word in {"nao", "nào", "gi", "gì", "bao", "nhieu", "nhiêu"}:
@@ -181,7 +195,12 @@ def _is_plausible_title(value: str) -> bool:
 
 
 def _is_price_question(text: str) -> bool:
-    t = text.lower()
+    t = re.sub(
+        r"\b(?:đánh giá|danh gia|rating)\s*(?:từ|tu|>=|>|trên|tren)?\s*[1-5](?:\.\d)?\s*(?:sao|star)?",
+        " ",
+        text.lower(),
+        flags=re.I,
+    )
     if re.search(r"\b(bao nhiêu tiền|bao nhieu tien|giá bao nhiêu|gia bao nhieu|price|cost|mức giá|muc gia|tầm giá|tam gia)\b", t, re.I):
         return True
     if re.search(r"\b(sách|sach)\s*(trên|tren|dưới|duoi)\s*\d+\b", t, re.I):
@@ -189,8 +208,6 @@ def _is_price_question(text: str) -> bool:
     if re.search(r"\b(sách|sach)\s*(từ|tu)\s*\d+\s*(đến|den|-)\s*\d+\b", t, re.I):
         return True
     if re.search(r"\b(trên|tren|dưới|duoi)\s*\d+\s*(k|nghìn|nghin|đồng|dong|vnd)?\b", t, re.I):
-        return True
-    if re.search(r"\bgia\b", t) and not re.search(r"\btac\s+gia\b", t):
         return True
     if re.search(r"\b(giá|gia)\s*(dưới|duoi|trên|tren|<|>|từ|tu|đến|den|k|vnd|đồng|dong|\d)", t, re.I):
         return True
@@ -256,7 +273,7 @@ def _extract_book_titles_for_compare(text: str) -> list[str]:
     if not m:
         return []
 
-    noise = r"\b(cuon|cuốn|quyen|quyển|sach|sách|nao|nào|re|rẻ|dat|đắt|hon|hơn|gia|giá|bao|nhieu|nhiêu|tien|tiền|co|có|khong|không|so\s+sanh|sánh)\b"
+    noise = r"\b(cuon|cuốn|quyen|quyển|sach|sách|nao|nào|re|rẻ|dat|đắt|hon|hơn|gia|giá|bao|nhieu|nhiêu|tien|tiền|co|có|khong|không|so\s+sanh|sánh|giúp|giup|tôi|toi|mình|minh|nhé|nhe|ạ)\b"
     t1 = _cleanup_title_candidate(re.sub(noise, " ", m.group(1), flags=re.I))
     t2 = _cleanup_title_candidate(re.sub(noise, " ", m.group(2), flags=re.I))
     t1 = re.sub(r"\s+", " ", t1)
@@ -318,6 +335,11 @@ def _extract_product_keywords(text: str, category: str | None) -> list[str]:
         "sản", "san", "phẩm", "pham", "product", "item", "hàng", "hang", "mặt", "mat",
         "giá", "gia", "price", "cost", "bao", "nhiêu", "nhieu", "sánh", "sanh", "so",
         "phù", "hợp", "với", "voi", "mình", "minh", "cho", "để", "de", "thế", "nào", "nao",
+        "dưới", "duoi", "trên", "tren", "từ", "tu", "đến", "den", "nghìn", "nghin", "đồng", "dong",
+        "vnd", "sao", "star", "rating", "đánh", "danh", "còn", "con", "không", "khong", "thì", "thi", "làm",
+        "giúp", "giup", "lịch", "lich", "sử",
+        "dựa", "dua", "trên", "tren", "hãy", "hay", "theo", "sở", "thích",
+        "đang", "được", "dành", "tư", "vấn", "nhu", "cầu", "việc", "nhé", "nhe",
     }
     words = re.findall(r"\b\w{3,}\b", text.lower())
     keywords = [w for w in words if w not in stopwords]
@@ -337,58 +359,61 @@ def extract(message: str, intent: str) -> dict[str, Any]:
     Returns a dict of entity_name → value.
     """
     text = message.strip()
+    signal_text = lookup_text(text)
     entities: dict[str, Any] = {}
 
-    budget_min, budget_max = _extract_budget(text)
+    budget_min, budget_max = _extract_budget(signal_text)
     if budget_min is not None:
         entities["budget_min"] = budget_min
     if budget_max is not None:
         entities["budget_max"] = budget_max
 
-    category = _extract_category(text)
-    if category:
-        entities["category"] = category
+    category = None
+    if intent in ("general_search", "product_advice"):
+        category = _extract_category(signal_text)
+        if category:
+            entities["category"] = category
 
-    if _is_price_question(text):
+    if _is_price_question(signal_text):
         entities["ask_price"] = True
 
-    if _is_stock_question(text):
+    if _is_stock_question(signal_text):
         entities["ask_stock"] = True
 
-    if _is_best_price_question(text):
+    if _is_best_price_question(signal_text):
         entities["ask_best_price"] = True
 
-    if _is_compare_price_question(text):
+    if _is_compare_price_question(signal_text):
         entities["ask_compare_price"] = True
 
-    if _is_next_book_question(text):
+    if _is_next_book_question(signal_text):
         entities["ask_next_book"] = True
 
-    if _is_bestseller_question(text):
+    if _is_bestseller_question(signal_text):
         entities["ask_bestseller"] = True
 
-    if _is_new_books_question(text):
+    if _is_new_books_question(signal_text):
         entities["ask_new_books"] = True
 
-    if _is_same_author_question(text):
+    if _is_same_author_question(signal_text):
         entities["ask_same_author"] = True
 
-    if _is_similar_products_question(text):
+    if _is_similar_products_question(signal_text):
         entities["ask_similar_products"] = True
 
-    if _is_category_interest_question(text):
+    if _is_category_interest_question(signal_text):
         entities["ask_category_interest"] = True
 
     if intent in ("order_support",):
-        order_id = _extract_order_id(text)
+        order_id = _extract_order_id(signal_text)
         if order_id:
             entities["order_id"] = order_id
 
-    policy_topic = _extract_policy_topic(text)
+    policy_topic = _extract_policy_topic(signal_text)
     if policy_topic:
         entities["policy_topic"] = policy_topic
 
-    rating = _extract_rating_threshold(text)
+    rating = _extract_rating_threshold(signal_text)
     if rating:
         entities["rating_threshold"] = rating
 

@@ -22,6 +22,48 @@ SHIPPING_SERVICE_URL = os.environ.get('SHIPPING_SERVICE_URL', 'http://shipping-s
 NOTIFICATION_SERVICE_URL = os.environ.get('NOTIFICATION_SERVICE_URL', 'http://notification-service:8000')
 
 ORDER_STATUSES = {'pending', 'paid', 'shipping', 'completed', 'cancelled', 'failed'}
+ORDER_STATUS_LABELS = {
+    'pending': 'chờ thanh toán',
+    'paid': 'đã xác nhận',
+    'shipping': 'đang giao',
+    'completed': 'hoàn tất',
+    'cancelled': 'đã hủy',
+    'failed': 'không thành công',
+}
+
+
+def _format_money(value):
+    try:
+        amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        amount = Decimal('0')
+    return f"{amount:,.0f}".replace(',', '.') + 'đ'
+
+
+def _status_label(value):
+    return ORDER_STATUS_LABELS.get(value, value or 'chưa xác định')
+
+
+def _customer_order_status_copy(order):
+    if order.current_status == 'paid':
+        return (
+            'Đơn hàng đã được xác nhận',
+            f'Đơn hàng #{order.id} đã được xác nhận và đang chờ cửa hàng chuẩn bị.'
+        )
+    if order.current_status == 'shipping':
+        return (
+            'Đơn hàng đang được giao',
+            f'Đơn hàng #{order.id} đã chuyển sang vận chuyển. Bạn có thể theo dõi các mốc giao hàng trong chi tiết đơn.'
+        )
+    if order.current_status == 'completed':
+        return (
+            'Đơn hàng đã hoàn tất',
+            f'Đơn hàng #{order.id} đã hoàn tất. Cảm ơn bạn đã mua sắm tại ShopSphere.'
+        )
+    return (
+        'Đơn hàng đã cập nhật',
+        f'Đơn hàng #{order.id} hiện ở trạng thái {_status_label(order.current_status)}.'
+    )
 
 
 def _send_notification(payload):
@@ -211,14 +253,14 @@ class OrderCheckoutView(generics.CreateAPIView):
 
             _notify_customer(
                 user_id,
-                'Đặt hàng thành công',
-                f'Đơn hàng #{order.id} đã được tạo và đang chờ thanh toán',
+                'ShopSphere đã nhận đơn hàng',
+                f'Đơn hàng #{order.id} đã được tạo. Bạn có thể thanh toán và theo dõi tiến trình trong mục Đơn hàng.',
                 'order',
                 entity_id=order.id,
             )
             _notify_staff(
-                'Đơn hàng mới cần xử lý',
-                f'Đơn hàng #{order.id} vừa được tạo, tổng tiền {total_price}',
+                'Có đơn hàng mới',
+                f'Đơn hàng #{order.id} vừa được tạo với tổng {_format_money(total_price)}. Kiểm tra thanh toán và chuẩn bị xử lý khi đơn được xác nhận.',
                 'order',
                 entity_id=order.id,
                 priority='high',
@@ -311,10 +353,11 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         order.current_status = new_status
         order.save(update_fields=['current_status', 'updated_at'])
         OrderStatusHistory.objects.create(order=order, status=new_status)
+        title, content = _customer_order_status_copy(order)
         _notify_customer(
             order.user_id,
-            'Trạng thái đơn hàng đã cập nhật',
-            f'Đơn hàng #{order.id} đã chuyển sang trạng thái {new_status}',
+            title,
+            content,
             'order',
             entity_id=order.id,
         )
@@ -376,7 +419,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                 if refund_resp.status_code >= 400:
                     logger.warning("Failed to refund payment for order %s: %s", order.id, refund_resp.text)
                 else:
-                    refund_ok = True
+                    refund_ok = refund_resp.json().get('overall_status') == 'refunded'
             except requests.RequestException as e:
                 logger.warning("Failed to call payment refund for order %s: %s", order.id, str(e))
 
@@ -394,7 +437,7 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
         _notify_customer(
             order.user_id,
             'Đơn hàng đã hủy',
-            f'Đơn hàng #{order.id} đã được hủy thành công',
+            f'Đơn hàng #{order.id} đã được hủy. Nếu có thanh toán trước đó, hệ thống sẽ ghi nhận trạng thái hoàn tiền riêng.',
             'order',
             entity_id=order.id,
             priority='high',
@@ -403,14 +446,14 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
             _notify_customer(
                 order.user_id,
                 'Hoàn tiền đã được ghi nhận',
-                f'Thanh toán cho đơn hàng #{order.id} đã được chuyển sang trạng thái hoàn tiền',
+                f'Khoản thanh toán của đơn hàng #{order.id} đã được ghi nhận hoàn tiền.',
                 'payment',
                 entity_id=order.id,
                 priority='high',
             )
         _notify_staff(
             'Đơn hàng bị hủy',
-            f'Đơn hàng #{order.id} đã bị hủy sau trạng thái {old_status}',
+            f'Đơn hàng #{order.id} đã bị hủy khi đang {_status_label(old_status)}.',
             'order',
             entity_id=order.id,
             priority='high',

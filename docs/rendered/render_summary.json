@@ -1,0 +1,46 @@
+[
+  {
+    "docx": "docs\\chuong1.docx",
+    "pdf": "docs\\rendered\\chuong1\\chuong1.pdf",
+    "pages": 13,
+    "png_count": 13,
+    "sample_png": [
+      "docs\\rendered\\chuong1\\page_001.png",
+      "docs\\rendered\\chuong1\\page_002.png",
+      "docs\\rendered\\chuong1\\page_003.png"
+    ]
+  },
+  {
+    "docx": "docs\\chuong2.docx",
+    "pdf": "docs\\rendered\\chuong2\\chuong2.pdf",
+    "pages": 26,
+    "png_count": 26,
+    "sample_png": [
+      "docs\\rendered\\chuong2\\page_001.png",
+      "docs\\rendered\\chuong2\\page_002.png",
+      "docs\\rendered\\chuong2\\page_003.png"
+    ]
+  },
+  {
+    "docx": "docs\\chuong3.docx",
+    "pdf": "docs\\rendered\\chuong3\\chuong3.pdf",
+    "pages": 22,
+    "png_count": 22,
+    "sample_png": [
+      "docs\\rendered\\chuong3\\page_001.png",
+      "docs\\rendered\\chuong3\\page_002.png",
+      "docs\\rendered\\chuong3\\page_003.png"
+    ]
+  },
+  {
+    "docx": "docs\\chuong4.docx",
+    "pdf": "docs\\rendered\\chuong4\\chuong4.pdf",
+    "pages": 22,
+    "png_count": 22,
+    "sample_png": [
+      "docs\\rendered\\chuong4\\page_001.png",
+      "docs\\rendered\\chuong4\\page_002.png",
+      "docs\\rendered\\chuong4\\page_003.png"
+    ]
+  }
+]

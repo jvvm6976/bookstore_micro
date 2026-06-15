@@ -23,7 +23,7 @@
   <section class="filter-row" aria-label="Lọc đơn hàng">
     <button class="filter-chip active" type="button" onclick="filterOrders('all', this)">Tất cả</button>
     <button class="filter-chip" type="button" onclick="filterOrders('pending', this)">Chờ xử lý</button>
-    <button class="filter-chip" type="button" onclick="filterOrders('paid', this)">Đã thanh toán</button>
+    <button class="filter-chip" type="button" onclick="filterOrders('paid', this)">Đã xác nhận</button>
     <button class="filter-chip" type="button" onclick="filterOrders('shipping', this)">Đang giao</button>
     <button class="filter-chip" type="button" onclick="filterOrders('completed', this)">Hoàn tất</button>
     <button class="filter-chip" type="button" onclick="filterOrders('cancelled', this)">Đã hủy</button>
@@ -43,7 +43,7 @@ let currentFilter = 'all';
 
 const statusLabels = {
   pending: 'Chờ xác nhận',
-  paid: 'Đã thanh toán',
+  paid: 'Đã xác nhận',
   processing: 'Đang chuẩn bị',
   shipping: 'Đang giao',
   shipped: 'Đã gửi',
@@ -94,7 +94,7 @@ function renderOrders() {
     const status = String(order.current_status || order.status || 'pending').toLowerCase();
     const itemCount = Array.isArray(order.items) ? order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0) : (order.items_count || order.item_count || 0);
     const fullAddress = order.address?.full_address || order.shipping_address || 'Chưa xác định';
-    const canReview = ['paid', 'delivered', 'completed'].includes(status);
+    const canReview = ['delivered', 'completed'].includes(status);
     const canCancel = ['pending', 'paid'].includes(status);
     return `
       <article class="order-card" onclick="window.location='/orders/${order.id}/tracking/'">

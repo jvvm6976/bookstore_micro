@@ -15,13 +15,14 @@ const Portal = (() => {
 
   function statusLabel(value) {
     const labels = {
-      pending: 'Chờ xử lý', paid: 'Đã thanh toán', processing: 'Đang chuẩn bị',
+      pending: 'Chờ xử lý', paid: 'Đã xác nhận', processing: 'Đang chuẩn bị',
       shipping: 'Đang giao', delivered: 'Đã giao', completed: 'Hoàn tất',
       cancelled: 'Đã hủy', failed: 'Thất bại', success: 'Thành công',
       refunded: 'Đã hoàn tiền', approved: 'Đã duyệt', rejected: 'Từ chối',
       active: 'Đang hoạt động', inactive: 'Ngừng hoạt động', unread: 'Chưa đọc', read: 'Đã đọc',
       admin: 'Quản trị viên', manager: 'Quản lý', staff: 'Nhân viên', customer: 'Khách hàng', guest: 'Chưa đăng nhập',
-      all: 'Tất cả'
+      all: 'Tất cả', new: 'Khách hàng mới', casual: 'Mua sắm thỉnh thoảng',
+      engaged: 'Quan tâm thường xuyên', loyal: 'Khách hàng gắn bó', champion: 'Khách hàng nổi bật'
     };
     return labels[String(value || '').toLowerCase()] || value || '-';
   }
@@ -155,7 +156,11 @@ const Portal = (() => {
       localStorage.setItem('portal_sidebar_collapsed', sidebar.classList.contains('collapsed') ? '1' : '0');
       document.getElementById('sidebarToggle').title = sidebar.classList.contains('collapsed') ? 'Mở rộng menu' : 'Thu gọn menu';
     });
-    document.querySelector('[data-portal-user]').textContent = ShopUI.username() || 'Tài khoản vận hành';
+    const portalUserNode = document.querySelector('[data-portal-user]');
+    portalUserNode.textContent = ShopUI.displayName() || 'Tài khoản vận hành';
+    ShopUI.loadDisplayName().then(name => {
+      if (name) portalUserNode.textContent = name;
+    });
     document.querySelector('[data-portal-role]').textContent = statusLabel(ShopUI.role() || 'guest');
     document.getElementById('portalModalForm').addEventListener('submit', handleModalSubmit);
     document.getElementById('portalModalLayer').addEventListener('click', event => {
@@ -246,7 +251,7 @@ const Portal = (() => {
       return (!query || haystack.includes(query)) && (!filter || order.current_status === filter);
     });
     const node = document.getElementById('ordersTable');
-    node.innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Đơn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Đơn hàng</th><th>Thanh toán</th><th>Cập nhật</th><th></th></tr></thead><tbody>${rows.map(order => {
+    node.innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Đơn</th><th>Khách hàng</th><th>Tổng tiền</th><th>Đơn hàng</th><th>Thanh toán</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody>${rows.map(order => {
       const payment = state.payments.get(Number(order.id));
       return `<tr><td><strong>#${order.id}</strong></td><td><strong>${esc(customerName(order.user_id))}</strong><div class="muted">ID ${order.user_id}</div></td><td>${money(order.total_price)}</td><td>${status(order.current_status)}</td><td>${payment ? status(payment.overall_status) : '<span class="muted">Chưa có</span>'}</td><td>${esc(date(order.updated_at))}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openOrder(${order.id})">${icon('eye')} Chi tiết</button></div></td></tr>`;
     }).join('')}</tbody></table></div>` : empty('Không có đơn phù hợp');
@@ -273,7 +278,7 @@ const Portal = (() => {
       ${payment ? `<button class="portal-btn" type="button" onclick="Portal.editPayment(${order.id}, '${esc(payment.overall_status)}')">${icon('credit-card')} Cập nhật thanh toán</button>` : ''}
       ${order.current_status === 'pending' ? `<button class="portal-btn success" type="button" onclick="Portal.advanceOrder(${order.id}, 'paid')">${icon('circle-check')} Xác nhận đã thanh toán</button>` : ''}
       ${['pending','paid'].includes(order.current_status) ? `<button class="portal-btn danger" type="button" onclick="Portal.cancelOrder(${order.id})">${icon('ban')} Hủy đơn</button>` : ''}
-      <a class="portal-btn" href="/orders/${order.id}/tracking/">${icon('external-link')} Mở tracking</a>
+      <a class="portal-btn" href="/orders/${order.id}/tracking/">${icon('external-link')} Mở theo dõi</a>
     </div>`;
     openModal({ title: `Đơn hàng #${order.id}`, eyebrow: 'Chi tiết vận hành', body, submitLabel: 'Đóng', onSubmit: async () => closeModal() });
   }
@@ -311,15 +316,15 @@ const Portal = (() => {
     const filter = document.getElementById('shippingStatusFilter')?.value || '';
     const query = String(document.getElementById('shippingSearch')?.value || '').toLowerCase();
     const rows = state.shipments.filter(item => (!filter || item.current_status === filter) && (!query || `${item.order_id} ${item.receiver_name} ${item.phone} ${item.full_address}`.toLowerCase().includes(query)));
-    document.getElementById('shippingTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Đơn</th><th>Người nhận</th><th>Địa chỉ</th><th>Trạng thái</th><th>Cập nhật</th><th></th></tr></thead><tbody>${rows.map(item => `<tr><td><strong>#${item.order_id}</strong></td><td><strong>${esc(item.receiver_name)}</strong><div class="muted">${esc(item.phone)}</div></td><td>${esc(item.full_address)}</td><td>${status(item.current_status)}</td><td>${esc(date(item.updated_at))}</td><td><div class="actions">${item.current_status === 'processing' ? `<button class="portal-btn success" onclick="Portal.advanceShipment(${item.order_id}, 'shipping')">Bắt đầu giao</button>` : ''}${item.current_status === 'shipping' ? `<button class="portal-btn success" onclick="Portal.advanceShipment(${item.order_id}, 'delivered')">Đã giao</button>` : ''}<button class="portal-btn" onclick="Portal.addTracking(${item.order_id}, '${esc(item.current_status)}')">${icon('map-pin-plus')} Thêm mốc</button>${item.current_status === 'processing' ? `<button class="portal-btn danger" onclick="Portal.deleteShipment(${item.order_id})">${icon('trash-2')}</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có vận đơn phù hợp');
+    document.getElementById('shippingTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Đơn</th><th>Người nhận</th><th>Địa chỉ</th><th>Trạng thái vận đơn</th><th>Cập nhật gần nhất</th><th>Thao tác</th></tr></thead><tbody>${rows.map(item => `<tr><td><strong>#${item.order_id}</strong></td><td><strong>${esc(item.receiver_name)}</strong><div class="muted">${esc(item.phone)}</div></td><td>${esc(item.full_address)}</td><td>${status(item.current_status)}</td><td>${esc(date(item.updated_at))}</td><td><div class="actions">${item.current_status === 'processing' ? `<button class="portal-btn success" onclick="Portal.advanceShipment(${item.order_id}, 'shipping')">${icon('truck')} Bắt đầu giao</button>` : ''}${item.current_status === 'shipping' ? `<button class="portal-btn success" onclick="Portal.advanceShipment(${item.order_id}, 'delivered')">${icon('package-check')} Xác nhận đã giao</button>` : ''}<button class="portal-btn" onclick="Portal.addTracking(${item.order_id}, '${esc(item.current_status)}')">${icon('map-pin-plus')} Thêm mốc</button>${item.current_status === 'processing' ? `<button class="portal-btn danger" onclick="Portal.deleteShipment(${item.order_id})">${icon('trash-2')}</button>` : ''}</div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có vận đơn phù hợp');
     refreshIcons();
   }
 
   function addTracking(orderId, currentStatus) {
-    openModal({ title: `Thêm tracking đơn #${orderId}`, body: formGrid(
-      field('Trạng thái', 'status', currentStatus, { type: 'select', choices: ['processing','shipping','delivered','cancelled'] }),
+    openModal({ title: `Thêm mốc vận chuyển đơn #${orderId}`, body: formGrid(
+      field('Trạng thái mốc', 'status', currentStatus, { type: 'select', choices: ['processing','shipping','delivered','cancelled'] }),
       field('Vị trí', 'location', '', { full: true, placeholder: 'Ví dụ: Trung tâm phân loại Hà Nội' })
-    ), onSubmit: async data => { await api(`/api/shipping/${orderId}/tracking/`, { method: 'POST', body: { status: data.get('status'), location: data.get('location') } }); toast('Đã thêm mốc tracking'); await loadShipping(); } });
+    ), onSubmit: async data => { await api(`/api/shipping/${orderId}/tracking/`, { method: 'POST', body: { status: data.get('status'), location: data.get('location') } }); toast('Đã thêm mốc vận chuyển'); await loadShipping(); } });
   }
 
   async function advanceShipment(orderId, nextStatus) {
@@ -344,7 +349,7 @@ const Portal = (() => {
     const filter = document.getElementById('reviewStatusFilter')?.value || '';
     const query = String(document.getElementById('reviewSearch')?.value || '').toLowerCase();
     const rows = state.reviews.filter(item => (!filter || item.status === filter) && (!query || `${item.id} ${item.order_id} ${item.product_id} ${item.comment}`.toLowerCase().includes(query)));
-    document.getElementById('reviewsTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Đánh giá</th><th>Đơn / sản phẩm</th><th>Số sao</th><th>Nội dung</th><th>Trạng thái</th><th></th></tr></thead><tbody>${rows.map(item => `<tr><td><strong>#${item.id}</strong><div class="muted">${esc(date(item.created_at))}</div></td><td>Đơn #${item.order_id}<div class="muted">Sản phẩm #${item.product_id}</div></td><td><strong>${item.rating}/5</strong></td><td>${esc(item.comment || 'Không có nội dung')} ${safeList(item.replies).length ? `<div class="muted">Phản hồi: ${esc(safeList(item.replies)[0].content)}</div>` : ''}</td><td>${status(item.status)}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.replyReview(${item.id})">${icon('reply')} Phản hồi</button>${item.status !== 'approved' ? `<button class="portal-btn success" onclick="Portal.setReviewStatus(${item.id}, 'approved')">Duyệt</button>` : ''}${item.status !== 'rejected' ? `<button class="portal-btn" onclick="Portal.setReviewStatus(${item.id}, 'rejected')">Từ chối</button>` : ''}<button class="portal-btn danger" onclick="Portal.deleteReview(${item.id})">${icon('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có đánh giá phù hợp');
+    document.getElementById('reviewsTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Đánh giá</th><th>Đơn / sản phẩm</th><th>Số sao</th><th>Nội dung</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${rows.map(item => `<tr><td><strong>#${item.id}</strong><div class="muted">${esc(date(item.created_at))}</div></td><td>Đơn #${item.order_id}<div class="muted">Sản phẩm #${item.product_id}</div></td><td><strong>${item.rating}/5</strong></td><td>${esc(item.comment || 'Không có nội dung')} ${safeList(item.replies).length ? `<div class="muted">Phản hồi: ${esc(safeList(item.replies)[0].content)}</div>` : ''}</td><td>${status(item.status)}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.replyReview(${item.id})">${icon('reply')} Phản hồi</button>${item.status !== 'approved' ? `<button class="portal-btn success" onclick="Portal.setReviewStatus(${item.id}, 'approved')">Duyệt</button>` : ''}${item.status !== 'rejected' ? `<button class="portal-btn" onclick="Portal.setReviewStatus(${item.id}, 'rejected')">Từ chối</button>` : ''}<button class="portal-btn danger" onclick="Portal.deleteReview(${item.id})">${icon('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có đánh giá phù hợp');
     refreshIcons();
   }
 
@@ -373,7 +378,7 @@ const Portal = (() => {
     const filter = document.getElementById('notificationTypeFilter')?.value || '';
     const query = String(document.getElementById('notificationSearch')?.value || '').toLowerCase();
     const rows = state.notifications.filter(item => (!filter || item.type === filter) && (!query || `${item.title} ${item.content} ${item.user_id || ''}`.toLowerCase().includes(query)));
-    document.getElementById('notificationsTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>ID</th><th>Người nhận</th><th>Loại</th><th>Nội dung</th><th>Ưu tiên</th><th>Trạng thái</th><th></th></tr></thead><tbody>${rows.map(item => `<tr><td>#${item.id}</td><td>${esc(item.recipient_type)}${item.user_id ? `<div class="muted">User #${item.user_id}</div>` : ''}</td><td>${esc(statusLabel(item.type))}</td><td><strong>${esc(item.title)}</strong><div class="muted">${esc(item.content)}</div></td><td>${esc(item.priority)}</td><td>${status(item.status)}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openNotificationForm(${item.id})">${icon('pencil')} Sửa</button><button class="portal-btn danger" onclick="Portal.deleteNotification(${item.id})">${icon('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có thông báo phù hợp');
+    document.getElementById('notificationsTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>ID</th><th>Người nhận</th><th>Loại</th><th>Nội dung</th><th>Ưu tiên</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${rows.map(item => `<tr><td>#${item.id}</td><td>${esc(item.recipient_type)}${item.user_id ? `<div class="muted">User #${item.user_id}</div>` : ''}</td><td>${esc(statusLabel(item.type))}</td><td><strong>${esc(item.title)}</strong><div class="muted">${esc(item.content)}</div></td><td>${esc(item.priority)}</td><td>${status(item.status)}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openNotificationForm(${item.id})">${icon('pencil')} Sửa</button><button class="portal-btn danger" onclick="Portal.deleteNotification(${item.id})">${icon('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có thông báo phù hợp');
     refreshIcons();
   }
 
@@ -440,7 +445,7 @@ const Portal = (() => {
     const query = String(document.getElementById('userSearch')?.value || '').toLowerCase();
     const role = document.getElementById('userRoleFilter')?.value || '';
     const rows = state.users.filter(item => (!role || item.role_name === role) && (!query || `${item.username} ${item.email} ${item.phone || ''} ${item.first_name} ${item.last_name}`.toLowerCase().includes(query)));
-    document.getElementById('usersTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Liên hệ</th><th>Vai trò</th><th>Trạng thái</th><th></th></tr></thead><tbody>${rows.map(item => `<tr><td><strong>${esc(item.username)}</strong><div class="muted">#${item.id}</div></td><td>${esc(`${item.first_name || ''} ${item.last_name || ''}`.trim() || '-')}</td><td>${esc(item.email)}<div class="muted">${esc(item.phone || '-')}</div></td><td>${esc(item.role_name || '-')}</td><td>${status(item.is_active ? 'active' : 'inactive')}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openUserForm(${item.id})">${icon('pencil')} Sửa</button><button class="portal-btn danger" onclick="Portal.deleteUser(${item.id})">${icon('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có người dùng phù hợp');
+    document.getElementById('usersTable').innerHTML = rows.length ? `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Tài khoản</th><th>Họ tên</th><th>Liên hệ</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${rows.map(item => `<tr><td><strong>${esc(item.username)}</strong><div class="muted">#${item.id}</div></td><td>${esc(`${item.first_name || ''} ${item.last_name || ''}`.trim() || '-')}</td><td>${esc(item.email)}<div class="muted">${esc(item.phone || '-')}</div></td><td>${esc(item.role_name || '-')}</td><td>${status(item.is_active ? 'active' : 'inactive')}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openUserForm(${item.id})">${icon('pencil')} Sửa</button><button class="portal-btn danger" onclick="Portal.deleteUser(${item.id})">${icon('trash-2')}</button></div></td></tr>`).join('')}</tbody></table></div>` : empty('Không có người dùng phù hợp');
     const roleFilter = document.getElementById('userRoleFilter');
     if (roleFilter && roleFilter.options.length <= 1) roleFilter.innerHTML += state.roles.map(item => `<option value="${esc(item.role_name)}">${esc(item.role_name)}</option>`).join('');
     refreshIcons();
@@ -485,7 +490,7 @@ const Portal = (() => {
     let html = '';
     if(tab==='domains') html = state.domains.filter(item=>!query||`${item.name} ${item.description||''}`.toLowerCase().includes(query)).map(item=>`<div class="catalog-item"><div class="catalog-item-head"><div><h3>${esc(item.name)}</h3><div class="muted">#${item.id}</div></div>${icon('layers-3')}</div><p>${esc(item.description||'Chưa có mô tả')}</p><div class="catalog-item-actions"><button class="portal-btn" onclick="Portal.openDomainForm(${item.id})">Sửa</button><button class="portal-btn danger" onclick="Portal.deleteDomain(${item.id})">Xóa</button></div></div>`).join('');
     else if(tab==='categories') html = state.categories.filter(item=>!query||`${item.name} ${item.domain_name} ${item.description||''}`.toLowerCase().includes(query)).map(item=>`<div class="catalog-item"><div class="catalog-item-head"><div><h3>${esc(item.name)}</h3><div class="muted">${esc(item.domain_name)}</div></div>${icon('tags')}</div><p>${esc(item.description||'Chưa có mô tả')}</p><div class="catalog-item-actions"><button class="portal-btn" onclick="Portal.openCategoryForm(${item.id})">Sửa</button><button class="portal-btn danger" onclick="Portal.deleteCategory(${item.id})">Xóa</button></div></div>`).join('');
-    else html = `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Sản phẩm</th><th>SKU</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th></th></tr></thead><tbody>${state.products.filter(item=>!query||`${item.name} ${item.sku} ${item.category_name} ${item.domain_name}`.toLowerCase().includes(query)).map(item=>{const primary=esc(ShopUI.imageFor(item));const fallback=esc(ShopUI.fallbackImage(item));return `<tr><td><div class="inline-product"><img class="product-thumb" src="${primary}" data-fallback-src="${fallback}" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc||ShopUI.fallbackImage()"><div><strong>${esc(item.name)}</strong><div class="muted">#${item.id}</div></div></div></td><td class="portal-code">${esc(item.sku)}</td><td>${esc(item.category_name)}<div class="muted">${esc(item.domain_name)}</div></td><td>${money(item.price)}</td><td>${item.stock}</td><td>${status(item.status)}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openProductForm(${item.id})">${icon('pencil')} Sửa</button><button class="portal-btn danger" onclick="Portal.deleteProduct(${item.id})">Ngưng bán</button></div></td></tr>`;}).join('')}</tbody></table></div>`;
+    else html = `<div class="table-wrap"><table class="portal-table"><thead><tr><th>Sản phẩm</th><th>SKU</th><th>Danh mục</th><th>Giá</th><th>Tồn kho</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>${state.products.filter(item=>!query||`${item.name} ${item.sku} ${item.category_name} ${item.domain_name}`.toLowerCase().includes(query)).map(item=>{const primary=esc(ShopUI.imageFor(item));const fallback=esc(ShopUI.fallbackImage(item));return `<tr><td><div class="inline-product"><img class="product-thumb" src="${primary}" data-fallback-src="${fallback}" onerror="this.onerror=null;this.src=this.dataset.fallbackSrc||ShopUI.fallbackImage()"><div><strong>${esc(item.name)}</strong><div class="muted">#${item.id}</div></div></div></td><td class="portal-code">${esc(item.sku)}</td><td>${esc(item.category_name)}<div class="muted">${esc(item.domain_name)}</div></td><td>${money(item.price)}</td><td>${item.stock}</td><td>${status(item.status)}</td><td><div class="actions"><button class="portal-btn" onclick="Portal.openProductForm(${item.id})">${icon('pencil')} Sửa</button><button class="portal-btn danger" onclick="Portal.deleteProduct(${item.id})">Ngưng bán</button></div></td></tr>`;}).join('')}</tbody></table></div>`;
     document.getElementById('catalogContent').innerHTML = html || empty('Chưa có dữ liệu sản phẩm'); refreshIcons();
   }
 
@@ -496,16 +501,9 @@ const Portal = (() => {
   function openProductForm(id=null){const item=id?state.products.find(row=>Number(row.id)===Number(id)):{};openModal({title:id?`Sửa sản phẩm #${id}`:'Tạo sản phẩm',body:formGrid(field('Tên sản phẩm','name',item?.name||''),field('SKU','sku',item?.sku||''),field('Danh mục','category_id',item?.category_id||state.categories[0]?.id||'',{type:'select',choices:state.categories.map(row=>({value:row.id,label:`${row.domain_name} / ${row.name}`}))}),field('Trạng thái','status',item?.status||'active',{type:'select',choices:['active','inactive']}),field('Giá','price',item?.price||'',{type:'number'}),field('Tồn kho','stock',item?.stock??0,{type:'number'}),currentProductImageField(item),field(id?'Thay ảnh từ máy tính':'Ảnh sản phẩm từ máy tính','image_file','',{type:'file',full:true,required:false,accept:'image/jpeg,image/png,image/webp'}),field('Mô tả','description',item?.description||'',{type:'textarea',full:true,required:false})),onSubmit:async data=>{const imageFile=data.get('image_file');if(!imageFile||!imageFile.name)data.delete('image_file');await apiForm(id?`/api/products/${id}/`:'/api/products/',data,id?'PATCH':'POST');toast('Đã lưu sản phẩm');await loadCatalog();}});}
   async function deleteProduct(id){if(!confirm('Ngưng bán sản phẩm này?'))return;try{await api(`/api/products/${id}/`,{method:'DELETE',headers:auth(false)});toast('Đã ngưng bán sản phẩm');await loadCatalog();}catch(error){toast(error.message,'error');}}
 
-  async function loadAi() {
-    const statusNode=document.getElementById('aiStatusPanel');
-    try{const data=await api('/api/v1/kb/status',{headers:{}});statusNode.innerHTML=`<div class="detail-list"><div class="detail-item"><span>Trạng thái tri thức</span><strong>${esc(data.status||'Sẵn sàng')}</strong></div><div class="detail-item"><span>Số tài liệu</span><strong>${esc(data.document_count??data.count??'-')}</strong></div></div>`;}catch(error){statusNode.innerHTML=empty('Không tải được trạng thái AI',error.message);}refreshIcons();
-  }
-  async function analyzeCustomer(){const id=Number(document.getElementById('aiCustomerId').value);if(!id){toast('Nhập mã khách hàng','error');return;}const node=document.getElementById('aiCustomerResult');node.innerHTML=loading();try{const [analysis,recs]=await Promise.all([api(`/api/v1/analyze-customer/${id}`,{headers:{}}),api(`/api/recommend/recommendations/?user_id=${id}&limit=8`,{headers:{}})]);const rows=safeList(recs.recommendations||recs);node.innerHTML=`<div class="detail-list"><div class="detail-item"><span>Khách hàng</span><strong>#${id}</strong></div><div class="detail-item"><span>Phân khúc</span><strong>${esc(analysis.segment||analysis.customer_segment||'Đang học hành vi')}</strong></div></div><div class="portal-section" style="margin-top:14px"><h2 style="font-size:.9rem">Sản phẩm gợi ý</h2><div class="catalog-grid">${rows.map(item=>`<div class="catalog-item"><h3>${esc(item.name||item.product_name||`Sản phẩm #${item.product_id||item.id}`)}</h3><p>${esc(item.reason||item.domain||'Gợi ý theo hành vi')}</p></div>`).join('')}</div></div>`;}catch(error){node.innerHTML=empty('Không phân tích được khách hàng',error.message);}refreshIcons();}
-  async function reindexKnowledge(){if(!confirm('Cập nhật lại tri thức AI cho chatbot và gợi ý?'))return;try{await api('/api/v1/kb/reindex',{method:'POST',body:{}});toast('Đã bắt đầu cập nhật tri thức AI');await loadAi();}catch(error){toast(error.message,'error');}}
-
   async function initPage() {
     if (!roleAllowed()) return;
-    const loaders = { dashboard:loadDashboard, orders:loadOrders, shipping:loadShipping, reviews:loadReviews, notifications:loadNotifications, users:loadUsersRoles, catalog:loadCatalog, ai:loadAi };
+    const loaders = { dashboard:loadDashboard, orders:loadOrders, shipping:loadShipping, reviews:loadReviews, notifications:loadNotifications, users:loadUsersRoles, catalog:loadCatalog };
     if (loaders[page]) await loaders[page]();
   }
 
@@ -518,6 +516,5 @@ const Portal = (() => {
     loadReviews,renderReviews,replyReview,setReviewStatus,deleteReview,
     loadNotifications,renderNotifications,openNotificationForm,deleteNotification,markAllNotificationsRead,
     loadUsersRoles,renderUsers,openUserForm,deleteUser,openRoleForm,deleteRole,
-    loadCatalog,setCatalogTab,renderCatalog,openDomainForm,deleteDomain,openCategoryForm,deleteCategory,openProductForm,deleteProduct,
-    loadAi,analyzeCustomer,reindexKnowledge };
+    loadCatalog,setCatalogTab,renderCatalog,openDomainForm,deleteDomain,openCategoryForm,deleteCategory,openProductForm,deleteProduct };
 })();

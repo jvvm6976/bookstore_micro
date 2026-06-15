@@ -15,7 +15,7 @@
     <div>
       <div class="eyebrow">Đánh giá</div>
       <h1 class="page-title">Đánh giá sản phẩm</h1>
-      <p class="page-subtitle">Khách hàng chỉ đánh giá sản phẩm đã mua. Staff có thể duyệt, từ chối hoặc phản hồi đánh giá.</p>
+      <p class="page-subtitle">Chia sẻ trải nghiệm sau khi nhận hàng và theo dõi phản hồi từ cửa hàng.</p>
     </div>
     <a class="btn subtle" href="/orders/">Mở đơn hàng</a>
   </section>
@@ -89,9 +89,20 @@ let orderItemsForReview = [];
 let catalogLoaded = false;
 
 const reviewStatusLabels = {
-  pending: 'Chờ duyệt',
-  approved: 'Đã duyệt',
-  rejected: 'Từ chối'
+  pending: 'Đang chờ đăng',
+  approved: 'Đã đăng',
+  rejected: 'Không được đăng'
+};
+
+const orderStatusLabels = {
+  pending: 'chờ xác nhận',
+  paid: 'đã xác nhận',
+  processing: 'đang chuẩn bị',
+  shipping: 'đang giao',
+  delivered: 'đã giao',
+  completed: 'hoàn tất',
+  cancelled: 'đã hủy',
+  failed: 'không thành công'
 };
 
 function isStaffUser() {
@@ -154,10 +165,10 @@ async function loadOrderReviewOptions() {
     const order = await ShopUI.fetchJson(`${API_BASE}/api/orders/${orderId}/`, {headers: ShopUI.authHeaders(false)});
     orderItemsForReview = Array.isArray(order.items) ? order.items : [];
     const status = String(order.current_status || '').toLowerCase();
-    const reviewableStatuses = ['paid', 'completed', 'delivered'];
+    const reviewableStatuses = ['completed', 'delivered'];
     const ctx = document.getElementById('orderContext');
     if (!reviewableStatuses.includes(status)) {
-      ctx.textContent = `Đơn #${orderId} đang ở trạng thái ${status || 'không xác định'}, chỉ đánh giá sau khi đã thanh toán hoặc hoàn tất.`;
+      ctx.textContent = `Đơn #${orderId} ${orderStatusLabels[status] || 'chưa hoàn tất'}. Bạn có thể đánh giá sau khi đã nhận hàng.`;
       document.getElementById('reviewComposer').style.display = 'none';
       return;
     }
@@ -171,7 +182,12 @@ async function loadOrderReviewOptions() {
         return `<option value="${pid}">${ShopUI.escapeHtml(productNameMap[pid] || `Sản phẩm #${pid}`)}</option>`;
       });
     document.getElementById('reviewProduct').innerHTML = options.join('');
-    document.getElementById('reviewCreateMsg').textContent = options.length ? '' : 'Bạn đã đánh giá tất cả sản phẩm trong đơn này.';
+    if (!options.length) {
+      document.getElementById('reviewComposer').style.display = 'none';
+      ctx.textContent = `Bạn đã đánh giá tất cả sản phẩm trong đơn #${orderId}.`;
+      return;
+    }
+    document.getElementById('reviewCreateMsg').textContent = '';
   } catch (_) {}
 }
 
@@ -216,14 +232,20 @@ function renderReviews() {
     const rating = Number(review.rating || 0);
     const replies = Array.isArray(review.replies) ? review.replies : [];
     const status = String(review.status || 'pending').toLowerCase();
+    const author = isStaffUser()
+      ? (review.author_name || `Khách hàng #${review.user_id || ''}`)
+      : 'Đánh giá của bạn';
+    const statusLabel = isStaffUser()
+      ? ({pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối'}[status] || status)
+      : (reviewStatusLabels[status] || status);
     return `
       <article class="review-card">
         <div class="review-header">
           <div>
-            <div class="review-author">${ShopUI.escapeHtml(review.author_name || `Khách hàng #${review.user_id || ''}`)}</div>
+            <div class="review-author">${ShopUI.escapeHtml(author)}</div>
             <div class="review-date">${new Date(review.created_at || Date.now()).toLocaleDateString('vi-VN')}</div>
           </div>
-          <span class="status-pill ${status}">${ShopUI.escapeHtml(reviewStatusLabels[status] || status)}</span>
+          <span class="status-pill ${status}">${ShopUI.escapeHtml(statusLabel)}</span>
         </div>
         <div class="review-rating">${rating}/5 sao</div>
         <div class="product-title" style="margin-bottom:.5rem">${ShopUI.escapeHtml(productNameMap[Number(review.product_id)] || `Sản phẩm #${review.product_id}`)}</div>

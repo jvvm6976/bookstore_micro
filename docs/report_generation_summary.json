@@ -1,0 +1,29 @@
+{
+  "generated": [
+    "D:\\Ecommerce\\docs\\chuong1.docx",
+    "D:\\Ecommerce\\docs\\chuong2.docx",
+    "D:\\Ecommerce\\docs\\chuong3.docx",
+    "D:\\Ecommerce\\docs\\chuong4.docx"
+  ],
+  "heading_counts": {
+    "1": 61,
+    "2": 114,
+    "3": 81,
+    "4": 73
+  },
+  "best_model": "bilstm",
+  "api_pass": {
+    "passed": 69,
+    "failed": 0,
+    "total": 69
+  },
+  "ui_pass": {
+    "passed": 25,
+    "failed": 0,
+    "total": 25
+  },
+  "ai_pass": {
+    "passed": 7,
+    "total": 7
+  }
+}

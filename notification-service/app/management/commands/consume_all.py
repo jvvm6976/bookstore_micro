@@ -1,8 +1,12 @@
 import pika
 import json
 import os
+from datetime import timedelta
 from django.core.management.base import BaseCommand
+from django.utils import timezone
 from app.models import Notification, NotificationLog
+
+DEDUPLICATE_WINDOW_HOURS = 12
 
 class Command(BaseCommand):
     help = 'Consume various events to create notifications'
@@ -23,28 +27,41 @@ class Command(BaseCommand):
             user_id = data.get('user_id', 1)
             
             event_map = {
-                'order_created': ('order', 'Đơn hàng mới', f'Đơn hàng #{order_id} vừa được tạo'),
-                'payment_success': ('payment', 'Thanh toán thành công', f'Đơn hàng #{order_id} đã thanh toán thành công'),
-                'shipment_created': ('shipping', 'Vận đơn mới', f'Đơn hàng #{order_id} đã có vận đơn mới'),
+                'order_created': ('order', 'ShopSphere đã nhận đơn hàng', f'Đơn hàng #{order_id} đã được tạo. Bạn có thể thanh toán và theo dõi tiến trình trong mục Đơn hàng.'),
+                'payment_success': ('payment', 'Thanh toán thành công', f'ShopSphere đã xác nhận thanh toán cho đơn hàng #{order_id}.'),
+                'shipment_created': ('shipping', 'Vận đơn mới', f'Đơn hàng #{order_id} đã có vận đơn mới. ShopSphere sẽ cập nhật khi đơn bắt đầu giao.'),
             }
             notif_type, title, content = event_map.get(
                 method.routing_key,
                 ('system', f"Event: {method.routing_key}", f"Event {method.routing_key} occurred for Order {order_id}")
             )
             
-            noti = Notification.objects.create(
-                user_id=user_id,
-                recipient_type='customer',
-                title=title,
-                content=content,
-                type=notif_type,
-                entity_type='order',
-                entity_id=order_id,
+            fields = {
+                'user_id': user_id,
+                'recipient_type': 'customer',
+                'target_role': None,
+                'title': title,
+                'content': content,
+                'type': notif_type,
+                'entity_type': 'order',
+                'entity_id': order_id,
+                'priority': 'normal',
+                'status': 'unread',
+            }
+            noti = (
+                Notification.objects
+                .filter(created_at__gte=timezone.now() - timedelta(hours=DEDUPLICATE_WINDOW_HOURS), **fields)
+                .order_by('-created_at')
+                .first()
             )
+            result = 'deduplicated'
+            if not noti:
+                noti = Notification.objects.create(**fields)
+                result = 'success'
             NotificationLog.objects.create(
                 notification=noti,
                 channel='system',
-                result='success'
+                result=result
             )
             self.stdout.write(f"Notification created for {method.routing_key}")
             ch.basic_ack(delivery_tag=method.delivery_tag)
